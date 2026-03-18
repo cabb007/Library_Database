@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "proxy": "http://localhost:5173",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -10,6 +11,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "axios": "^1.13.6",
+    "body-parser": "^2.2.2",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-router-dom": "^7.13.1"
