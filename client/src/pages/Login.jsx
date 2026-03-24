@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 export default function Login() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ email: "", password: "" });
+  const [form, setForm] = useState({ Email: "", Password: "" });
 
   function handleChange(e) {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -11,6 +11,10 @@ export default function Login() {
 
   function handleSubmit(e) {
     e.preventDefault();
+    setMessage("");
+    setError("");
+
+
     // TODO: connect to backend
     console.log("Login submitted:", form);
   }
@@ -43,8 +47,8 @@ export default function Login() {
             </label>
             <input
               type="email"
-              name="email"
-              value={form.email}
+              name="Email"
+              value={form.Email}
               onChange={handleChange}
               required
               placeholder="you@example.com"
@@ -63,8 +67,8 @@ export default function Login() {
             </div>
             <input
               type="password"
-              name="password"
-              value={form.password}
+              name="Password"
+              value={form.Password}
               onChange={handleChange}
               required
               placeholder="••••••••"

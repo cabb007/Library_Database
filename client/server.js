@@ -32,11 +32,11 @@ db.connect((err) => {
     console.log("connected to the database");
 })
 
-app.post("/api/users", async (req,res) => {
+app.post("/api/users", async (req, res) => {
     try {
-        const {FirstName,LastName,Email,Password} = req.body;
-        if (!FirstName || !LastName || !Email || !Password){
-            return res.status(400).json({ error: "First name, last name, and email are required."});
+        const { FirstName, LastName, Email, Password } = req.body;
+        if (!FirstName || !LastName || !Email || !Password) {
+            return res.status(400).json({ error: "First name, last name, and email are required." });
         }
 
         const [result] = await db.execute(
@@ -50,7 +50,7 @@ app.post("/api/users", async (req,res) => {
         });
     } catch (error) {
         console.error("Insert Failed: ", error);
-        res.status(500).json({ error: "Failed to register user"});
+        res.status(500).json({ error: "Failed to register user" });
     }
 })
 
@@ -59,15 +59,5 @@ app.get('/api/users', async (req, res) => {
     res.json(rows);
 })
 
-
-/*app.get('/users', (req, res) => {
-    const sql = 'SELECT * FROM users';
-    db.query(sql, (err, data) => {
-        if (err) return res.json(err);
-        return res.json(data);
-    })
-
-})
-*/
 const PORT = 3000;
 app.listen(PORT, () => console.log('Server running on port ' + PORT));
