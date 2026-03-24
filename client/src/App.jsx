@@ -9,7 +9,7 @@ export default function App() {
   const [message, setMessage] = useState('')
 
   useEffect(() => {
-    axios.get('http://localhost:5000/api/data')
+    axios.get('http://localhost:5200/api/data')
         .then(response => setMessage(response.data.message))
         .catch(error => console.error(error));
   }, []);
