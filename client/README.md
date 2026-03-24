@@ -1,3 +1,14 @@
+# .env file template
+
+To successfully connect to your locally hosted database, you will have to make a file named '.env' with the following variables :
+DB_HOST=localhost
+DB_PORT=yourport
+DB_USER=root
+DB_PASSWORD=yourpassword
+DB_NAME=yourdbname
+
+If your DB password contains #, you must put quotations around the password for it to recognize the whole thing, otherwise # is considered the start of a comment.
+
 # React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
