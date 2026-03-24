@@ -1,19 +1,27 @@
 import express from 'express';
 import mysql from 'mysql2';
 import cors from 'cors';
+import 'dotenv/config';
 
 const app = express();
-const dbpw = 't]$y6:mUc}!:HC8}'
 
 app.use(cors());
 app.use(express.json());
 
+console.log({
+    DB_HOST: process.env.DB_HOST,
+    DB_PORT: process.env.DB_PORT,
+    DB_USER: process.env.DB_USER,
+    DB_NAME: process.env.DB_NAME,
+    DB_PASSWORD_PRESENT: !!process.env.DB_PASSWORD
+});
+
 const db = mysql.createConnection({
-    host: 'localhost',
-    port: '5173',
-    user: 'root',
-    password: dbpw,
-    database: 'library_database'
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME
 })
 
 db.connect((err) => {
