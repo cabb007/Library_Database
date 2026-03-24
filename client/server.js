@@ -1,5 +1,5 @@
 import express from 'express';
-import mysql from 'mysql2';
+import mysql from 'mysql2/promise';
 import cors from 'cors';
 import 'dotenv/config';
 
@@ -16,7 +16,7 @@ console.log({
     DB_PASSWORD_PRESENT: !!process.env.DB_PASSWORD
 });
 
-const db = mysql.createConnection({
+const db = await mysql.createConnection({
     host: process.env.DB_HOST,
     port: process.env.DB_PORT,
     user: process.env.DB_USER,
@@ -32,13 +32,35 @@ db.connect((err) => {
     console.log("connected to the database");
 })
 
-app.get('/api/data', (req, res) => {
-    res.json({
-        message: 'Hello from Express!'
-    })
+app.post("/api/users", async (req,res) => {
+    try {
+        const {FirstName,LastName,Email,Password} = req.body;
+        if (!FirstName || !LastName || !Email || !Password){
+            return res.status(400).json({ error: "First name, last name, and email are required."});
+        }
+
+        const [result] = await db.execute(
+            "INSERT INTO users (FirstName, LastName, Email, Password) VALUES (?,?,?,?)",
+            [FirstName, LastName, Email, Password]
+        );
+
+        res.status(201).json({
+            message: "User registered successfully.",
+            id: result.insertId,
+        });
+    } catch (error) {
+        console.error("Insert Failed: ", error);
+        res.status(500).json({ error: "Failed to register user"});
+    }
 })
 
-app.get('/users', (req, res) => {
+app.get('/api/users', async (req, res) => {
+    const [rows] = await db.query("SELECT UserID, FirstName, LastName, Email, Balance, Status FROM users");
+    res.json(rows);
+})
+
+
+/*app.get('/users', (req, res) => {
     const sql = 'SELECT * FROM users';
     db.query(sql, (err, data) => {
         if (err) return res.json(err);
@@ -46,6 +68,6 @@ app.get('/users', (req, res) => {
     })
 
 })
-
-const PORT = 5173;
+*/
+const PORT = 3000;
 app.listen(PORT, () => console.log('Server running on port ' + PORT));

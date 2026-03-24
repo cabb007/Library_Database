@@ -55,6 +55,11 @@ export default function Landing() {
           >
             Register
           </button>
+          <button
+            onClick={() => navigate("/users")}
+            className="px-5 py-2 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold transition rounded text-sm tracking-wide">
+            User List
+          </button>
         </div>
       </nav>
 

@@ -4,12 +4,14 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import RegisterSuccess from './pages/RegisterSuccess';
+import Users from './pages/Users';
 
 export default function App() {
   const [message, setMessage] = useState('')
 
   useEffect(() => {
-    axios.get('http://localhost:5200/api/data')
+    axios.get('http://localhost:3000/api/users')
         .then(response => setMessage(response.data.message))
         .catch(error => console.error(error));
   }, []);
@@ -19,6 +21,8 @@ export default function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/registersuccess" element={<RegisterSuccess />} />
+        <Route path="/users" element={<Users />} />
       </Routes>
     </BrowserRouter>
   );
