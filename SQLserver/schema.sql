@@ -104,12 +104,12 @@ CREATE TABLE loans (
 ) ENGINE=InnoDB;
 
 -- =========================================================
--- HOLD REQUESTS
+-- HOLDS
 -- =========================================================
-CREATE TABLE holdRequests (
+CREATE TABLE holds (
     HoldID INT PRIMARY KEY AUTO_INCREMENT,
     UserID INT NOT NULL,
-    ItemID INT NOT NULL,
+    ItemID BIGINT NOT NULL,
     RequestDate DATETIME NOT NULL,
     HoldStatus SMALLINT,
     FOREIGN KEY (UserID) REFERENCES users(UserID),
