@@ -91,8 +91,8 @@ app.post("/login", async (req,res) => {
             return res.status(401).json({ success: false, message : "invalid credentials"});
         }
 
-        req.session.user = {
-            UserID: user.UserID,
+        req.session.user = { //req.session keeps you logged in for a set amount of time, initialized 
+            UserID: user.UserID, //in app.use(session(etc...))
             Email: user.Email,
             FirstName : user.FirstName,
             LastName : user.LastName,
@@ -114,35 +114,7 @@ app.post("/login", async (req,res) => {
     }
 })
 
-app.get("/numLiterature"), async (reg,res) => {
-    const [rows] = await db.execute(
-        "SELECT * FROM literature"
-    );
-    res.send(rows.length.toString());
-}
-
-app.get("/literature", async (req, res) => {
-    const [rows] = await db.execute(
-        "SELECT * FROM literature"
-    );
-    res.json(rows);
-});
-
-
-app.get("/me", (req,res) => {
-    if(!req.session.user) {
-        return res.status(401).json({
-            loggedIn: false
-        });
-    }
-
-    return res.json({
-        loggedIn: true,
-        user: req.session.user
-    });
-});
-
-// logout as a user
+//logout as a user, ends/'destroys' the session
 app.post("/logout", (req,res) =>{
     req.session.destroy((err) => {
         if (err) {
@@ -160,6 +132,72 @@ app.post("/logout", (req,res) =>{
         success: true,
         message: "Logged out"
     });
+})
+
+//retrieve one user's info
+app.get("/me", (req,res) => {
+    if(!req.session.user) {
+        return res.status(401).json({
+            loggedIn: false
+        });
+    }
+
+    return res.json({
+        loggedIn: true,
+        user: req.session.user
+    });
+});
+
+//retrieves the entire literature table from the database
+app.get("/literature", async (req,res) => {
+    try {
+        const [literature] = await db.execute(
+        "SELECT * FROM literature"
+        )
+
+        res.json(literature);
+
+    } catch (err) {
+        console.error("Failed to fetch books: ", err);
+        res.status(500).json({
+            error: "Failed to fetch books"
+        });
+    }
+})
+
+//retrieves number of rows from literature
+app.get("/numliterature", async (req,res) => {
+
+    const [rows] = await db.execute(
+        "SELECT * FROM literature"
+    );
+
+    res.json(rows.length.toString());
+
+})
+
+app.post("/finepayment", async (req,res) => {
+    try {
+        const {Payment, UserID}= req.body;
+
+        const[balance] = await db.execute(
+            "SELECT Balance FROM users WHERE UserID = ?"
+            [UserID]
+        )
+
+        const[result] = await db.execute(
+            "UPDATE users SET Balance = ? WHERE UserID = ?"
+            [(balance-Payment),UserID]
+        )
+
+        res.json(result)
+
+    } catch (err) {
+        console.error("Failed to pay balance: ", err);
+        res.status(500).json({
+            error: "Failed to pay balance"
+        });
+    }
 })
 
 const PORT = 3000;

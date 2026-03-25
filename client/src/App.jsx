@@ -7,15 +7,13 @@ import Register from "./pages/Register";
 import RegisterSuccess from './pages/RegisterSuccess';
 import UserAccount from './pages/UserAccount';
 import ItemDashboard from "./pages/ItemDashboard";
+import LitCatalogue from './pages/LitCatalogue';
+import FinePayment from './pages/FinePayment';
+
 
 export default function App() {
   const [message, setMessage] = useState('')
 
-  useEffect(() => {
-    axios.get('http://localhost:3000/api/users')
-        .then(response => setMessage(response.data.message))
-        .catch(error => console.error(error));
-  }, []);
   return (
     <BrowserRouter>
       <Routes>
@@ -25,6 +23,8 @@ export default function App() {
         <Route path="/registersuccess" element={<RegisterSuccess />} />
         <Route path="/useraccount" element={<UserAccount />} />
         <Route path="/itemDashBoard" element={<ItemDashboard />} />
+        <Route path="/litcatalogue" element={<LitCatalogue />} />
+        <Route path="/finepayment" element={<FinePayment />} />
       </Routes>
     </BrowserRouter>
   );
