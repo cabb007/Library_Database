@@ -9,7 +9,7 @@ SOURCE procedures/triggers.sql;
 -- =========================================================
 -- USERS
 -- =========================================================
-LOAD DATA LOCAL INFILE 'data/users.csv'
+LOAD DATA LOCAL INFILE 'C:/Users/nequi/OneDrive/Documents/LibraryProject/SQLserver/data/users.csv'
 INTO TABLE users
 FIELDS TERMINATED BY ','
 ENCLOSED BY '"'
@@ -23,7 +23,7 @@ SET
 -- =========================================================
 -- ITEMS (supertype)
 -- =========================================================
-LOAD DATA LOCAL INFILE 'data/items.csv'
+LOAD DATA LOCAL INFILE 'C:/Users/nequi/OneDrive/Documents/LibraryProject/SQLserver/data/items.csv'
 INTO TABLE items
 FIELDS TERMINATED BY ','
 ENCLOSED BY '"'
@@ -34,7 +34,7 @@ IGNORE 1 ROWS
 -- =========================================================
 -- LITERATURE
 -- =========================================================
-LOAD DATA LOCAL INFILE 'data/literature.csv'
+LOAD DATA LOCAL INFILE 'C:/Users/nequi/OneDrive/Documents/LibraryProject/SQLserver/data/literature.csv'
 INTO TABLE literature
 FIELDS TERMINATED BY ','
 ENCLOSED BY '"'
@@ -45,7 +45,7 @@ IGNORE 1 ROWS
 -- =========================================================
 -- MEDIA
 -- =========================================================
-LOAD DATA LOCAL INFILE 'data/media.csv'
+LOAD DATA LOCAL INFILE 'C:/Users/nequi/OneDrive/Documents/LibraryProject/SQLserver/data/media.csv'
 INTO TABLE media
 FIELDS TERMINATED BY ','
 ENCLOSED BY '"'
@@ -56,7 +56,7 @@ IGNORE 1 ROWS
 -- =========================================================
 -- DEVICES
 -- =========================================================
-LOAD DATA LOCAL INFILE 'data/devices.csv'
+LOAD DATA LOCAL INFILE 'C:/Users/nequi/OneDrive/Documents/LibraryProject/SQLserver/data/devices.csv'
 INTO TABLE devices
 FIELDS TERMINATED BY ','
 ENCLOSED BY '"'
@@ -67,7 +67,7 @@ IGNORE 1 ROWS
 -- =========================================================
 -- COPIES
 -- ========================================================
-LOAD DATA LOCAL INFILE 'data/copies.csv'
+LOAD DATA LOCAL INFILE 'C:/Users/nequi/OneDrive/Documents/LibraryProject/SQLserver/data/copies.csv'
 INTO TABLE copies
 FIELDS TERMINATED BY ','
 ENCLOSED BY '"'
@@ -77,5 +77,3 @@ IGNORE 1 ROWS
 SET
     CreatedBy = NULLIF(@cb, ''),
     UpdatedBy = NULLIF(@ub, '');
-
-
