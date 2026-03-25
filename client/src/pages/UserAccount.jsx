@@ -66,14 +66,15 @@ export default function UserAccount(){
                         Home
                     </button>
                     {user ? <h1>Logged in as {user.FirstName} {user.LastName}</h1> : <h1>Not logged in</h1>}
-                    {user ? <h1>User ID : {user.UserID}</h1> : <h1>User ID invalid</h1>}
-                    {user ? <h1>Email : {user.Email}</h1> : <h1>No email found</h1>}
-                    {user ? <h1>Current Balance : ${user.Balance} </h1> : <h1>No balance</h1>}
-                    <p className="text-amber-600 text-sm tracking-[0.3em] uppercase">
+                    {user ? <h1>User ID : {user.UserID}</h1> : <h1></h1>}
+                    {user ? <h1>Email : {user.Email}</h1> : <h1></h1>}
+                    {user ? <h1>Current Balance : ${user.Balance} </h1> : <h1></h1>}
+                    {user ? <p className="text-amber-600 text-sm tracking-[0.3em] uppercase">
                         <button onClick={() => handleLogout()} className="px-7 py-3 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold rounded transition tracking-wide">
                             Logout
                         </button>
-                    </p>
+                    </p> : <h1></h1>}
+                    
                     
                 </div>
             </div>
