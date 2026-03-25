@@ -164,6 +164,7 @@ app.get("/literature", async (req,res) => {
     }
 })
 
+
 //retrieves number of rows from literature
 app.get("/numliterature", async (req,res) => {
 
@@ -175,13 +176,48 @@ app.get("/numliterature", async (req,res) => {
 
 })
 
-app.get("/media", async (req,res) => {
+app.get("/numCopies", async (req, res) => {
+  const { itemId } = req.params;
+  try {
+    const [rows] = await db.execute(
+      "CALL GetAvailableCopies(?)",
+      [itemId]
+    );
 
-})
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Book not found" });
+    }
 
-app.get("/devices", async (req,res) => {
+    res.json({ copies: rows[0].CopiesAvailable });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
 
-})
+app.get("/media", async (req, res) => {
+  try {
+    const [media] = await db.execute(
+      "SELECT i.ItemID, i.Title, m.Producer, m.DurationMinutes FROM items i JOIN media m ON i.ItemID = m.ItemID WHERE i.ItemCategory = 2"
+    );
+    res.json(media);
+  } catch (err) {
+    console.error("Failed to fetch media: ", err);
+    res.status(500).json({ error: "Failed to fetch media" });
+  }
+});
+
+app.get("/devices", async (req, res) => {
+  try {
+    const [media] = await db.execute(
+      "SELECT i.ItemID, i.Title, d.Manufacturer, d.Model FROM items i JOIN devices d ON i.ItemID = d.ItemID WHERE i.ItemCategory = 3"
+    );
+    res.json(media);
+  } catch (err) {
+    console.error("Failed to fetch devices: ", err);
+    res.status(500).json({ error: "Failed to fetch devices" });
+  }
+});
 
 //gets balance and deducts payment amount from current balance of a specific user
 app.put("/finepayment", async (req,res) => {
