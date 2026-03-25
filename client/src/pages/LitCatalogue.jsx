@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 export default function LitCatalogue() {
     const navigate = useNavigate();
 
-    const [books,setBooks] = useState([]);
+    const [literature,setLiterature] = useState([]);
     const [loading,setLoading] = useState(true);
     const [error,setError] = useState("");
 
@@ -18,7 +18,9 @@ export default function LitCatalogue() {
                     throw new Error(data.error || "Failed to fetch books");
                 }
 
-                setBooks(data);
+                console.log(data);
+
+                setLiterature(data);
 
             } catch (err){
                 setError(err.message);
@@ -30,25 +32,42 @@ export default function LitCatalogue() {
         getLiterature();
     }, []);
 
+
     return(
-        <div>
-            <div>
+        <div >
+            <div className = "items-center justify-center flex">
                 <button onClick={() => navigate("/")}>
-                    Home
+                   || Home |
                 </button>
+                <h1>| Book Catalogue |</h1>
+                <h1>| Loaded {literature.length} books ||</h1>
             </div>
-            <h1> ~ Book Catalogue ~ </h1>
+            
             
             {literature.length === 0 && <p>No books found</p>}
-
-            {literature.map(literature => {
-                <div key={literature.ItemID}>
-                    <p>Author : {literature.Author}</p>
-                    <p>Publisher : {literature.Publisher}</p>
-                    <p>Publication Year : {literature.PublicationYear}</p>
-                    <p>ISBN : {literature.ItemID}</p>
-                </div>
-            })}
+            
+            <div className = "items-center justify-center flex">
+                <table>
+                <thead>
+                    <tr>
+                        <th>ISBN</th>
+                        <th>Author</th>
+                        <th>Publisher</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {literature.map((literature) => {
+                        return (
+                        <tr key={literature.ItemID}>
+                            <td>{literature.ItemID}</td>
+                            <td>{literature.Author}</td>
+                            <td>{literature.Publisher}</td>
+                        </tr>
+                    )})}
+                </tbody>
+            </table>
+            </div>
+            
         </div>
     );
 }

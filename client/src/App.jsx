@@ -12,11 +12,6 @@ import LitCatalogue from './pages/LitCatalogue';
 export default function App() {
   const [message, setMessage] = useState('')
 
-  useEffect(() => {
-    axios.get('http://localhost:3000/api/users')
-        .then(response => setMessage(response.data.message))
-        .catch(error => console.error(error));
-  }, []);
   return (
     <BrowserRouter>
       <Routes>
