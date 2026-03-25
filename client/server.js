@@ -10,6 +10,7 @@ app.use(cors({
     origin : "http://localhost:5173",
     credentials: true
 }));
+
 app.use(express.json());
 app.use(session({
     secret: "secret_key", //need to implement a better secret key later for logged in session security
@@ -127,7 +128,7 @@ app.get("/me", (req,res) => {
 });
 
 // logout as a user
-/*app.post("/logout", (req,res) =>{
+app.post("/logout", (req,res) =>{
     req.session.destroy((err) => {
         if (err) {
             console.error("Logout failed: ", err);
@@ -144,39 +145,7 @@ app.get("/me", (req,res) => {
         success: true,
         message: "Logged out"
     });
-})*/
-
-// retrieving information about user
-/*app.get("/api/users", async (req,res) => {
-
-        try {
-            const UserID = req.body;
-            const [rows] = await db.execute(
-                "SELECT * FROM users WHERE UserID = ?",
-                [UserID]
-            );
-
-            const user = rows[0]
-
-            return res.json({
-                success: true,
-                user: {
-                    Email : user.Email,
-                    FirstName : user.FirstName,
-                    LastName : user.LastName,
-                    Balance : user.Balance,
-                    Status : user.Status
-                }
-            });
-
-        } catch (err) {
-            console.error("error retrieving user data: ", err);
-            return res.status(500).json({
-                success: false,
-                message: "Server error"
-            });
-        }
-    })*/
+})
 
 const PORT = 3000;
 app.listen(PORT, () => console.log('Server running on port ' + PORT));

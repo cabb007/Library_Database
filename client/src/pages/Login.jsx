@@ -15,8 +15,6 @@ export default function Login() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    console.log("submit clicked")
-
     setMessage("");
     setError("");
     setSubmitting(true);
