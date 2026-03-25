@@ -3,20 +3,37 @@ import { useNavigate } from "react-router-dom";
 
 export default function Login() {
   const navigate = useNavigate();
+  
   const [form, setForm] = useState({ Email: "", Password: "" });
 
   function handleChange(e) {
     setForm({ ...form, [e.target.name]: e.target.value });
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    setMessage("");
-    setError("");
+    try {
+      const response = await fetch("http://localhost:3000/api/users", {
+      method: "GET",
+      headers: {
+        "Content-Type" : "application/json",
+      },
+      body: JSON.stringify(form),
+    });
 
+    const data = await response.json();
 
-    // TODO: connect to backend
-    console.log("Login submitted:", form);
+    if( !response.ok ){
+      throw new Error(data.error || "Failed to login");
+    }
+
+    setMessage("Logged in successfully");
+    console.log("Logged in as: ",data);
+
+    navigate('/useraccount');
+    } catch(err){
+      setError(err.message);
+    }
   }
 
   return (

@@ -55,8 +55,28 @@ app.post("/api/users", async (req, res) => {
 })
 
 app.get('/api/users', async (req, res) => {
-    const [rows] = await db.query("SELECT UserID, FirstName, LastName, Email, Balance, Status FROM users");
-    res.json(rows);
+
+
+    try {
+        const { Email, Password } = req.body;
+
+        if (!Email || !Password) {
+            return res.status(400).json({ error: "Email and password required" });
+        }
+
+        const [result] = db.query(
+            "SELECT (Email, Password) FROM users WHERE (Email, Password) = (?,?)",
+            [Email, Password]
+        );
+
+        res.status(201).json({
+            message: "Logged in successfully"
+        })
+
+    } catch (error) {
+        console.error("Log in failed : ", error);
+        res.status(500).json({ error: "Failed to log in" });
+    }
 })
 
 const PORT = 3000;
