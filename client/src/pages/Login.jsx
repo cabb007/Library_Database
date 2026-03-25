@@ -41,6 +41,7 @@ export default function Login() {
       navigate("/useraccount");
 
     } catch(err){
+      alert("Invalid Email or Password");
       setError(err.message);
     } finally {
       setSubmitting(false);
