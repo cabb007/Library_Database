@@ -136,7 +136,7 @@ app.post("/logout", (req,res) =>{
 
 //retrieve one user's info
 app.get("/me", (req,res) => {
-    if(!req.session.user) {
+    if(!req.session.user) { //checks if user is logged in/session active
         return res.status(401).json({
             loggedIn: false
         });
@@ -183,21 +183,27 @@ app.get("/devices", async (req,res) => {
 
 })
 
-app.post("/finepayment", async (req,res) => {
+//gets balance and deducts payment amount from current balance of a specific user
+app.put("/finepayment", async (req,res) => {
+    const user = req.session.user;
+    const payamt = req.body;
+
+    console.log(payamt,user);
+
     try {
-        const {Payment, UserID}= req.body;
+        
+        if(payamt > user.Balance){
+            return res.status(400).json({
+                error: "Invalid amount"
+            });
+        }
 
-        const[balance] = await db.execute(
-            "SELECT Balance FROM users WHERE UserID = ?"
-            [UserID]
-        )
+        await db.execute(
+            "UPDATE users SET Balance = Balance - ? WHERE UserID = ?",
+            [Number(payamt),user.UserID]
+        );
 
-        const[result] = await db.execute(
-            "UPDATE users SET Balance = ? WHERE UserID = ?"
-            [(balance-Payment),UserID]
-        )
-
-        res.json(result)
+        res.json({ success : true});
 
     } catch (err) {
         console.error("Failed to pay balance: ", err);
