@@ -3,16 +3,49 @@ import { useNavigate } from "react-router-dom";
 
 export default function Login() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ email: "", password: "" });
+  
+  const [form, setForm] = useState({ Email: "", Password: "" });
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   function handleChange(e) {
     setForm({ ...form, [e.target.name]: e.target.value });
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    // TODO: connect to backend
-    console.log("Login submitted:", form);
+    setMessage("");
+    setError("");
+    setSubmitting(true);
+
+    try {
+      const response = await fetch("http://localhost:3000/login", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        credentials: "include",
+        body: JSON.stringify({
+          Email: form.Email,
+          Password: form.Password
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || data.message || "Failed to login");
+      }
+
+      setMessage("Logged in successfully");
+      console.log("Logged in as ", data);
+      navigate("/useraccount");
+
+    } catch(err){
+      alert("Invalid Email or Password");
+      setError(err.message);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -43,8 +76,8 @@ export default function Login() {
             </label>
             <input
               type="email"
-              name="email"
-              value={form.email}
+              name="Email"
+              value={form.Email}
               onChange={handleChange}
               required
               placeholder="you@example.com"
@@ -63,8 +96,8 @@ export default function Login() {
             </div>
             <input
               type="password"
-              name="password"
-              value={form.password}
+              name="Password"
+              value={form.Password}
               onChange={handleChange}
               required
               placeholder="••••••••"

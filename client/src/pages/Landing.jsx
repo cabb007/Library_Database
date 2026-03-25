@@ -1,9 +1,19 @@
 import { useNavigate } from "react-router-dom";
 
+async function numLiterature() {
+  try {
+    const response = await fetch("http://localhost:3000/numliterature");
+    const data = await response.json();
+    return data;
+  } catch (err) {
+    console.error(err);
+  }
+}
+
 const CATEGORIES = [
   {
-    label: "Books",
-    count: "2,400+",
+    label: "Literature",
+    count: (numLiterature()),
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-8 h-8">
         <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" strokeLinecap="round" strokeLinejoin="round" />
@@ -55,6 +65,11 @@ export default function Landing() {
           >
             Register
           </button>
+          <button
+            onClick={() => navigate("/useraccount")}
+            className="px-5 py-2 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold transition rounded text-sm tracking-wide">
+            My Account
+          </button>
         </div>
       </nav>
 
@@ -76,13 +91,21 @@ export default function Landing() {
           <div className="flex gap-4 mt-2">
             <button
               onClick={() => navigate("/login")}
-              className="px-7 py-3 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold rounded transition tracking-wide"
-            >
+              className="px-7 py-3 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold rounded transition tracking-wide">
               Get Started
             </button>
-            <button className="px-7 py-3 border border-stone-600 text-stone-300 hover:border-amber-700 hover:text-amber-300 rounded transition tracking-wide">
+            <button
+              onClick={() => navigate("/litcatalogue")} 
+              className="px-7 py-3 border border-stone-600 text-stone-300 hover:border-amber-700 hover:text-amber-300 rounded transition tracking-wide">
               Browse Catalog
             </button>
+
+            <button
+            onClick={() => navigate("/itemDashboard")}
+            className="px-7 py-3 border border-stone-600 text-stone-300 hover:border-amber-700 hover:text-amber-300 rounded transition tracking-wide"
+            >
+              Dashboard
+            </button>         
           </div>
         </div>
 

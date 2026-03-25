@@ -2,29 +2,61 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function Register() {
+
   const navigate = useNavigate();
+
   const [form, setForm] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    password: "",
+    FirstName: "",
+    LastName: "",
+    Email: "",
+    Password: "",
     confirmPassword: "",
   });
+
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   function handleChange(e) {
     setForm({ ...form, [e.target.name]: e.target.value });
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
+    setMessage("");
+    setError("");
+    setSubmitting(true);
 
-    if (form.password !== form.confirmPassword) {
+    if (form.Password !== form.confirmPassword) {
       alert("Passwords do not match.");
+      setSubmitting(false);
       return;
     }
 
-    // TODO: connect to backend
-    console.log("Register submitted:", form);
+    try {
+      const response = await fetch("http://localhost:3000/api/users", {
+        method: "POST",
+        headers: {
+          "Content-Type" : "application/json",
+        },
+        body: JSON.stringify(form),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to register user");
+      }
+
+      setMessage("User registered successfully");
+      console.log("Registered:",data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSubmitting(false);
+    }
+
+    navigate('/registersuccess');
   }
 
   return (
@@ -56,8 +88,8 @@ export default function Register() {
               </label>
               <input
                 type="text"
-                name="firstName"
-                value={form.firstName}
+                name="FirstName"
+                value={form.FirstName}
                 onChange={handleChange}
                 required
                 placeholder="John"
@@ -70,8 +102,8 @@ export default function Register() {
               </label>
               <input
                 type="text"
-                name="lastName"
-                value={form.lastName}
+                name="LastName"
+                value={form.LastName}
                 onChange={handleChange}
                 required
                 placeholder="Doe"
@@ -86,8 +118,8 @@ export default function Register() {
             </label>
             <input
               type="email"
-              name="email"
-              value={form.email}
+              name="Email"
+              value={form.Email}
               onChange={handleChange}
               required
               placeholder="you@university.edu"
@@ -101,8 +133,8 @@ export default function Register() {
             </label>
             <input
               type="password"
-              name="password"
-              value={form.password}
+              name="Password"
+              value={form.Password}
               onChange={handleChange}
               required
               placeholder="••••••••"
@@ -127,9 +159,10 @@ export default function Register() {
 
           <button
             type="submit"
+            disabled={submitting}
             className="mt-2 w-full py-3 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold rounded transition tracking-wide"
           >
-            Create Account
+            {submitting ? "Creating account.." : "Create Account"}
           </button>
         </form>
 
