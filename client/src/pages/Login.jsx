@@ -15,8 +15,6 @@ export default function Login() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    console.log("submit clicked")
-
     setMessage("");
     setError("");
     setSubmitting(true);
@@ -43,6 +41,7 @@ export default function Login() {
       navigate("/useraccount");
 
     } catch(err){
+      alert("Invalid Email or Password");
       setError(err.message);
     } finally {
       setSubmitting(false);

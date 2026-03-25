@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 
 export default function UserAccount(){
     const [user, setUser] = useState(null);
+    const [error, setError] = useState("");
 
     useEffect(() => {
         async function checkLogin() {
@@ -27,6 +28,36 @@ export default function UserAccount(){
 
         checkLogin();
     }, []);
+
+
+    async function handleLogout(){
+        setError("");
+
+        try {
+            const response = await fetch("http://localhost:3000/logout", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                credentials: "include",
+                body: JSON.stringify({
+                    UserID: user.UserID
+                })
+            });
+
+            const data = await response.json();
+
+            if(!response.ok) {
+                throw new Error(data.error || data.message || "Failed to logout");
+            }
+
+            console.log("Logged out successfully");
+            navigate("/login");
+
+        } catch (err) {
+            setError(err.message);
+        }
+    }
+
+    const navigate = useNavigate();
     return (
         <div className="min-h-screen bg-stone-950 text-amber-50 flex flex-col">
             <div className="flex flex-1 flex-col md:flex-row items-center justify-center gap-16 px-10 py-20 max-w-6xl mx-auto w-full">
@@ -35,11 +66,11 @@ export default function UserAccount(){
                         Home
                     </button>
                     {user ? <h1>Logged in as {user.FirstName} {user.LastName}</h1> : <h1>Not logged in</h1>}
-                    {user ?<h1>User ID : {user.UserID}</h1>: <h1>User ID invalid</h1>}
+                    {user ? <h1>User ID : {user.UserID}</h1> : <h1>User ID invalid</h1>}
                     {user ? <h1>Email : {user.Email}</h1> : <h1>No email found</h1>}
                     {user ? <h1>Current Balance : ${user.Balance} </h1> : <h1>No balance</h1>}
                     <p className="text-amber-600 text-sm tracking-[0.3em] uppercase">
-                        <button onClick={() => navigate("/")} className="px-7 py-3 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold rounded transition tracking-wide">
+                        <button onClick={() => handleLogout()} className="px-7 py-3 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold rounded transition tracking-wide">
                             Logout
                         </button>
                     </p>

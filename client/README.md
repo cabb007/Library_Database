@@ -9,20 +9,18 @@ DB_NAME=yourdbname
 
 If your DB password contains #, you must put quotations around the password for it to recognize the whole thing, otherwise # is considered the start of a comment.
 
-# React + Vite
+# running the program
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
-
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
-
+First, make sure you are in the '/client' directory which can be done with the command :
+cd client
+next, you want to make sure you have all the necessary packages/dependencies installed locally which can be
+done with the command :
+npm install
+afterwards, as long as there are no errors with the installation you can run the express server and then the web
+application with their respective commands:
+npm start
+npm run dev
+//note that you will be executing these commands in separate terminals
+if there are no issues with connecting to the server and website, in the terminal that you ran 'npm run dev',
+you can now type 'o' and press enter to open the web application. In the same terminal, you can stop the hosting of the web application by typing 'q' and pressing enter. To stop the express server, go in the other terminal and press
+CTRL + 'C' at the same time on your keyboard.
