@@ -32,6 +32,7 @@ db.connect((err) => {
     console.log("connected to the database");
 })
 
+// This post function is for user registering, adds their information as a row to the database
 app.post("/api/users", async (req, res) => {
     try {
         const { FirstName, LastName, Email, Password } = req.body;
@@ -54,9 +55,7 @@ app.post("/api/users", async (req, res) => {
     }
 })
 
-app.get('/api/users', async (req, res) => {
-
-
+app.post('/login', async (req, res) => {
     try {
         const { Email, Password } = req.body;
 
@@ -64,20 +63,42 @@ app.get('/api/users', async (req, res) => {
             return res.status(400).json({ error: "Email and password required" });
         }
 
-        const [result] = db.query(
-            "SELECT (Email, Password) FROM users WHERE (Email, Password) = (?,?)",
-            [Email, Password]
+        const [rows] = await db.execute(
+            "SELECT * FROM users WHERE email = ?",
+            [Email]
         );
 
-        res.status(201).json({
-            message: "Logged in successfully"
-        })
+        if (rows.length == 0) {
+            return res.status(401).json({ error: "Email and/or password invalid" });
+        }
 
-    } catch (error) {
-        console.error("Log in failed : ", error);
-        res.status(500).json({ error: "Failed to log in" });
+        const user = rows[0];
+
+        if (Password !== user.Password) {
+            return res.status(401).json({
+                error: "Password is incorrect"
+            });
+        }
+
+        return res.json({
+            success: true,
+            message: "Login successful",
+            user: {
+                UserID: user.UserID,
+                Email: user.Email
+            }
+        });
+    } catch (err) {
+        console.error(err)
+        res.status(500).json({
+            success: false,
+            message: "Server error"
+        })
     }
+
 })
+
+
 
 const PORT = 3000;
 app.listen(PORT, () => console.log('Server running on port ' + PORT));

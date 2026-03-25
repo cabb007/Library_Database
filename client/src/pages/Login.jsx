@@ -3,6 +3,10 @@ import { useNavigate } from "react-router-dom";
 
 export default function Login() {
   const navigate = useNavigate();
+
+  const [Email,setEmail] = useState("");
+  const [Password, setPassword] = useState("");
+  const [message, setMessage] = useState("");
   
   const [form, setForm] = useState({ Email: "", Password: "" });
 
@@ -12,27 +16,26 @@ export default function Login() {
 
   async function handleSubmit(e) {
     e.preventDefault();
+    
     try {
-      const response = await fetch("http://localhost:3000/api/users", {
-      method: "GET",
-      headers: {
-        "Content-Type" : "application/json",
-      },
-      body: JSON.stringify(form),
-    });
+      const res = await axios.post("http://localhost:3000/login", {
+        Email,
+        Password
+      });
 
-    const data = await response.json();
+      if (response.data.success) {
+        setMessage("Login successful");
+        console.log("User: ", response.data.user);
+      }
 
-    if( !response.ok ){
-      throw new Error(data.error || "Failed to login");
-    }
-
-    setMessage("Logged in successfully");
-    console.log("Logged in as: ",data);
-
-    navigate('/useraccount');
-    } catch(err){
-      setError(err.message);
+      navigate('/');
+    
+    } catch (error) {
+      if (error.response) {
+        setMessage(error.response.data.message);
+      } else {
+        setMessage("Could not connect to server");
+      }
     }
   }
 
