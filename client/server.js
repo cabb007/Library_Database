@@ -24,14 +24,6 @@ const db = await mysql.createConnection({
     database: process.env.DB_NAME
 })
 
-db.connect((err) => {
-    if (err) {
-        console.error("database connection failed: " + err.stack);
-        return;
-    }
-    console.log("connected to the database");
-})
-
 app.post("/api/users", async (req, res) => {
     try {
         const { FirstName, LastName, Email, Password } = req.body;
@@ -54,28 +46,51 @@ app.post("/api/users", async (req, res) => {
     }
 })
 
-app.get('/api/users', async (req, res) => {
-
-
+app.post("/login", async (req,res) => {
+    console.log("req.body:", req.body);
+    console.log("Email:", Email);
+    console.log("Password:", Password);
+    console.log("rows:", rows);
     try {
+
         const { Email, Password } = req.body;
 
-        if (!Email || !Password) {
-            return res.status(400).json({ error: "Email and password required" });
+        if(!Email || !Password) {
+            return res.status(400).json({error: "Email and password required"});
         }
 
-        const [result] = db.query(
-            "SELECT (Email, Password) FROM users WHERE (Email, Password) = (?,?)",
-            [Email, Password]
+        const [rows] = await db.execute(
+            "SELECT * FROM users WHERE Email = ?",
+            [Email]
         );
 
-        res.status(201).json({
-            message: "Logged in successfully"
-        })
+        if(rows.length === 0){
+            return res.status(401).json({
+                success: false,
+                message: "invalid creds"
+            });
+        }
 
-    } catch (error) {
-        console.error("Log in failed : ", error);
-        res.status(500).json({ error: "Failed to log in" });
+        const user = rows[0];
+        
+        if(Password != user.Password){
+            return res.status(401).json({ success: false, message : "invalid credentials"});
+        }
+
+        return res.json({
+            success: true,
+            user: {
+                UserID : user.UserID,
+                Email : user.Email
+            }
+        });
+        
+    } catch (err){
+        console.error("Login Failed: ", err);
+        return res.status(500).json({
+            success: false,
+            message: "Server error"
+        });
     }
 })
 

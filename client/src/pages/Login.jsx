@@ -5,6 +5,9 @@ export default function Login() {
   const navigate = useNavigate();
   
   const [form, setForm] = useState({ Email: "", Password: "" });
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   function handleChange(e) {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -12,27 +15,36 @@ export default function Login() {
 
   async function handleSubmit(e) {
     e.preventDefault();
+    console.log("submit clicked")
+
+    setMessage("");
+    setError("");
+    setSubmitting(true);
+
     try {
-      const response = await fetch("http://localhost:3000/api/users", {
-      method: "GET",
-      headers: {
-        "Content-Type" : "application/json",
-      },
-      body: JSON.stringify(form),
-    });
+      const response = await fetch("http://localhost:3000/login", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          Email: form.Email,
+          Password: form.Password
+        })
+      });
 
-    const data = await response.json();
+      const data = await response.json();
 
-    if( !response.ok ){
-      throw new Error(data.error || "Failed to login");
-    }
+      if (!response.ok) {
+        throw new Error(data.error || data.message || "Failed to login");
+      }
 
-    setMessage("Logged in successfully");
-    console.log("Logged in as: ",data);
+      setMessage("Logged in successfully");
+      console.log("Logged in as ", data);
+      navigate("/useraccount");
 
-    navigate('/useraccount');
     } catch(err){
       setError(err.message);
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -96,6 +108,7 @@ export default function Login() {
           <button
             type="submit"
             className="mt-2 w-full py-3 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold rounded transition tracking-wide"
+            onClick={() => console.log("button clicked")}
           >
             Sign In
           </button>
