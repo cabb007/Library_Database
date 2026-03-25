@@ -6,7 +6,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import RegisterSuccess from './pages/RegisterSuccess';
 import UserAccount from './pages/UserAccount';
-import Catalogue from './pages/Catalogue';
+import ItemDashboard from "./pages/ItemDashboard";
 
 export default function App() {
   const [message, setMessage] = useState('')
@@ -24,7 +24,7 @@ export default function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/registersuccess" element={<RegisterSuccess />} />
         <Route path="/useraccount" element={<UserAccount />} />
-        <Route path="/catalogue" element={<Catalogue />} />
+        <Route path="/itemDashBoard" element={<ItemDashboard />} />
       </Routes>
     </BrowserRouter>
   );

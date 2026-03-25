@@ -114,6 +114,21 @@ app.post("/login", async (req,res) => {
     }
 })
 
+app.get("/numLiterature"), async (reg,res) => {
+    const [rows] = await db.execute(
+        "SELECT * FROM literature"
+    );
+    res.send(rows.length.toString());
+}
+
+app.get("/literature", async (req, res) => {
+    const [rows] = await db.execute(
+        "SELECT * FROM literature"
+    );
+    res.json(rows);
+});
+
+
 app.get("/me", (req,res) => {
     if(!req.session.user) {
         return res.status(401).json({

@@ -2,8 +2,8 @@ import { useNavigate } from "react-router-dom";
 
 const CATEGORIES = [
   {
-    label: "Books",
-    count: "2,400+",
+    label: "Literature",
+    count: "3000+",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-8 h-8">
         <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" strokeLinecap="round" strokeLinejoin="round" />
@@ -90,6 +90,13 @@ export default function Landing() {
             className="px-7 py-3 border border-stone-600 text-stone-300 hover:border-amber-700 hover:text-amber-300 rounded transition tracking-wide">
               Browse Catalog
             </button>
+
+            <button
+            onClick={() => navigate("/itemDashboard")}
+            className="px-7 py-3 border border-stone-600 text-stone-300 hover:border-amber-700 hover:text-amber-300 rounded transition tracking-wide"
+            >
+              Dashboard
+            </button>         
           </div>
         </div>
 
