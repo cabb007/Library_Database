@@ -25,6 +25,7 @@ export default function Login() {
       const response = await fetch("http://localhost:3000/login", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
+        credentials: "include",
         body: JSON.stringify({
           Email: form.Email,
           Password: form.Password
@@ -108,7 +109,6 @@ export default function Login() {
           <button
             type="submit"
             className="mt-2 w-full py-3 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold rounded transition tracking-wide"
-            onClick={() => console.log("button clicked")}
           >
             Sign In
           </button>

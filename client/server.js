@@ -1,12 +1,27 @@
 import express from 'express';
 import mysql from 'mysql2/promise';
 import cors from 'cors';
+import session from 'express-session';
 import 'dotenv/config';
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+    origin : "http://localhost:5173",
+    credentials: true
+}));
 app.use(express.json());
+app.use(session({
+    secret: "secret_key", //need to implement a better secret key later for logged in session security
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        httpOnly: true,
+        secure: false,
+        sameSite: "lax",
+        maxAge: 1000 * 60 * 60 * 24 //session lasts 1 day
+    }
+}))
 
 console.log({
     DB_HOST: process.env.DB_HOST,
@@ -24,6 +39,7 @@ const db = await mysql.createConnection({
     database: process.env.DB_NAME
 })
 
+// registering a user with firstname lastname email and password being input
 app.post("/api/users", async (req, res) => {
     try {
         const { FirstName, LastName, Email, Password } = req.body;
@@ -46,11 +62,8 @@ app.post("/api/users", async (req, res) => {
     }
 })
 
+// login as a user with a max session time of 1 day
 app.post("/login", async (req,res) => {
-    console.log("req.body:", req.body);
-    console.log("Email:", Email);
-    console.log("Password:", Password);
-    console.log("rows:", rows);
     try {
 
         const { Email, Password } = req.body;
@@ -77,12 +90,18 @@ app.post("/login", async (req,res) => {
             return res.status(401).json({ success: false, message : "invalid credentials"});
         }
 
+        req.session.user = {
+            UserID: user.UserID,
+            Email: user.Email,
+            FirstName : user.FirstName,
+            LastName : user.LastName,
+            Balance : user.Balance
+        };
+
         return res.json({
             success: true,
-            user: {
-                UserID : user.UserID,
-                Email : user.Email
-            }
+            message: "Logged in successfully",
+            user: req.session.user
         });
         
     } catch (err){
@@ -93,6 +112,71 @@ app.post("/login", async (req,res) => {
         });
     }
 })
+
+app.get("/me", (req,res) => {
+    if(!req.session.user) {
+        return res.status(401).json({
+            loggedIn: false
+        });
+    }
+
+    return res.json({
+        loggedIn: true,
+        user: req.session.user
+    });
+});
+
+// logout as a user
+/*app.post("/logout", (req,res) =>{
+    req.session.destroy((err) => {
+        if (err) {
+            console.error("Logout failed: ", err);
+            return res.status(500).json({
+                success: false,
+                message: "Logout failed"
+            });
+        }
+    })
+
+    res.clearCookie("connect.sid");
+
+    return res.json({
+        success: true,
+        message: "Logged out"
+    });
+})*/
+
+// retrieving information about user
+/*app.get("/api/users", async (req,res) => {
+
+        try {
+            const UserID = req.body;
+            const [rows] = await db.execute(
+                "SELECT * FROM users WHERE UserID = ?",
+                [UserID]
+            );
+
+            const user = rows[0]
+
+            return res.json({
+                success: true,
+                user: {
+                    Email : user.Email,
+                    FirstName : user.FirstName,
+                    LastName : user.LastName,
+                    Balance : user.Balance,
+                    Status : user.Status
+                }
+            });
+
+        } catch (err) {
+            console.error("error retrieving user data: ", err);
+            return res.status(500).json({
+                success: false,
+                message: "Server error"
+            });
+        }
+    })*/
 
 const PORT = 3000;
 app.listen(PORT, () => console.log('Server running on port ' + PORT));
