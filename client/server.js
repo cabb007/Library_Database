@@ -63,16 +63,6 @@ app.post("/api/users", async (req, res) => {
     }
 })
 
-app.get("/numliterature", async (req,res) => {
-
-    const [rows] = await db.execute(
-        "SELECT * FROM literature"
-    );
-
-    res.json(rows.length.toString());
-
-})
-
 // login as a user with a max session time of 1 day
 app.post("/login", async (req,res) => {
     try {
@@ -124,21 +114,7 @@ app.post("/login", async (req,res) => {
     }
 })
 
-//retrieve one user's info
-app.get("/me", (req,res) => {
-    if(!req.session.user) {
-        return res.status(401).json({
-            loggedIn: false
-        });
-    }
-
-    return res.json({
-        loggedIn: true,
-        user: req.session.user
-    });
-});
-
-// logout as a user
+//logout as a user, ends/'destroys' the session
 app.post("/logout", (req,res) =>{
     req.session.destroy((err) => {
         if (err) {
@@ -158,6 +134,21 @@ app.post("/logout", (req,res) =>{
     });
 })
 
+//retrieve one user's info
+app.get("/me", (req,res) => {
+    if(!req.session.user) {
+        return res.status(401).json({
+            loggedIn: false
+        });
+    }
+
+    return res.json({
+        loggedIn: true,
+        user: req.session.user
+    });
+});
+
+//retrieves the entire literature table from the database
 app.get("/literature", async (req,res) => {
     try {
         const [literature] = await db.execute(
@@ -170,6 +161,41 @@ app.get("/literature", async (req,res) => {
         console.error("Failed to fetch books: ", err);
         res.status(500).json({
             error: "Failed to fetch books"
+        });
+    }
+})
+
+//retrieves number of rows from literature
+app.get("/numliterature", async (req,res) => {
+
+    const [rows] = await db.execute(
+        "SELECT * FROM literature"
+    );
+
+    res.json(rows.length.toString());
+
+})
+
+app.post("/finepayment", async (req,res) => {
+    try {
+        const {Payment, UserID}= req.body;
+
+        const[balance] = await db.execute(
+            "SELECT Balance FROM users WHERE UserID = ?"
+            [UserID]
+        )
+
+        const[result] = await db.execute(
+            "UPDATE users SET Balance = ? WHERE UserID = ?"
+            [(balance-Payment),UserID]
+        )
+
+        res.json(result)
+
+    } catch (err) {
+        console.error("Failed to pay balance: ", err);
+        res.status(500).json({
+            error: "Failed to pay balance"
         });
     }
 })

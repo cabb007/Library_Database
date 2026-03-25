@@ -91,13 +91,12 @@ export default function Landing() {
           <div className="flex gap-4 mt-2">
             <button
               onClick={() => navigate("/login")}
-              className="px-7 py-3 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold rounded transition tracking-wide"
-            >
+              className="px-7 py-3 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold rounded transition tracking-wide">
               Get Started
             </button>
             <button
-            onClick={() => navigate("/litcatalogue")} 
-            className="px-7 py-3 border border-stone-600 text-stone-300 hover:border-amber-700 hover:text-amber-300 rounded transition tracking-wide">
+              onClick={() => navigate("/litcatalogue")} 
+              className="px-7 py-3 border border-stone-600 text-stone-300 hover:border-amber-700 hover:text-amber-300 rounded transition tracking-wide">
               Browse Catalog
             </button>
           </div>
