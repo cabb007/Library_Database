@@ -152,9 +152,8 @@ app.get("/me", (req,res) => {
 app.get("/literature", async (req,res) => {
     try {
         const [literature] = await db.execute(
-        "SELECT * FROM literature"
+        "SELECT i.ItemID, i.Title, l.Author, l.Publisher, l.PublicationYear FROM items i JOIN literature l ON i.ItemID = l.ItemID WHERE i.ItemCategory=1"
         )
-
         res.json(literature);
 
     } catch (err) {
@@ -173,6 +172,14 @@ app.get("/numliterature", async (req,res) => {
     );
 
     res.json(rows.length.toString());
+
+})
+
+app.get("/media", async (req,res) => {
+
+})
+
+app.get("/devices", async (req,res) => {
 
 })
 

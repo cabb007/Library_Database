@@ -3,48 +3,34 @@ import { useNavigate } from "react-router-dom";
 
 export default function ItemDashboard() {
   const navigate = useNavigate();
+  const [loading,setLoading] = useState(true);
+  const [error,setError] = useState("");
   const [activeTab, setActiveTab] = useState("browse");
   const [activeSubTab, setActiveSubTab] = useState("books");
-  const [books, setBooks] = useState([]);
+  const [literature,setLiterature] = useState([]);
   const [media, setMedia] = useState([]);
   const [devices, setDevices] = useState([]);
-  const [checkedOut, setCheckedOut] = useState([]);
 
   useEffect(() => {
-    fetch("http://localhost:3000/library")
-      .then((res) => res.json())
-      .then(setBooks)
-      .catch(console.error);
+    async function getLiterature() {
+      try {
+        const response = await fetch("http://localhost:3000/literature");
+        const data = await response.json();
 
-    fetch("http://localhost:3000/media")
-      .then((res) => res.json())
-      .then(setMedia)
-      .catch(console.error);
-
-    fetch("http://localhost:3000/devices")
-      .then((res) => res.json())
-      .then(setDevices)
-      .catch(console.error);
-
-    fetch("http://localhost:3000/literature")
-      .then((res) => res.json())
-      .then(setCheckedOut)
-      .catch(console.error);
-  }, []);
-
-  const handleCheckout = async (itemId) => {
-    try {
-      const res = await fetch("http://localhost:3000/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ itemId, userId: 1 }),
-      });
-      const data = await res.json();
-      alert(data.message);
-    } catch (err) {
-      console.error(err);
+        if(!response.ok){
+          throw new Error(data.error || "Failed to fetch books FE");
+        }
+        setLiterature(data);
+      
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
     }
-  };
+
+    getLiterature();
+  }, []);
 
   return (
     <div className="min-h-screen bg-stone-950 text-amber-50 flex flex-col">
@@ -115,18 +101,22 @@ export default function ItemDashboard() {
             <table className="w-full border border-amber-900/30">
               <thead>
                 <tr className="bg-stone-900">
-                  <th className="p-3">Name</th>
+                  <th className="p-3">ISBN</th>
+                  <th className="p-3">Title</th>
+                  <th className="p-3">Publisher</th>
                   <th className="p-3">Author</th>
                   <th className="p-3">Year</th>
-                  <th className="p-3">Action</th>
+                  <th className="p-3">Select</th>
                 </tr>
               </thead>
               <tbody>
-                {books.map((b) => (
-                  <tr key={b.ItemID} className="border-t border-amber-900/20">
-                    <td className="p-3">{b.Name}</td>
-                    <td className="p-3">{b.Author}</td>
-                    <td className="p-3">{b.PublicationYear}</td>
+                {literature.map((literature) => (
+                  <tr key={literature.ItemID} className="border-t border-amber-900/20">
+                    <td className="p-3">{literature.ItemID}</td>
+                    <td className="p-3">{literature.Title}</td>
+                    <td className="p-3">{literature.Publisher}</td>
+                    <td className="p-3">{literature.Author}</td>
+                    <td className="p-3">{literature.PublicationYear}</td>
                     <td className="p-3">
                       <button
                         onClick={() => handleCheckout(b.ItemID)}
@@ -141,6 +131,7 @@ export default function ItemDashboard() {
             </table>
           </div>
         )}
+
 
         {activeTab === "browse" && activeSubTab === "media" && (
           <div>
