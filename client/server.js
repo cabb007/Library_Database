@@ -63,6 +63,16 @@ app.post("/api/users", async (req, res) => {
     }
 })
 
+app.get("/numliterature", async (req,res) => {
+
+    const [rows] = await db.execute(
+        "SELECT * FROM literature"
+    );
+
+    res.json(rows.length.toString());
+
+})
+
 // login as a user with a max session time of 1 day
 app.post("/login", async (req,res) => {
     try {
@@ -91,8 +101,8 @@ app.post("/login", async (req,res) => {
             return res.status(401).json({ success: false, message : "invalid credentials"});
         }
 
-        req.session.user = {
-            UserID: user.UserID,
+        req.session.user = { //req.session keeps you logged in for a set amount of time, initialized 
+            UserID: user.UserID, //in app.use(session(etc...))
             Email: user.Email,
             FirstName : user.FirstName,
             LastName : user.LastName,
@@ -114,6 +124,7 @@ app.post("/login", async (req,res) => {
     }
 })
 
+//retrieve one user's info
 app.get("/me", (req,res) => {
     if(!req.session.user) {
         return res.status(401).json({
@@ -145,6 +156,22 @@ app.post("/logout", (req,res) =>{
         success: true,
         message: "Logged out"
     });
+})
+
+app.get("/literature", async (req,res) => {
+    try {
+        const [literature] = await db.execute(
+        "SELECT * FROM literature"
+        )
+
+        res.json(literature);
+
+    } catch (err) {
+        console.error("Failed to fetch books: ", err);
+        res.status(500).json({
+            error: "Failed to fetch books"
+        });
+    }
 })
 
 const PORT = 3000;
