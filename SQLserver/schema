@@ -1,0 +1,110 @@
+-- USERS
+CREATE TABLE users (
+    UserID INT PRIMARY KEY AUTO_INCREMENT,
+    Password VARCHAR(30) NOT NULL,
+    FirstName VARCHAR(30) NOT NULL,
+    LastName VARCHAR(30) NOT NULL,
+    Email VARCHAR(50) UNIQUE,
+    Balance DECIMAL(7,2) DEFAULT 0,
+    UserType SMALLINT,
+    MaxItemsAllowed INT NOT NULL,
+    LoanPeriodDays INT NOT NULL,
+    Status SMALLINT DEFAULT 1,
+    CreatedAt DATETIME,
+    CreatedBy INT NULL,
+    UpdatedAt DATETIME,
+    UpdatedBy INT NULL
+) ENGINE=InnoDB;
+
+-- ITEMS
+CREATE TABLE items (
+    ItemID INT PRIMARY KEY,
+    ItemCategory SMALLINT,
+    Title VARCHAR(100) NOT NULL,
+    CreatedAt DATETIME,
+    CreatedBy INT,
+    UpdatedAt DATETIME,
+    UpdatedBy INT,
+    FOREIGN KEY (CreatedBy) REFERENCES Users(UserID),
+    FOREIGN KEY (UpdatedBy) REFERENCES Users(UserID)
+) ENGINE=InnoDB;
+
+-- LITERATURE
+CREATE TABLE literature (
+    ItemID INT PRIMARY KEY,
+    ItemType SMALLINT,
+    Author VARCHAR(100),
+    Publisher VARCHAR(100),
+    PublicationYear INT,
+    FOREIGN KEY (ItemID) REFERENCES Items(ItemID)
+) ENGINE=InnoDB;
+
+-- MEDIA
+CREATE TABLE media (
+    ItemID INT PRIMARY KEY,
+    ItemType SMALLINT,
+    Producer VARCHAR(100),
+    DurationMinutes INT,
+    FOREIGN KEY (ItemID) REFERENCES Items(ItemID)
+) ENGINE=InnoDB;
+
+-- DEVICES
+CREATE TABLE devices (
+    ItemID INT PRIMARY KEY,
+    ItemType SMALLINT,
+    Manufacturer VARCHAR(100),
+    Model VARCHAR(100),
+    FOREIGN KEY (ItemID) REFERENCES Items(ItemID)
+) ENGINE=InnoDB;
+
+-- COPIES
+CREATE TABLE copies (
+    CopyID INT PRIMARY KEY,
+    ItemID INT NOT NULL,
+    CopyStatus SMALLINT,
+    CreatedAt DATETIME,
+    CreatedBy INT,
+    UpdatedAt DATETIME,
+    UpdatedBy INT,
+    FOREIGN KEY (ItemID) REFERENCES Items(ItemID),
+    FOREIGN KEY (CreatedBy) REFERENCES Users(UserID),
+    FOREIGN KEY (UpdatedBy) REFERENCES Users(UserID)
+) ENGINE=InnoDB;
+
+-- LOANS
+CREATE TABLE loans (
+    LoanID INT PRIMARY KEY,
+    UserID INT NOT NULL,
+    CopyID INT NOT NULL,
+    CreatedBy INT,
+    CheckoutDate DATE NOT NULL,
+    DueDate DATE NOT NULL,
+    ReturnDate DATE,
+    FOREIGN KEY (UserID) REFERENCES Users(UserID),
+    FOREIGN KEY (CopyID) REFERENCES Copies(CopyID),
+    FOREIGN KEY (CreatedBy) REFERENCES Users(UserID)
+) ENGINE=InnoDB;
+
+-- HOLD REQUESTS
+CREATE TABLE holdRequests (
+    HoldID INT PRIMARY KEY,
+    UserID INT NOT NULL,
+    ItemID INT NOT NULL,
+    RequestDate DATETIME NOT NULL,
+    HoldStatus SMALLINT,
+    FOREIGN KEY (UserID) REFERENCES Users(UserID),
+    FOREIGN KEY (ItemID) REFERENCES Items(ItemID),
+    UNIQUE (UserID, ItemID)
+) ENGINE=InnoDB;
+
+-- FINES
+CREATE TABLE fines (
+    FineID INT PRIMARY KEY,
+    LoanID INT UNIQUE,
+    UserID INT NOT NULL,
+    FineAmount DECIMAL(7,2) NOT NULL,
+    PaidStatus SMALLINT,
+    PaidAt DATETIME,
+    FOREIGN KEY (LoanID) REFERENCES Loans(LoanID),
+    FOREIGN KEY (UserID) REFERENCES Users(UserID)
+) ENGINE=InnoDB;
