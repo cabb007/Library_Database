@@ -12,7 +12,7 @@ async function numLiterature() {
 
 const CATEGORIES = [
   {
-    label: "Books",
+    label: "Literature",
     count: (numLiterature()),
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-8 h-8">
@@ -99,6 +99,13 @@ export default function Landing() {
               className="px-7 py-3 border border-stone-600 text-stone-300 hover:border-amber-700 hover:text-amber-300 rounded transition tracking-wide">
               Browse Catalog
             </button>
+
+            <button
+            onClick={() => navigate("/itemDashboard")}
+            className="px-7 py-3 border border-stone-600 text-stone-300 hover:border-amber-700 hover:text-amber-300 rounded transition tracking-wide"
+            >
+              Dashboard
+            </button>         
           </div>
         </div>
 

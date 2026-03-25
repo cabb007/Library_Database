@@ -6,6 +6,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import RegisterSuccess from './pages/RegisterSuccess';
 import UserAccount from './pages/UserAccount';
+import ItemDashboard from "./pages/ItemDashboard";
 import LitCatalogue from './pages/LitCatalogue';
 import FinePayment from './pages/FinePayment';
 
@@ -21,6 +22,7 @@ export default function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/registersuccess" element={<RegisterSuccess />} />
         <Route path="/useraccount" element={<UserAccount />} />
+        <Route path="/itemDashBoard" element={<ItemDashboard />} />
         <Route path="/litcatalogue" element={<LitCatalogue />} />
         <Route path="/finepayment" element={<FinePayment />} />
       </Routes>
