@@ -3,6 +3,8 @@ CREATE DATABASE library_db;
 USE library_db;
 
 SOURCE schema.sql;
+SOURCE procedures/queries.sql;
+SOURCE procedures/triggers.sql;
 
 -- =========================================================
 -- USERS
@@ -61,5 +63,19 @@ ENCLOSED BY '"'
 LINES TERMINATED BY '\n'
 IGNORE 1 ROWS
 (ItemID, ItemType, Manufacturer, Model);
+
+-- =========================================================
+-- COPIES
+-- ========================================================
+LOAD DATA LOCAL INFILE 'data/copies.csv'
+INTO TABLE copies
+FIELDS TERMINATED BY ','
+ENCLOSED BY '"'
+LINES TERMINATED BY '\n'
+IGNORE 1 ROWS
+(CopyID, ItemID, CopyStatus, CreatedAt, @cb, UpdatedAt, @ub)
+SET
+    CreatedBy = NULLIF(@cb, ''),
+    UpdatedBy = NULLIF(@ub, '');
 
 

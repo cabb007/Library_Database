@@ -136,7 +136,7 @@ app.post("/logout", (req,res) =>{
 
 //retrieve one user's info
 app.get("/me", (req,res) => {
-    if(!req.session.user) {
+    if(!req.session.user) { //checks if user is logged in/session active
         return res.status(401).json({
             loggedIn: false
         });
@@ -164,6 +164,7 @@ app.get("/literature", async (req,res) => {
     }
 })
 
+
 //retrieves number of rows from literature
 app.get("/numliterature", async (req,res) => {
 
@@ -175,29 +176,70 @@ app.get("/numliterature", async (req,res) => {
 
 })
 
-app.get("/media", async (req,res) => {
+app.get("/numCopies", async (req, res) => {
+  const { itemId } = req.params;
+  try {
+    const [rows] = await db.execute(
+      "CALL GetAvailableCopies(?)",
+      [itemId]
+    );
 
-})
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Book not found" });
+    }
 
-app.get("/devices", async (req,res) => {
+    res.json({ copies: rows[0].CopiesAvailable });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
 
-})
+app.get("/media", async (req, res) => {
+  try {
+    const [media] = await db.execute(
+      "SELECT i.ItemID, i.Title, m.Producer, m.DurationMinutes FROM items i JOIN media m ON i.ItemID = m.ItemID WHERE i.ItemCategory = 2"
+    );
+    res.json(media);
+  } catch (err) {
+    console.error("Failed to fetch media: ", err);
+    res.status(500).json({ error: "Failed to fetch media" });
+  }
+});
 
-app.post("/finepayment", async (req,res) => {
+app.get("/devices", async (req, res) => {
+  try {
+    const [media] = await db.execute(
+      "SELECT i.ItemID, i.Title, d.Manufacturer, d.Model FROM items i JOIN devices d ON i.ItemID = d.ItemID WHERE i.ItemCategory = 3"
+    );
+    res.json(media);
+  } catch (err) {
+    console.error("Failed to fetch devices: ", err);
+    res.status(500).json({ error: "Failed to fetch devices" });
+  }
+});
+
+//gets balance and deducts payment amount from current balance of a specific user
+app.put("/finepayment", async (req,res) => {
+    const user = req.session.user;
+    const payamt = req.body;
+
+    console.log(payamt,user);
+
     try {
-        const {Payment, UserID}= req.body;
+        
+        if(payamt > user.Balance){
+            return res.status(400).json({
+                error: "Invalid amount"
+            });
+        }
 
-        const[balance] = await db.execute(
-            "SELECT Balance FROM users WHERE UserID = ?"
-            [UserID]
-        )
+        await db.execute(
+            "UPDATE users SET Balance = Balance - ? WHERE UserID = ?",
+            [Number(payamt),user.UserID]
+        );
 
-        const[result] = await db.execute(
-            "UPDATE users SET Balance = ? WHERE UserID = ?"
-            [(balance-Payment),UserID]
-        )
-
-        res.json(result)
+        res.json({ success : true});
 
     } catch (err) {
         console.error("Failed to pay balance: ", err);
