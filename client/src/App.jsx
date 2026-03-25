@@ -5,7 +5,9 @@ import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import RegisterSuccess from './pages/RegisterSuccess';
-import Users from './pages/Users';
+import UserAccount from './pages/UserAccount';
+import LitCatalogue from './pages/LitCatalogue';
+
 
 export default function App() {
   const [message, setMessage] = useState('')
@@ -22,7 +24,8 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/registersuccess" element={<RegisterSuccess />} />
-        <Route path="/users" element={<Users />} />
+        <Route path="/useraccount" element={<UserAccount />} />
+        <Route path="/litcatalogue" element={<LitCatalogue />} />
       </Routes>
     </BrowserRouter>
   );

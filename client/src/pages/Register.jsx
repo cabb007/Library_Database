@@ -56,8 +56,7 @@ export default function Register() {
       setSubmitting(false);
     }
 
-    // TODO: connect to backend
-    console.log("Register submitted:", form);
+    navigate('/registersuccess');
   }
 
   return (

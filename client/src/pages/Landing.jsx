@@ -56,9 +56,9 @@ export default function Landing() {
             Register
           </button>
           <button
-            onClick={() => navigate("/users")}
+            onClick={() => navigate("/useraccount")}
             className="px-5 py-2 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold transition rounded text-sm tracking-wide">
-            User List
+            My Account
           </button>
         </div>
       </nav>
@@ -85,7 +85,9 @@ export default function Landing() {
             >
               Get Started
             </button>
-            <button className="px-7 py-3 border border-stone-600 text-stone-300 hover:border-amber-700 hover:text-amber-300 rounded transition tracking-wide">
+            <button
+            onClick={() => navigate("/litcatalogue")} 
+            className="px-7 py-3 border border-stone-600 text-stone-300 hover:border-amber-700 hover:text-amber-300 rounded transition tracking-wide">
               Browse Catalog
             </button>
           </div>
