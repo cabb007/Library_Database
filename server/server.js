@@ -10,7 +10,7 @@ app.use(cors({
     origin: [ "http://localhost:3000",
         "http://localhost:5173",
         "http://localhost:4280",
-        "https://librarydatabaseserver-aqbhg6a3gxgsdpge.centralus-01.azurewebsites.net/"],
+        "https://brave-field-0e8fa9510.1.azurestaticapps.net/"],
         credentials: true
 }));
 
