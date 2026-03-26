@@ -43,3 +43,4 @@ jobs:
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_BRAVE_FIELD_0E8FA9510 }}
           action: "close"
+          app_location: "client"
