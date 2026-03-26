@@ -7,8 +7,11 @@ import 'dotenv/config';
 const app = express();
 
 app.use(cors({
-    origin: "http://localhost:3000",
-    credentials: true
+    origin: [ "http://localhost:3000",
+        "http://localhost:5173",
+        "http://localhost:4280",
+        "https://librarydatabaseserver-aqbhg6a3gxgsdpge.centralus-01.azurewebsites.net/"],
+        credentials: true
 }));
 
 app.use(express.json());
