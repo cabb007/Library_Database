@@ -27,23 +27,6 @@ app.use(session({
     }
 }))
 
-console.log({
-    DB_HOST: process.env.DB_HOST,
-    DB_PORT: process.env.DB_PORT,
-    DB_USER: process.env.DB_USER,
-    DB_NAME: process.env.DB_NAME,
-    DB_PASSWORD_PRESENT: !!process.env.DB_PASSWORD
-});
-
-const db = await mysql.createConnection({
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME
-})
-
-console.log("connected to the database");
 
 // This post function is for user registering, adds their information as a row to the database
 // registering a user with firstname lastname email and password being input
