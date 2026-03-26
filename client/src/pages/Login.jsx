@@ -7,8 +7,8 @@ export default function Login() {
   const [Email,setEmail] = useState("");
   const [Password, setPassword] = useState("");
   const [message, setMessage] = useState("");
-  
-  const [form, setForm] = useState({ Email: "", Password: "" });
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   function handleChange(e) {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -16,26 +16,36 @@ export default function Login() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    
+    setMessage("");
+    setError("");
+    setSubmitting(true);
+
     try {
-      const res = await axios.post("http://localhost:3000/login", {
-        Email,
-        Password
+      const response = await fetch("http://localhost:3000/login", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        credentials: "include",
+        body: JSON.stringify({
+          Email: form.Email,
+          Password: form.Password
+        })
       });
 
-      if (response.data.success) {
-        setMessage("Login successful");
-        console.log("User: ", response.data.user);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || data.message || "Failed to login");
       }
 
-      navigate('/');
-    
-    } catch (error) {
-      if (error.response) {
-        setMessage(error.response.data.message);
-      } else {
-        setMessage("Could not connect to server");
-      }
+      setMessage("Logged in successfully");
+      console.log("Logged in as ", data);
+      navigate("/useraccount");
+
+    } catch(err){
+      alert("Invalid Email or Password");
+      setError(err.message);
+    } finally {
+      setSubmitting(false);
     }
   }
 
