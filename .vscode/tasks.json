@@ -9,8 +9,6 @@
         "swa",
         "start",
         "http://localhost:5173",
-        "--run",
-        "npm run dev",
         "--port",
         "5100"
       ],
