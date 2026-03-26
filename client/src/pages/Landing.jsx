@@ -1,8 +1,9 @@
 import { useNavigate } from "react-router-dom";
+import API from "../api";
 
 async function numLiterature() {
   try {
-    const response = await fetch("http://localhost:3000/api/numliterature");
+    const response = await fetch(`${API}/api/numliterature`);
     const data = await response.json();
     return data;
   } catch (err) {

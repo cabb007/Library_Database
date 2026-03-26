@@ -10,9 +10,17 @@ app.use(cors({
     origin: [ "http://localhost:3000",
         "http://localhost:5173",
         "http://localhost:4280",
-        "https://brave-field-0e8fa9510.1.azurestaticapps.net/"],
+        "https://brave-field-0e8fa9510.1.azurestaticapps.net"],
         credentials: true
 }));
+
+app.get("/", (req, res) => {
+    res.send("Backend is running");
+});
+
+app.get("/health", (req, res) => {
+    res.status(200).send("ok");
+});
 
 app.use(express.json());
 app.use(session({

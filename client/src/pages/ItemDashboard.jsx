@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import API from "../api";
 
 export default function ItemDashboard() {
   const navigate = useNavigate();
@@ -16,7 +17,7 @@ export default function ItemDashboard() {
   useEffect(() => {
     async function getLiterature() {
       try {
-        const response = await fetch("http://localhost:3000/api/literature");
+        const response = await fetch(`${API}/api/literature`);
         const data = await response.json();
 
         if (!response.ok) {
@@ -37,7 +38,7 @@ export default function ItemDashboard() {
   useEffect(() => {
     async function getMedia() {
       try {
-        const response = await fetch("http://localhost:3000/api/media");
+        const response = await fetch(`${API}/api/media`);
         const data = await response.json();
 
         if (!response.ok) {
@@ -58,7 +59,7 @@ export default function ItemDashboard() {
   useEffect(() => {
     async function getDevices() {
       try {
-        const response = await fetch("http://localhost:3000/api/devices");
+        const response = await fetch(`${API}/api/devices`);
         const data = await response.json();
 
         if (!response.ok) {
