@@ -40,13 +40,7 @@ const db = await mysql.createConnection({
     database: process.env.DB_NAME
 })
 
-db.connect((err) => {
-    if (err) {
-        console.error("database connection failed: " + err.stack);
-        return;
-    }
-    console.log("connected to the database");
-});
+console.log("connected to the database");
 
 // This post function is for user registering, adds their information as a row to the database
 // registering a user with firstname lastname email and password being input
@@ -259,5 +253,5 @@ app.put("/api/finepayment", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {console.log('Server running on port ${PORT}');
+app.listen(PORT, () => {console.log(`Server running on port ${PORT}`);
 });
