@@ -10,6 +10,11 @@ export default function Login() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  const [form, setForm] = useState({
+    Email: "",
+    Password: "",
+  });
+
   function handleChange(e) {
     setForm({ ...form, [e.target.name]: e.target.value });
   }
@@ -21,7 +26,7 @@ export default function Login() {
     setSubmitting(true);
 
     try {
-      const response = await fetch("http://localhost:3000/login", {
+      const response = await fetch("http://localhost:3000/api/login", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         credentials: "include",

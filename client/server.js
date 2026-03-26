@@ -7,7 +7,7 @@ import 'dotenv/config';
 const app = express();
 
 app.use(cors({
-    origin: "http://localhost:5173",
+    origin: "http://localhost:3000",
     credentials: true
 }));
 
@@ -73,7 +73,7 @@ app.post("/api/users", async (req, res) => {
 })
 
 // login as a user with a max session time of 1 day
-app.post("/login", async (req, res) => {
+app.post("/api/login", async (req, res) => {
     try {
 
         const { Email, Password } = req.body;
@@ -124,7 +124,7 @@ app.post("/login", async (req, res) => {
 })
 
 //logout as a user, ends/'destroys' the session
-app.post("/logout", (req, res) => {
+app.post("/api/logout", (req, res) => {
     req.session.destroy((err) => {
         if (err) {
             console.error("Logout failed: ", err);
@@ -144,7 +144,7 @@ app.post("/logout", (req, res) => {
 })
 
 //retrieve one user's info
-app.get("/me", (req, res) => {
+app.get("/api/me", (req, res) => {
     if (!req.session.user) { //checks if user is logged in/session active
         return res.status(401).json({
             loggedIn: false
@@ -158,7 +158,7 @@ app.get("/me", (req, res) => {
 });
 
 //retrieves the entire literature table from the database
-app.get("/literature", async (req, res) => {
+app.get("/api/literature", async (req, res) => {
     try {
         const [literature] = await db.execute(
             "SELECT i.ItemID, i.Title, l.Author, l.Publisher, l.PublicationYear FROM items i JOIN literature l ON i.ItemID = l.ItemID WHERE i.ItemCategory=1"
@@ -175,7 +175,7 @@ app.get("/literature", async (req, res) => {
 
 
 //retrieves number of rows from literature
-app.get("/numliterature", async (req, res) => {
+app.get("/api/numliterature", async (req, res) => {
 
     const [rows] = await db.execute(
         "SELECT * FROM literature"
@@ -185,7 +185,7 @@ app.get("/numliterature", async (req, res) => {
 
 })
 
-app.get("/numCopies", async (req, res) => {
+app.get("/api/numCopies", async (req, res) => {
     const { itemId } = req.params;
     try {
         const [rows] = await db.execute(
@@ -204,7 +204,7 @@ app.get("/numCopies", async (req, res) => {
     }
 });
 
-app.get("/media", async (req, res) => {
+app.get("/api/media", async (req, res) => {
     try {
         const [media] = await db.execute(
             "SELECT i.ItemID, i.Title, m.Producer, m.DurationMinutes FROM items i JOIN media m ON i.ItemID = m.ItemID WHERE i.ItemCategory = 2"
@@ -216,7 +216,7 @@ app.get("/media", async (req, res) => {
     }
 });
 
-app.get("/devices", async (req, res) => {
+app.get("/api/devices", async (req, res) => {
     try {
         const [media] = await db.execute(
             "SELECT i.ItemID, i.Title, d.Manufacturer, d.Model FROM items i JOIN devices d ON i.ItemID = d.ItemID WHERE i.ItemCategory = 3"
@@ -229,7 +229,7 @@ app.get("/devices", async (req, res) => {
 });
 
 //gets balance and deducts payment amount from current balance of a specific user
-app.put("/finepayment", async (req, res) => {
+app.put("/api/finepayment", async (req, res) => {
     const user = req.session.user;
     const payamt = req.body;
 

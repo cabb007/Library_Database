@@ -17,7 +17,7 @@ export default function FinePayment(){
     useEffect(() => {
         async function checkLogin() { //Checks that there is an active session in the browser (logged in), if not, alerts user and immediately redirects to landing page
             try {
-                const response = await fetch("http://localhost:3000/me", {
+                const response = await fetch("http://localhost:3000/api/me", {
                     credentials:"include"
                 });
 
@@ -41,7 +41,7 @@ export default function FinePayment(){
 
     async function handleSubmit(){
         try{
-            const response = await fetch("http://localhost:3000/finepayment",{
+            const response = await fetch("http://localhost:3000/api/finepayment",{
                 credentials:"include",
                 method: "PUT",
                 headers: {

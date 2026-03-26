@@ -16,7 +16,7 @@ export default function ItemDashboard() {
   useEffect(() => {
     async function getLiterature() {
       try {
-        const response = await fetch("http://localhost:3000/literature");
+        const response = await fetch("http://localhost:3000/api/literature");
         const data = await response.json();
 
         if (!response.ok) {
@@ -37,7 +37,7 @@ export default function ItemDashboard() {
   useEffect(() => {
     async function getMedia() {
       try {
-        const response = await fetch("http://localhost:3000/media");
+        const response = await fetch("http://localhost:3000/api/media");
         const data = await response.json();
 
         if (!response.ok) {
@@ -58,7 +58,7 @@ export default function ItemDashboard() {
   useEffect(() => {
     async function getDevices() {
       try {
-        const response = await fetch("http://localhost:3000/devices");
+        const response = await fetch("http://localhost:3000/api/devices");
         const data = await response.json();
 
         if (!response.ok) {

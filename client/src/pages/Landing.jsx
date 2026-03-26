@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 
 async function numLiterature() {
   try {
-    const response = await fetch("http://localhost:3000/numliterature");
+    const response = await fetch("http://localhost:3000/api/numliterature");
     const data = await response.json();
     return data;
   } catch (err) {
