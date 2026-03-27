@@ -16,7 +16,7 @@ BEGIN
       AND CopyStatus = 1;
 
     RETURN available;
-END $$
+END$$
 
 -- =========================================================
 -- Procedure: Get all media items
@@ -32,7 +32,7 @@ BEGIN
         GetAvailableCopies(i.ItemID) AS AvailableCopies
     FROM items i
     JOIN media m ON i.ItemID = m.ItemID
-    WHERE i.ItemCategory = 2;
+    WHERE i.ItemCategory = 2
     ORDER BY i.Title;
 END$$
 
@@ -51,7 +51,7 @@ BEGIN
         GetAvailableCopies(i.ItemID) AS AvailableCopies
     FROM items i
     JOIN devices d ON i.ItemID = d.ItemID
-    WHERE i.ItemCategory = 3;
+    WHERE i.ItemCategory = 3
     ORDER BY i.Title;
 END$$
 
@@ -71,7 +71,7 @@ BEGIN
         GetAvailableCopies(i.ItemID) AS AvailableCopies
     FROM items i
     JOIN literature l ON i.ItemID = l.ItemID
-    WHERE i.ItemCategory = 1;
+    WHERE i.ItemCategory = 1
     ORDER BY i.Title;
 END$$
 
@@ -86,7 +86,7 @@ BEGIN
     FROM copies AS c
     WHERE c.ItemID = p_ItemID
       AND c.CopyStatus = 0; -- Status Available = 0, OnLoan = 1, Reserved = 2, Repair = 3
-END $$
+END$$
 
 -- =========================================================
 -- Procedure: Get item availability summary of whole catalog
