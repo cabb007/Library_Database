@@ -31,11 +31,15 @@ try {
   port: Number(process.env.DB_PORT) || 3306,
   ssl: {
     rejectUnauthorized: false
-  }
+  },
+
 });
 } catch (err){
     console.log(error.err);
 }
+
+
+console.log("database connected!!!");
 
 app.use(express.json());
 app.use(session({
