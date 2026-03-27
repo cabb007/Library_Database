@@ -1,7 +1,7 @@
 -- Team 7 Library Schema 
 
-CREATE DATABASE IF NOT EXISTS LibraryDatabaseSchema;
-USE LibraryDatabaseSchema;
+CREATE DATABASE IF NOT EXISTS library_db;
+USE library_db;
 
 SET FOREIGN_KEY_CHECKS = 0;
 
