@@ -12,7 +12,6 @@ import ConfirmationPage from './pages/ConfirmationPage';
 
 
 export default function App() {
-  const [message, setMessage] = useState('')
 
   return (
     <BrowserRouter>

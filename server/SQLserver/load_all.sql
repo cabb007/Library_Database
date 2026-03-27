@@ -14,12 +14,20 @@ LOAD DATA LOCAL INFILE 'data/users.csv'
 INTO TABLE users
 FIELDS TERMINATED BY ','
 ENCLOSED BY '"'
-LINES TERMINATED BY '\n'
+LINES TERMINATED BY '\r\n'
 IGNORE 1 ROWS
 (Password, FirstName, LastName, Email, Balance, UserType, LoanPeriodDays, Status, CreatedAt, @cb, UpdatedAt, @ub)
 SET
-    CreatedBy = NULLIF(@cb, ''),
-    UpdatedBy = NULLIF(@ub, '');
+    CreatedBy = NULLIF(TRIM(REPLACE(@cb, '\r', '')), ''),
+    UpdatedBy = NULLIF(TRIM(REPLACE(@ub, '\r', '')), '');
+
+SHOW WARNINGS LIMIT 50;
+SELECT COUNT(*) FROM users;
+SELECT COUNT(*) FROM items;
+SELECT COUNT(*) FROM literature;
+SELECT COUNT(*) FROM media;
+SELECT COUNT(*) FROM devices;
+SELECT COUNT(*) FROM copies;
 
 -- =========================================================
 -- ITEMS (supertype)
@@ -28,9 +36,20 @@ LOAD DATA LOCAL INFILE 'data/items.csv'
 INTO TABLE items
 FIELDS TERMINATED BY ','
 ENCLOSED BY '"'
-LINES TERMINATED BY '\n'
+LINES TERMINATED BY '\r\n'
 IGNORE 1 ROWS
-(ItemID, ItemCategory, Title, CreatedAt, CreatedBy, UpdatedAt, UpdatedBy);
+(ItemID, ItemCategory, Title, CreatedAt, @cb, UpdatedAt, @ub);
+SET
+    CreatedBy = NULLIF(TRIM(REPLACE(@cb, '\r', '')), ''),
+    UpdatedBy = NULLIF(TRIM(REPLACE(@ub, '\r', '')), '');
+
+SHOW WARNINGS LIMIT 50;
+SELECT COUNT(*) FROM users;
+SELECT COUNT(*) FROM items;
+SELECT COUNT(*) FROM literature;
+SELECT COUNT(*) FROM media;
+SELECT COUNT(*) FROM devices;
+SELECT COUNT(*) FROM copies;
 
 -- =========================================================
 -- LITERATURE
@@ -43,6 +62,14 @@ LINES TERMINATED BY '\n'
 IGNORE 1 ROWS
 (ItemID, ItemType, Author, Publisher, PublicationYear);
 
+SHOW WARNINGS LIMIT 50;
+SELECT COUNT(*) FROM users;
+SELECT COUNT(*) FROM items;
+SELECT COUNT(*) FROM literature;
+SELECT COUNT(*) FROM media;
+SELECT COUNT(*) FROM devices;
+SELECT COUNT(*) FROM copies;
+
 -- =========================================================
 -- MEDIA
 -- =========================================================
@@ -53,6 +80,14 @@ ENCLOSED BY '"'
 LINES TERMINATED BY '\n'
 IGNORE 1 ROWS
 (ItemID, ItemType, Producer, DurationMinutes);
+
+SHOW WARNINGS LIMIT 50;
+SELECT COUNT(*) FROM users;
+SELECT COUNT(*) FROM items;
+SELECT COUNT(*) FROM literature;
+SELECT COUNT(*) FROM media;
+SELECT COUNT(*) FROM devices;
+SELECT COUNT(*) FROM copies;
 
 -- =========================================================
 -- DEVICES
@@ -65,6 +100,14 @@ LINES TERMINATED BY '\n'
 IGNORE 1 ROWS
 (ItemID, ItemType, Manufacturer, Model);
 
+SHOW WARNINGS LIMIT 50;
+SELECT COUNT(*) FROM users;
+SELECT COUNT(*) FROM items;
+SELECT COUNT(*) FROM literature;
+SELECT COUNT(*) FROM media;
+SELECT COUNT(*) FROM devices;
+SELECT COUNT(*) FROM copies;
+
 -- =========================================================
 -- COPIES
 -- ========================================================
@@ -72,11 +115,19 @@ LOAD DATA LOCAL INFILE 'data/copies.csv'
 INTO TABLE copies
 FIELDS TERMINATED BY ','
 ENCLOSED BY '"'
-LINES TERMINATED BY '\n'
+LINES TERMINATED BY '\r\n'
 IGNORE 1 ROWS
 (CopyID, ItemID, CopyStatus, CreatedAt, @cb, UpdatedAt, @ub)
 SET
-    CreatedBy = NULLIF(@cb, ''),
-    UpdatedBy = NULLIF(@ub, '');
+    CreatedBy = NULLIF(TRIM(REPLACE(@cb, '\r', '')), ''),
+    UpdatedBy = NULLIF(TRIM(REPLACE(@ub, '\r', '')), '');
+    
+SHOW WARNINGS LIMIT 50;
+SELECT COUNT(*) FROM users;
+SELECT COUNT(*) FROM items;
+SELECT COUNT(*) FROM literature;
+SELECT COUNT(*) FROM media;
+SELECT COUNT(*) FROM devices;
+SELECT COUNT(*) FROM copies;
 
-
+SET FOREIGN_KEY_CHECKS = 1;

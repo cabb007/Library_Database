@@ -22,7 +22,7 @@ BEGIN
     DECLARE currentLoans INT;
 
     -- Only run logic when a copy becomes available
-    IF NEW.CopyStatus = 1 AND OLD.CopyStatus <> 1 THEN -- given copy changes from unavailable to available
+    IF NEW.CopyStatus = 0 AND OLD.CopyStatus <> 1 THEN -- given copy changes from unavailable to available
     
         -- Find the earliest active hold for this item
         SELECT h.HoldID, h.UserID INTO holdID, holdUserID

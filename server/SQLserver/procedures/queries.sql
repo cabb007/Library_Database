@@ -13,7 +13,7 @@ BEGIN
     SELECT COUNT(*) INTO available
     FROM copies
     WHERE ItemID = p_ItemID
-      AND CopyStatus = 1;
+      AND CopyStatus = 0;
 
     RETURN available;
 END$$
@@ -73,19 +73,6 @@ BEGIN
     JOIN literature l ON i.ItemID = l.ItemID
     WHERE i.ItemCategory = 1
     ORDER BY i.Title;
-END$$
-
-
--- =========================================================
--- Procedure: Get number of available copies (for a specific item)
--- =========================================================
-DROP PROCEDURE IF EXISTS GetAvailableCopies$$
-CREATE PROCEDURE GetAvailableCopies(IN p_ItemID INT)
-BEGIN
-    SELECT COUNT(*) AS AvailableCopies
-    FROM copies AS c
-    WHERE c.ItemID = p_ItemID
-      AND c.CopyStatus = 0; -- Status Available = 0, OnLoan = 1, Reserved = 2, Repair = 3
 END$$
 
 -- =========================================================

@@ -41,7 +41,7 @@ CREATE TABLE users (
 -- 2) ITEMS  (ItemCategory: 1=Literature, 2=Media, 3=Device)
 
 CREATE TABLE items (
-    ItemID INT PRIMARY KEY AUTO_INCREMENT,
+    ItemID BIGINT PRIMARY KEY,
     ItemCategory SMALLINT NOT NULL,                 -- 1..3
     Title VARCHAR(100) NOT NULL,
     CreatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -58,7 +58,7 @@ CREATE TABLE items (
 -- 3) LITERATURE subtype (ItemType: 1=Book,2=Textbook,3=Magazine,4=Audiobook)
 
 CREATE TABLE literature (
-    ItemID INT PRIMARY KEY,
+    ItemID BIGINT PRIMARY KEY,
     ItemType SMALLINT NOT NULL,                     -- 1..4
     Author VARCHAR(100) NOT NULL,
     Publisher VARCHAR(100) NULL,
@@ -73,12 +73,12 @@ CREATE TABLE literature (
 -- 4) MEDIA subtype (ItemType: 5=DVD/CD,6=BluRay,7=Vinyl)
 
 CREATE TABLE media (
-    ItemID INT PRIMARY KEY,
+    ItemID BIGINT PRIMARY KEY,
     ItemType SMALLINT NOT NULL,                     -- 5..7
     Producer VARCHAR(100) NULL,
     DurationMinutes INT NULL,
 
-    CHECK (ItemType IN (5,6,7)),
+    CHECK (ItemType IN (1,2,3)),
     CHECK (DurationMinutes IS NULL OR DurationMinutes > 0),
 
     CONSTRAINT fk_media_item FOREIGN KEY (ItemID) REFERENCES items(ItemID)
@@ -88,23 +88,23 @@ CREATE TABLE media (
 -- 5) DEVICES subtype (ItemType: 8=Laptop,9=Tablet,10=Calculator)
 
 CREATE TABLE devices (
-    ItemID INT PRIMARY KEY,
+    ItemID BIGINT PRIMARY KEY,
     ItemType SMALLINT NOT NULL,                     -- 8..10
     Manufacturer VARCHAR(100) NULL,
     Model VARCHAR(100) NULL,
 
-    CHECK (ItemType IN (8,9,10)),
+    CHECK (ItemType IN (1,2,3)),
 
     CONSTRAINT fk_dev_item FOREIGN KEY (ItemID) REFERENCES items(ItemID)
         ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- 6) COPIES (CopyStatus: 0=OnLoan,1=Available,2=Lost,3=Repair)
+-- 6) COPIES (CopyStatus: 0=Available,1=OnLoan,2=Lost,3=Repair)
 
 CREATE TABLE copies (
-    CopyID INT PRIMARY KEY AUTO_INCREMENT,
-    ItemID INT NOT NULL,
-    CopyStatus SMALLINT NOT NULL DEFAULT 1,         -- 0..3
+    CopyID INT PRIMARY KEY, -- Temp removing autoincrement because of error with csv files
+    ItemID BIGINT NOT NULL,
+    CopyStatus SMALLINT NOT NULL DEFAULT 0,         -- 0..3
     CreatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CreatedBy INT NOT NULL,
     UpdatedAt DATETIME NULL,
@@ -159,7 +159,7 @@ CREATE UNIQUE INDEX uq_loans_copy_one_active ON loans(CopyID, ActiveLoan);
 CREATE TABLE holds (
     HoldID INT PRIMARY KEY AUTO_INCREMENT,
     UserID INT NOT NULL,
-    ItemID INT NOT NULL,
+    ItemID BIGINT NOT NULL,
     RequestDate DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     HoldStatus SMALLINT NOT NULL DEFAULT 0,
 
@@ -200,4 +200,3 @@ CREATE INDEX idx_fines_user_paid ON fines(UserID, PaidStatus);
 -- Zero or one fine per loan
 CREATE UNIQUE INDEX uq_fines_one_per_loan ON fines(LoanID);
 
-SET FOREIGN_KEY_CHECKS = 1;
