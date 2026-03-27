@@ -1,10 +1,12 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import API from "../api";
 
 export default function FinePayment(){
     const navigate = useNavigate();
     const [user,setUser] = useState(null);
     const [submitting, setSubmitting] = useState(false);
+    
 
     const [form, setForm] = useState({
         payamt: ""
@@ -17,7 +19,7 @@ export default function FinePayment(){
     useEffect(() => {
         async function checkLogin() { //Checks that there is an active session in the browser (logged in), if not, alerts user and immediately redirects to landing page
             try {
-                const response = await fetch("http://localhost:3000/me", {
+                const response = await fetch(`${API}/api/me`, {
                     credentials:"include"
                 });
 
@@ -41,7 +43,7 @@ export default function FinePayment(){
 
     async function handleSubmit(){
         try{
-            const response = await fetch("http://localhost:3000/finepayment",{
+            const response = await fetch(`${API}/api/finepayment`,{
                 credentials:"include",
                 method: "PUT",
                 headers: {
