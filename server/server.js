@@ -21,9 +21,8 @@ app.get("/", (req, res) => {
 app.get("/health", (req, res) => {
     res.status(200).send("ok");
 });
-
-try {
-    const db = mysql.createPool({
+  
+  const db = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
@@ -31,15 +30,7 @@ try {
   port: Number(process.env.DB_PORT) || 3306,
   ssl: {
     rejectUnauthorized: false
-  },
-
-});
-} catch (err){
-    console.log(error.err);
-}
-
-
-console.log("database connected!!!");
+  }});
 
 app.use(express.json());
 app.use(session({
@@ -48,8 +39,8 @@ app.use(session({
     saveUninitialized: false,
     cookie: {
         httpOnly: true,
-        secure: false,
-        sameSite: "lax",
+        secure: true,
+        sameSite: "none",
         maxAge: 1000 * 60 * 60 * 24 //session lasts 1 day
     }
 }))
@@ -188,16 +179,16 @@ app.get("/api/numliterature", async (req, res) => {
         "SELECT * FROM literature"
     );
 
-    res.json(rows.length.toString());
+    res.json(rows.length);
 
 });
 
-app.get("/api/numCopies", async (req, res) => {
-    const { itemId } = req.params;
+app.get("/api/numCopies/:ItemId", async (req, res) => {
+    const { ItemId } = req.params;
     try {
         const [rows] = await db.execute(
             "CALL GetAvailableCopies(?)",
-            [itemId]
+            [ItemId]
         );
 
         if (rows.length === 0) {
