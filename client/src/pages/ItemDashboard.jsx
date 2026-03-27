@@ -76,12 +76,12 @@ export default function ItemDashboard() {
 
 async function handleCheckout(itemId) {
   try {
-    await fetch("http://localhost:3000/api/changeConfirmflag?value=1", {
+    await fetch(`${API}/api/changeConfirmflag?value=1`, {
       method: "GET",
       credentials: "include",
     });
 
-    await fetch(`http://localhost:3000/api/setSelectedItem?value=${itemId}`, {
+    await fetch(`${API}/api/setSelectedItem?value=${itemId}`, {
       method: "GET",
       credentials: "include",
     });
@@ -98,12 +98,12 @@ async function handleCheckout(itemId) {
 
 async function handleHold(itemId) {
   try {
-    await fetch("http://localhost:3000/api/changeConfirmflag?value=2", {
+    await fetch(`${API}/api/changeConfirmflag?value=2`, {
       method: "GET",
       credentials: "include",
     });
 
-    await fetch(`http://localhost:3000/api/setSelectedItem?value=${itemId}`, {
+    await fetch(`${API}/api/setSelectedItem?value=${itemId}`, {
       method: "GET",
       credentials: "include",
     });
