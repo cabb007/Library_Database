@@ -23,12 +23,12 @@ BEGIN
         SET MESSAGE_TEXT = 'Invalid user';
     END IF;
 
-    -- FIND AVAILABLE COPY (status = 0 means available)
+    -- FIND AVAILABLE COPY (status = 1 means available)
     SELECT CopyID
     INTO v_CopyID
     FROM copies
     WHERE ItemID = p_ItemID
-      AND CopyStatus = 0
+      AND CopyStatus = 1
     ORDER BY CopyID
     LIMIT 1
     FOR UPDATE;
@@ -39,9 +39,9 @@ BEGIN
         SET MESSAGE_TEXT = 'No available copy';
     END IF;
 
-    -- MARK AS CHECKED OUT (1)
+    -- MARK AS CHECKED OUT (0)
     UPDATE copies
-    SET CopyStatus = 1,
+    SET CopyStatus = 0,
         UpdatedAt = NOW(),
         UpdatedBy = p_UserID
     WHERE CopyID = v_CopyID;
