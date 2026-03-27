@@ -6,6 +6,8 @@ import 'dotenv/config';
 
 const app = express();
 
+app.set("trust proxy", 1);
+
 app.use(cors({
     origin: [ "http://localhost:3000",
         "http://localhost:5173",
@@ -46,8 +48,7 @@ app.use(session({
 }))
 
 
-// This post function is for user registering, adds their information as a row to the database
-// registering a user with firstname lastname email and password being input
+/* ================== REGISTER ================= */
 app.post("/api/users", async (req, res) => {
     try {
         const { FirstName, LastName, Email, Password } = req.body;
@@ -70,26 +71,22 @@ app.post("/api/users", async (req, res) => {
     }
 });
 
-// login as a user with a max session time of 1 day
+/* ================= LOGIN ================= */
+
 app.post("/api/login", async (req, res) => {
+    const { Email, Password } = req.body;
+   
     try {
-
-        const { Email, Password } = req.body;
-
         if (!Email || !Password) {
             return res.status(400).json({ error: "Email and password required" });
         }
-
         const [rows] = await db.execute(
             "SELECT * FROM users WHERE Email = ?",
             [Email]
         );
 
-        if (rows.length === 0) {
-            return res.status(401).json({
-                success: false,
-                message: "invalid creds"
-            });
+        if (rows.length === 0 || rows[0].Password !== Password) {
+            return res.status(401).json({ error: "Invalid credentials" });
         }
 
         const user = rows[0];
@@ -98,32 +95,26 @@ app.post("/api/login", async (req, res) => {
             return res.status(401).json({ success: false, message: "invalid credentials" });
         }
 
-        req.session.user = { //req.session keeps you logged in for a set amount of time, initialized 
-            UserID: user.UserID, //in app.use(session(etc...))
+        req.session.user = {
+            UserID: user.UserID,
             Email: user.Email,
             FirstName: user.FirstName,
             LastName: user.LastName,
-            Balance: user.Balance
+            Balance: user.Balance,
+            ConfirmFlag: 0,
+            SelectedItem: null
         };
 
-        req.session.save((err) => {
+        req.session.save(err => {
             if (err) {
-                return res.status(500).json({ error : "session save failed "});
+                return res.status(500).json({ error: "Session save failed" });
             }
-        })
-
-        return res.json({
-            success: true,
-            message: "Logged in successfully",
-            user: req.session.user
+            res.json({ success: true, user: req.session.user });
         });
 
     } catch (err) {
-        console.error("Login Failed: ", err);
-        return res.status(500).json({
-            success: false,
-            message: "Server error"
-        });
+        console.error(err);
+        res.status(500).json({ error: "Server error" });
     }
 });
 
@@ -147,7 +138,8 @@ app.post("/api/logout", (req, res) => {
     });
 });
 
-//retrieve one user's info
+/* ================= AUTH ================= */
+
 app.get("/api/me", (req, res) => {
     if (!req.session.user) { //checks if user is logged in/session active
         return res.status(401).json({
@@ -159,6 +151,112 @@ app.get("/api/me", (req, res) => {
         loggedIn: true,
         user: req.session.user
     });
+});
+
+/* ================= SESSION STATE ================= */
+
+app.get("/api/changeConfirmflag", (req, res) => {
+    const value = Number(req.query.value);
+
+    if (!req.session.user) {
+        return res.status(401).json({ error: "Not logged in" });
+    }
+
+    req.session.user.ConfirmFlag = value;
+
+    req.session.save(() => {
+        res.json({ success: true });
+    });
+});
+
+/* FIXED: consistent session usage */
+app.get("/api/setSelectedItem", (req, res) => {
+    if (!req.session.user) {
+        return res.status(401).json({ error: "Not logged in" });
+    }
+
+    req.session.user.SelectedItem = req.query.value;
+
+    req.session.save(() => {
+        res.json({ success: true });
+    });
+});
+
+app.get("/api/confirmdata", (req, res) => {
+    if (!req.session.user) {
+        return res.status(401).json({ error: "Not logged in" });
+    }
+
+    res.json({
+        ConfirmFlag: req.session.user.ConfirmFlag,
+        SelectedItem: req.session.user.SelectedItem
+    });
+});
+
+/* ================= CHECKOUT AND HOLD================= */
+
+app.post("/api/checkout", async (req, res) => {
+    if (!req.session.user) {
+        return res.status(401).json({ error: "Not logged in" });
+    }
+
+    const userID = req.session.user.UserID;
+    const itemID = req.session.user.SelectedItem;
+
+    if (!itemID) {
+        return res.status(400).json({ error: "No item selected" });
+    }
+
+    try {
+        await db.execute("CALL checkout_item(?, ?)", [userID, itemID]);
+
+        // reset selection after success
+        req.session.user.SelectedItem = null;
+
+        req.session.save(() => {
+            res.json({ success: true, message: "Item checked out" });
+        });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.sqlMessage || "Checkout failed" });
+    }
+});
+
+app.post("/api/hold", async (req, res) => {
+    if (!req.session.user) {
+        return res.status(401).json({ error: "Not logged in" });
+    }
+
+    const userID = req.session.user.UserID;
+    const itemID = req.session.user.SelectedItem;
+
+    if (!itemID) {
+        return res.status(400).json({ error: "No item selected" });
+    }
+
+    try {
+        await db.execute(
+            `INSERT INTO holds (UserID, ItemID, RequestDate, HoldStatus)
+             VALUES (?, ?, NOW(), 1)`,
+            [userID, itemID]
+        );
+
+        req.session.user.SelectedItem = null;
+
+        req.session.save(() => {
+            res.json({ success: true, message: "Hold placed" });
+        });
+
+    } catch (err) {
+        console.error(err);
+
+        if (err.code === "ER_DUP_ENTRY") {
+            return res.status(409).json({ error: "Already holding this item" });
+        }
+
+        res.status(500).json({ error: "Hold failed" });
+    }
 });
 
 //retrieves the entire literature table from the database
@@ -177,90 +275,39 @@ app.get("/api/literature", async (req, res) => {
     }
 });
 
+/* ================= DATA ================= */
 
-//retrieves number of rows from literature
-app.get("/api/numliterature", async (req, res) => {
-
-    const [rows] = await db.execute(
-        "SELECT * FROM literature"
-    );
-
-    res.json(rows.length);
-
-});
-
-app.get("/api/numCopies/:ItemId", async (req, res) => {
-    const { ItemId } = req.params;
-    try {
-        const [rows] = await db.execute(
-            "CALL GetAvailableCopies(?)",
-            [ItemId]
-        );
-
-        if (rows.length === 0) {
-            return res.status(404).json({ error: "Book not found" });
-        }
-
-        res.json({ copies: rows[0].CopiesAvailable });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: "Server error" });
-    }
+app.get("/api/literature", async (req, res) => {
+    const [data] = await db.execute("CALL getLiterature()");
+    res.json(data);
 });
 
 app.get("/api/media", async (req, res) => {
-    try {
-        const [media] = await db.execute(
-            "SELECT i.ItemID, i.Title, m.Producer, m.DurationMinutes FROM items i JOIN media m ON i.ItemID = m.ItemID WHERE i.ItemCategory = 2"
-        );
-        res.json(media);
-    } catch (err) {
-        console.error("Failed to fetch media: ", err);
-        res.status(500).json({ error: "Failed to fetch media" });
-    }
+    const [data] = await db.execute("CALL GetMedia()");
+    res.json(data);
 });
 
 app.get("/api/devices", async (req, res) => {
-    try {
-        const [media] = await db.execute(
-            "SELECT i.ItemID, i.Title, d.Manufacturer, d.Model FROM items i JOIN devices d ON i.ItemID = d.ItemID WHERE i.ItemCategory = 3"
-        );
-        res.json(media);
-    } catch (err) {
-        console.error("Failed to fetch devices: ", err);
-        res.status(500).json({ error: "Failed to fetch devices" });
-    }
+    const [data] = await db.execute("CALL getDevices()");
+    res.json(data);
 });
 
-//gets balance and deducts payment amount from current balance of a specific user
-app.put("/api/finepayment", async (req, res) => {
-    const user = req.session.user;
-    const payamt = req.body;
-
-    console.log(payamt, user);
-
-    try {
-
-        if (payamt > user.Balance) {
-            return res.status(400).json({
-                error: "Invalid amount"
-            });
-        }
-
-        await db.execute(
-            "UPDATE users SET Balance = Balance - ? WHERE UserID = ?",
-            [Number(payamt), user.UserID]
-        );
-
-        res.json({ success: true });
-
-    } catch (err) {
-        console.error("Failed to pay balance: ", err);
-        res.status(500).json({
-            error: "Failed to pay balance"
-        });
+app.get("/api/title", async (req, res) => {
+    if (!req.session.user) {
+        return res.status(401).json({ error: "Not logged in" });
     }
+
+    const selectedItem = req.session.user.SelectedItem;
+
+    if (!selectedItem) {
+        return res.status(400).json({ error: "No item selected" });
+    }
+
+    const [data] = await db.execute("CALL getTitle(?)", [selectedItem]);
+
+    res.json(data);
 });
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {console.log(`Server running on port ${PORT}`);
