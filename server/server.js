@@ -22,7 +22,8 @@ app.get("/health", (req, res) => {
     res.status(200).send("ok");
 });
 
-const db = mysql.createPool({
+try {
+    const db = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
@@ -32,6 +33,9 @@ const db = mysql.createPool({
     rejectUnauthorized: false
   }
 });
+} catch (err){
+    console.log(error.err);
+}
 
 app.use(express.json());
 app.use(session({
