@@ -1,26 +1,42 @@
 DELIMITER $$
 
+-- =========================================================
 -- Library Database Stored Procedures - Media, Devices, Literature
 -- =========================================================
+
+CREATE FUNCTION GetAvailableCopies(p_ItemID BIGINT)
+RETURNS INT
+DETERMINISTIC
+BEGIN
+    DECLARE available INT;
+
+    SELECT COUNT(*) INTO available
+    FROM copies
+    WHERE ItemID = p_ItemID
+      AND CopyStatus = 1;
+
+    RETURN available;
+END $$
 
 -- =========================================================
 -- Procedure: Get all media items
 -- =========================================================
-DROP PROCEDURE IF EXISTS GetMediaItems$$
-CREATE PROCEDURE GetMediaItems()
+DROP PROCEDURE IF EXISTS GetMedia$$
+CREATE PROCEDURE GetMedia()
 BEGIN
     SELECT 
         i.ItemID,
         i.Title,
         m.Producer,
-        m.DurationMinutes
+        m.DurationMinutes,
+        GetAvailableCopies(i.ItemID) AS AvailableCopies
     FROM items i
     JOIN media m ON i.ItemID = m.ItemID
     WHERE i.ItemCategory = 2;
 END$$
 
 -- =========================================================
--- Procedure: Get all devices
+-- Procedure: Get all devices data
 -- =========================================================
 DROP PROCEDURE IF EXISTS GetDevices$$
 CREATE PROCEDURE GetDevices()
@@ -29,14 +45,15 @@ BEGIN
         i.ItemID,
         i.Title,
         d.Manufacturer,
-        d.Model
+        d.Model,
+        GetAvailableCopies(i.ItemID) AS AvailableCopies
     FROM items i
     JOIN devices d ON i.ItemID = d.ItemID
     WHERE i.ItemCategory = 3;
 END$$
 
 -- =========================================================
--- Procedure: Get all literature items (books, etc.)
+-- Procedure: Get all literature data
 -- =========================================================
 DROP PROCEDURE IF EXISTS GetLiterature$$
 CREATE PROCEDURE GetLiterature()
@@ -46,23 +63,23 @@ BEGIN
         i.Title,
         l.Author,
         l.Publisher,
-        l.PublicationYear
+        l.PublicationYear,
+        GetAvailableCopies(i.ItemID) AS AvailableCopies
     FROM items i
     JOIN literature l ON i.ItemID = l.ItemID
     WHERE i.ItemCategory = 1;
 END$$
 
-
-
 -- =========================================================
--- Procedure: Get number of available copies
+-- NEW: Procedure to get title for selected item
 -- =========================================================
-CREATE PROCEDURE GetAvailableCopies(IN p_ItemID BIGINT)
+DROP PROCEDURE IF EXISTS getTitle$$
+CREATE PROCEDURE getTitle(IN p_ItemID BIGINT)
 BEGIN
-    SELECT COUNT(*) AS AvailableCopies
-    FROM copies
-    WHERE ItemID = p_ItemID
-      AND CopyStatus = 1;
-END $$
+    SELECT 
+        Title As Title
+    FROM items
+    WHERE ItemID = p_ItemID;
+END$$
 
 DELIMITER ;
