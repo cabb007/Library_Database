@@ -259,22 +259,6 @@ app.post("/api/hold", async (req, res) => {
     }
 });
 
-//retrieves the entire literature table from the database
-app.get("/api/literature", async (req, res) => {
-    try {
-        const [literature] = await db.execute(
-            "SELECT i.ItemID, i.Title, l.Author, l.Publisher, l.PublicationYear FROM items i JOIN literature l ON i.ItemID = l.ItemID WHERE i.ItemCategory=1"
-        )
-        res.json(literature);
-
-    } catch (err) {
-        console.error("Failed to fetch books: ", err);
-        res.status(500).json({
-            error: "Failed to fetch books"
-        });
-    }
-});
-
 /* ================= DATA ================= */
 
 app.get("/api/literature", async (req, res) => {
