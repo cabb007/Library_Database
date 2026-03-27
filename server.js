@@ -12,6 +12,15 @@ app.use(cors({
 }));
 
 app.use(express.json());
+
+const db = await mysql.createConnection({
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME
+});
+
 app.use(session({
     secret: "secret_key", //need to implement a better secret key later for logged in session security
     resave: false,
@@ -94,9 +103,16 @@ app.post("/login", async (req,res) => {
         req.session.user = { //req.session keeps you logged in for a set amount of time, initialized 
             UserID: user.UserID, //in app.use(session(etc...))
             Email: user.Email,
+<<<<<<< Updated upstream:server.js
             FirstName : user.FirstName,
             LastName : user.LastName,
             Balance : user.Balance
+=======
+            FirstName: user.FirstName,
+            LastName: user.LastName,
+            Balance: user.Balance,
+            UserType: user.UserType
+>>>>>>> Stashed changes:server/server.js
         };
 
         return res.json({
