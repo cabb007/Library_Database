@@ -18,7 +18,7 @@ DROP TABLE IF EXISTS Users;
 
 -- 1) USERS  (UserType: 0=Student,1=Faculty,2=Librarian; Status: 0=Blocked,1=Active)
 
-CREATE TABLE Users (
+CREATE TABLE users (
     UserID INT PRIMARY KEY AUTO_INCREMENT,
     Password VARCHAR(30) NOT NULL,                 
     FirstName VARCHAR(30) NOT NULL,
@@ -45,7 +45,7 @@ CREATE TABLE Users (
 
 -- 2) ITEMS  (ItemCategory: 1=Literature, 2=Media, 3=Device)
 
-CREATE TABLE Items (
+CREATE TABLE items (
     ItemID INT PRIMARY KEY AUTO_INCREMENT,
     ItemCategory SMALLINT NOT NULL,                 -- 1..3
     Title VARCHAR(100) NOT NULL,
@@ -62,7 +62,7 @@ CREATE TABLE Items (
 
 -- 3) LITERATURE subtype (ItemType: 1=Book,2=Textbook,3=Magazine,4=Audiobook)
 
-CREATE TABLE Literature (
+CREATE TABLE literature (
     ItemID INT PRIMARY KEY,
     ItemType SMALLINT NOT NULL,                     -- 1..4
     Author VARCHAR(100) NOT NULL,
@@ -77,7 +77,7 @@ CREATE TABLE Literature (
 
 -- 4) MEDIA subtype (ItemType: 5=DVD/CD,6=BluRay,7=Vinyl)
 
-CREATE TABLE Media (
+CREATE TABLE media (
     ItemID INT PRIMARY KEY,
     ItemType SMALLINT NOT NULL,                     -- 5..7
     Producer VARCHAR(100) NULL,
@@ -92,7 +92,7 @@ CREATE TABLE Media (
 
 -- 5) DEVICES subtype (ItemType: 8=Laptop,9=Tablet,10=Calculator)
 
-CREATE TABLE Devices (
+CREATE TABLE devices (
     ItemID INT PRIMARY KEY,
     ItemType SMALLINT NOT NULL,                     -- 8..10
     Manufacturer VARCHAR(100) NULL,
@@ -106,7 +106,7 @@ CREATE TABLE Devices (
 
 -- 6) COPIES (CopyStatus: 0=Available,1=OnLoan,2=Lost,3=Repair)
 
-CREATE TABLE Copies (
+CREATE TABLE copies (
     CopyID INT PRIMARY KEY AUTO_INCREMENT,
     ItemID INT NOT NULL,
     CopyStatus SMALLINT NOT NULL DEFAULT 0,         -- 0..3
@@ -129,7 +129,7 @@ CREATE INDEX idx_copies_status ON Copies(CopyStatus);
 -- Enforces: a copy may have at most one active loan at a time
 -- Active loan = ReturnDate IS NULL  -> via generated column + unique index
 
-CREATE TABLE Loans (
+CREATE TABLE loans (
     LoanID INT PRIMARY KEY AUTO_INCREMENT,
     UserID INT NOT NULL,
     CopyID INT NOT NULL,
@@ -161,7 +161,7 @@ CREATE UNIQUE INDEX uq_loans_copy_one_active ON Loans(CopyID, ActiveLoan);
 -- Active hold = HoldStatus=0 -> via generated column + unique index
 -- FIFO by RequestDate (index below)
 
-CREATE TABLE HoldRequests (
+CREATE TABLE holds (
     HoldID INT PRIMARY KEY AUTO_INCREMENT,
     UserID INT NOT NULL,
     ItemID INT NOT NULL,
@@ -185,7 +185,7 @@ CREATE UNIQUE INDEX uq_holds_user_item_one_active ON HoldRequests(UserID, ItemID
 -- 9) FINES
 -- PaidStatus: 0=Unpaid, 1=Paid
 -- Enforces: zero or one fine per loan (unique LoanID)
-CREATE TABLE Fines (
+CREATE TABLE fines (
     FineID INT PRIMARY KEY AUTO_INCREMENT,
     LoanID INT NOT NULL,
     UserID INT NOT NULL,
