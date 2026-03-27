@@ -3,309 +3,292 @@ import { useNavigate } from "react-router-dom";
 
 export default function ItemDashboard() {
   const navigate = useNavigate();
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("browse");
   const [activeSubTab, setActiveSubTab] = useState("books");
+
   const [literature, setLiterature] = useState([]);
   const [media, setMedia] = useState([]);
   const [devices, setDevices] = useState([]);
   const [checkedOut, setCheckedOut] = useState([]);
 
-  // Fetch books
+  // =========================
+  // FETCH DATA
+  // =========================
+
   useEffect(() => {
     async function getLiterature() {
       try {
-        const response = await fetch("http://localhost:3000/literature");
-        const data = await response.json();
+        const res = await fetch("http://localhost:3000/api/literature");
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
 
-        if (!response.ok) {
-          throw new Error(data.error || "Failed to fetch books FE");
-        }
-        setLiterature(data);
+        setLiterature(Array.isArray(data[0]) ? data[0] : data);
       } catch (err) {
         setError(err.message);
       } finally {
         setLoading(false);
       }
     }
-
     getLiterature();
   }, []);
 
-  // Fetch media
   useEffect(() => {
     async function getMedia() {
       try {
-        const response = await fetch("http://localhost:3000/media");
-        const data = await response.json();
+        const res = await fetch("http://localhost:3000/api/media");
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
 
-        if (!response.ok) {
-          throw new Error(data.error || "Failed to fetch media FE");
-        }
-        setMedia(data);
+        setMedia(Array.isArray(data[0]) ? data[0] : data);
       } catch (err) {
         setError(err.message);
-      } finally {
-        setLoading(false);
       }
     }
-
     getMedia();
   }, []);
 
-  // Fetch devices
   useEffect(() => {
     async function getDevices() {
       try {
-        const response = await fetch("http://localhost:3000/devices");
-        const data = await response.json();
+        const res = await fetch("http://localhost:3000/api/devices");
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
 
-        if (!response.ok) {
-          throw new Error(data.error || "Failed to fetch devices FE");
-        }
-        setDevices(data);
+        const clean = (Array.isArray(data[0]) ? data[0] : data).map((d) => ({
+          ...d,
+          AvailableCopies: d.AvailableCopies ?? 0,
+        }));
+
+        setDevices(clean);
       } catch (err) {
         setError(err.message);
-      } finally {
-        setLoading(false);
       }
     }
-
     getDevices();
   }, []);
+// =========================
+// ACTION HANDLERS (FIXED)
+// =========================
 
-  // Placeholder for checkout
-  function handleCheckout(itemId) {
-    console.log("Checkout item:", itemId);
+async function handleCheckout(itemId) {
+  try {
+    await fetch("http://localhost:3000/api/changeConfirmflag?value=1", {
+      method: "GET",
+      credentials: "include",
+    });
+
+    await fetch(`http://localhost:3000/api/setSelectedItem?value=${itemId}`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    // small safety delay (prevents race condition)
+    setTimeout(() => {
+      navigate("/confirmationpage");
+    }, 50);
+
+  } catch (err) {
+    console.error("Checkout failed:", err);
   }
+}
+
+async function handleHold(itemId) {
+  try {
+    await fetch("http://localhost:3000/api/changeConfirmflag?value=2", {
+      method: "GET",
+      credentials: "include",
+    });
+
+    await fetch(`http://localhost:3000/api/setSelectedItem?value=${itemId}`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    setTimeout(() => {
+      navigate("/confirmationpage");
+    }, 50);
+
+  } catch (err) {
+    console.error("Hold failed:", err);
+  }
+}
+
+  // =========================
+  // TABLE RENDER
+  // =========================
+
+  const renderTableRows = (items, columns) =>
+    items.map((item) => {
+      const isAvailable = item.AvailableCopies > 0;
+
+      return (
+        <tr key={item.ItemID} className="border-t border-amber-900/20">
+          {columns.map((col) => (
+            <td className="p-3" key={col.key}>
+              {item[col.key] ?? 0}
+            </td>
+          ))}
+
+          <td className="p-3">
+            <button
+              onClick={() =>
+                isAvailable
+                  ? handleCheckout(item.ItemID)
+                  : handleHold(item.ItemID)
+              }
+              className={`px-4 py-1 rounded text-stone-950 ${
+                isAvailable
+                  ? "bg-amber-700 hover:bg-amber-600"
+                  : "bg-stone-600 hover:bg-stone-500"
+              }`}
+            >
+              {isAvailable ? "Checkout" : "Hold"}
+            </button>
+          </td>
+        </tr>
+      );
+    });
+
+  // =========================
+  // UI
+  // =========================
 
   return (
     <div className="min-h-screen bg-stone-950 text-amber-50 flex flex-col">
-      {/* Navbar */}
-      <nav className="flex items-center justify-between px-10 py-5 border-b border-amber-900/40">
-        <h1 className="text-2xl font-serif tracking-widest text-amber-400">
+      {/* NAVBAR */}
+      <nav className="flex justify-between px-10 py-5 border-b border-amber-900/40">
+        <h1 className="text-2xl font-serif text-amber-400">
           Team 7 Library
         </h1>
         <button
           onClick={() => navigate("/")}
-          className="px-5 py-2 border border-amber-700 text-amber-300 hover:bg-amber-900/30 transition rounded text-sm"
+          className="px-5 py-2 border border-amber-700 text-amber-300 rounded"
         >
           Home
         </button>
       </nav>
 
-      {/* Tabs */}
+      {/* TABS */}
       <div className="flex justify-center gap-6 mt-8">
-        <button
-          onClick={() => setActiveTab("browse")}
-          className={`px-6 py-2 rounded ${
-            activeTab === "browse"
-              ? "bg-amber-700 text-stone-950"
-              : "border border-amber-700 text-amber-300"
-          }`}
-        >
-          Browse & Checkout
-        </button>
-        <button
-          onClick={() => setActiveTab("checked")}
-          className={`px-6 py-2 rounded ${
-            activeTab === "checked"
-              ? "bg-amber-700 text-stone-950"
-              : "border border-amber-700 text-amber-300"
-          }`}
-        >
-          Checked Out Items
-        </button>
-        <button
-          onClick={() => setActiveTab("holds")}
-          className={`px-6 py-2 rounded ${
-            activeTab === "holds"
-              ? "bg-amber-700 text-stone-950"
-              : "border border-amber-700 text-amber-300"
-          }`}
-        >
-          Holds
-        </button>
+        {["browse", "checked", "holds"].map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`px-6 py-2 rounded ${
+              activeTab === tab
+                ? "bg-amber-700 text-stone-950"
+                : "border border-amber-700 text-amber-300"
+            }`}
+          >
+            {tab === "browse"
+              ? "Browse & Checkout"
+              : tab === "checked"
+              ? "Checked Out"
+              : "Holds"}
+          </button>
+        ))}
       </div>
 
-      {/* Subtabs */}
+      {/* SUBTABS */}
       {activeTab === "browse" && (
         <div className="flex justify-center gap-4 mt-4">
-          <button
-            onClick={() => setActiveSubTab("books")}
-            className={`px-4 py-1 rounded ${
-              activeSubTab === "books"
-                ? "bg-amber-700 text-stone-950"
-                : "border border-amber-700 text-amber-300"
-            }`}
-          >
-            Book Search
-          </button>
-          <button
-            onClick={() => setActiveSubTab("media")}
-            className={`px-4 py-1 rounded ${
-              activeSubTab === "media"
-                ? "bg-amber-700 text-stone-950"
-                : "border border-amber-700 text-amber-300"
-            }`}
-          >
-            Media Search
-          </button>
-          <button
-            onClick={() => setActiveSubTab("devices")}
-            className={`px-4 py-1 rounded ${
-              activeSubTab === "devices"
-                ? "bg-amber-700 text-stone-950"
-                : "border border-amber-700 text-amber-300"
-            }`}
-          >
-            Device Search
-          </button>
+          {["books", "media", "devices"].map((sub) => (
+            <button
+              key={sub}
+              onClick={() => setActiveSubTab(sub)}
+              className={`px-4 py-1 rounded ${
+                activeSubTab === sub
+                  ? "bg-amber-700 text-stone-950"
+                  : "border border-amber-700 text-amber-300"
+              }`}
+            >
+              {sub}
+            </button>
+          ))}
         </div>
       )}
 
-      {/* Content */}
+      {/* CONTENT */}
       <div className="p-10 max-w-5xl mx-auto w-full">
-        {activeTab === "browse" && activeSubTab === "books" && (
-          <div>
-            <h2 className="text-3xl font-serif mb-6 text-amber-400">
-              Browse Books
-            </h2>
-            <table className="w-full border border-amber-900/30">
-              <thead>
-                <tr className="bg-stone-900">
-                  <th className="p-3">ISBN</th>
-                  <th className="p-3">Title</th>
-                  <th className="p-3">Publisher</th>
-                  <th className="p-3">Author</th>
-                  <th className="p-3">Year</th>
-                  <th className="p-3">Select</th>
-                </tr>
-              </thead>
-              <tbody>
-                {literature.map((literature) => (
-                  <tr
-                    key={literature.ItemID}
-                    className="border-t border-amber-900/20"
-                  >
-                    <td className="p-3">{literature.ItemID}</td>
-                    <td className="p-3">{literature.Title}</td>
-                    <td className="p-3">{literature.Publisher}</td>
-                    <td className="p-3">{literature.Author}</td>
-                    <td className="p-3">{literature.PublicationYear}</td>
-                    <td className="p-3">
-                      <button
-                        onClick={() => handleCheckout(literature.ItemID)}
-                        className="bg-amber-700 hover:bg-amber-600 text-stone-950 px-4 py-1 rounded"
-                      >
-                        Checkout
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        {/* BOOKS */}
+        {activeSubTab === "books" && (
+          <table className="w-full border border-amber-900/30">
+            <thead>
+              <tr className="bg-stone-900">
+                <th className="p-3">ISBN</th>
+                <th className="p-3">Title</th>
+                <th className="p-3">Publisher</th>
+                <th className="p-3">Author</th>
+                <th className="p-3">Year</th>
+                <th className="p-3">Avail</th>
+                <th className="p-3">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {renderTableRows(literature, [
+                { key: "ItemID" },
+                { key: "Title" },
+                { key: "Publisher" },
+                { key: "Author" },
+                { key: "PublicationYear" },
+                { key: "AvailableCopies" },
+              ])}
+            </tbody>
+          </table>
         )}
 
-        {activeTab === "browse" && activeSubTab === "media" && (
-          <div>
-            <h2 className="text-3xl font-serif mb-6 text-amber-400">
-              Browse Media
-            </h2>
-            <table className="w-full border border-amber-900/30">
-              <thead>
-                <tr className="bg-stone-900">
-                  <th className="p-3">Name</th>
-                  <th className="p-3">Producer</th>
-                  <th className="p-3">Duration</th>
-                  <th className="p-3">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {media.map((m) => (
-                  <tr key={m.ItemID} className="border-t border-amber-900/20">
-                    <td className="p-3">{m.Title}</td>
-                    <td className="p-3">{m.Producer}</td>
-                    <td className="p-3">{m.DurationMinutes}</td>
-                    <td className="p-3">
-                      <button
-                        onClick={() => handleCheckout(m.ItemID)}
-                        className="bg-amber-700 hover:bg-amber-600 text-stone-950 px-4 py-1 rounded"
-                      >
-                        Checkout
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        {/* MEDIA */}
+        {activeSubTab === "media" && (
+          <table className="w-full border border-amber-900/30">
+            <thead>
+              <tr className="bg-stone-900">
+                <th className="p-3">Name</th>
+                <th className="p-3">Producer</th>
+                <th className="p-3">Duration</th>
+                <th className="p-3">Avail</th>
+                <th className="p-3">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {renderTableRows(media, [
+                { key: "Title" },
+                { key: "Producer" },
+                { key: "DurationMinutes" },
+                { key: "AvailableCopies" },
+              ])}
+            </tbody>
+          </table>
         )}
 
-        {activeTab === "browse" && activeSubTab === "devices" && (
-          <div>
-            <h2 className="text-3xl font-serif mb-6 text-amber-400">
-              Browse Devices
-            </h2>
-            <table className="w-full border border-amber-900/30">
-              <thead>
-                <tr className="bg-stone-900">
-                  <th className="p-3">Name</th>
-                  <th className="p-3">Manufacturer</th>
-                  <th className="p-3">Model</th>
-                  <th className="p-3">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {devices.map((d) => (
-                  <tr key={d.ItemID} className="border-t border-amber-900/20">
-                    <td className="p-3">{d.Title}</td>
-                    <td className="p-3">{d.Manufacturer}</td>
-                    <td className="p-3">{d.Model}</td>
-                    <td className="p-3">
-                      <button
-                        onClick={() => handleCheckout(d.ItemID)}
-                        className="bg-amber-700 hover:bg-amber-600 text-stone-950 px-4 py-1 rounded"
-                      >
-                        Checkout
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {activeTab === "checked" && (
-          <div>
-            <h2 className="text-3xl font-serif mb-6 text-amber-400">
-              Checked Out Items
-            </h2>
-            <table className="w-full border border-amber-900/30">
-              <thead>
-                <tr className="bg-stone-900">
-                  <th className="p-3">Name</th>
-                  <th className="p-3">Due Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {checkedOut.map((b) => (
-                  <tr key={b.LoanID} className="border-t border-amber-900/20">
-                    <td className="p-3">{b.Name}</td>
-                    <td className="p-3">{b.DueDate}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        {/* DEVICES */}
+        {activeSubTab === "devices" && (
+          <table className="w-full border border-amber-900/30">
+            <thead>
+              <tr className="bg-stone-900">
+                <th className="p-3">Name</th>
+                <th className="p-3">Manufacturer</th>
+                <th className="p-3">Model</th>
+                <th className="p-3">Avail</th>
+                <th className="p-3">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {renderTableRows(devices, [
+                { key: "Title" },
+                { key: "Manufacturer" },
+                { key: "Model" },
+                { key: "AvailableCopies" },
+              ])}
+            </tbody>
+          </table>
         )}
       </div>
 
-      {/* Footer */}
-      <div className="border-t border-amber-900/30 py-4 text-center text-stone-600 text-xs">
+      {/* FOOTER */}
+      <div className="border-t border-amber-900/30 py-4 text-center text-xs text-stone-600">
         Team 7 Library — READ MORE, LEARN MORE
       </div>
     </div>

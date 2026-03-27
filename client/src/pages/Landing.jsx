@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 
 async function numLiterature() {
   try {
-    const response = await fetch("http://localhost:3000/numliterature");
+    const response = await fetch("http://localhost:3000/api/literature");
     const data = await response.json();
     return data;
   } catch (err) {
@@ -13,7 +13,7 @@ async function numLiterature() {
 const CATEGORIES = [
   {
     label: "Literature",
-    count: (numLiterature()),
+    count: "3000+",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-8 h-8">
         <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" strokeLinecap="round" strokeLinejoin="round" />
