@@ -9,7 +9,7 @@ export default function FinePayment(){
     
 
     const [form, setForm] = useState({
-        payamt: ""
+        payment: ""
     });
 
     function handleChange(e) {
@@ -52,8 +52,8 @@ export default function FinePayment(){
                 body: form.payment
             });
 
-            console.log(form.payamt)
-            console.log("Balance successfully changed",form.payamt)
+            console.log(form.payment)
+            console.log("Balance successfully changed",form.payment)
         } catch(err){
             console.error(err);
         } finally {
@@ -82,9 +82,9 @@ export default function FinePayment(){
                         </label>
                         <input
                         type="number"
-                        name="payamt"
+                        name="payment"
                         min="0"
-                        value={form.payamt}
+                        value={form.payment}
                         onChange={handleChange}
                         required
                         placeholder="0.00"

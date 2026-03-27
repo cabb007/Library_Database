@@ -43,6 +43,7 @@ app.use(session({
         httpOnly: true,
         secure: true,
         sameSite: "none",
+        proxy: true, // 🔥
         maxAge: 1000 * 60 * 60 * 24 //session lasts 1 day
     }
 }))
@@ -207,7 +208,7 @@ app.post("/api/checkout", async (req, res) => {
         return res.status(400).json({ error: "No item selected" });
     }
 
-    try {
+    try {  // Checking out as any user with any balance returns a 500 server status from this try/catch... error must be in the try portion or from a reference in the try portion
         await db.execute("CALL checkout_item(?, ?)", [userID, itemID]);
 
         // reset selection after success

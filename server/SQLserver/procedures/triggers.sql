@@ -22,11 +22,11 @@ BEGIN
     DECLARE currentLoans INT;
 
     -- Only run logic when a copy becomes available
-    IF NEW.CopyStatus = 1 AND OLD.CopyStatus <> 1 THEN -- given copy changes from unavailable to available
+    IF NEW.CopyStatus = 0 AND OLD.CopyStatus <> 1 THEN -- given copy changes from unavailable to available
     
         -- Find the earliest active hold for this item
         SELECT h.HoldID, h.UserID INTO holdID, holdUserID
-        FROM Holds AS h
+        FROM holds AS h
         WHERE h.ItemID = NEW.ItemID
             AND h.HoldStatus = 1
         ORDER BY h.RequestDate
@@ -36,7 +36,7 @@ BEGIN
         IF holdID IS NOT NULL THEN
         -- Get user status, balance, and max allowed loans
             SELECT u.Status, u.Balance, u.UserType INTO userStatus, userBalance, userType
-            FROM Users AS u
+            FROM users AS u
             WHERE u.UserID = holdUserID;
         
         -- Set max loans based on user type
@@ -49,18 +49,18 @@ BEGIN
         -- Count how many active loans the user currently has
         SELECT COUNT(*)
         INTO currentLoans
-        FROM Loans
+        FROM loans
         WHERE UserID = holdUserID
             AND ReturnDate IS NULL;    
 
         -- Check if user is eligible to borrow
             IF userStatus = 1 AND userBalance <= 0 AND currentLoans < maxLoans THEN
             -- Mark the hold as fulfilled
-                UPDATE Holds
+                UPDATE holds
                 SET HoldStatus = 1 -- (0 = Active, 1 = Fulfilled, 2 = Cancelled)
                 WHERE HoldID = holdID;
         -- Create a new loan for this available copy
-            INSERT INTO Loans(
+            INSERT INTO loans(
                 UserID,
                 CopyID,
                 CreatedBy,
@@ -93,7 +93,7 @@ END$$
 -- =========================================================
 DROP TRIGGER IF EXISTS EnforceBorrowingLimitTrigger$$
 CREATE TRIGGER EnforceBorrowingLimitTrigger
-BEFORE INSERT ON Loans
+BEFORE INSERT ON loans
 FOR EACH ROW
 BEGIN
     DECLARE userStatus INT;
@@ -104,7 +104,7 @@ BEGIN
     -- Get user status, balance, and type
     SELECT u.Status, u.Balance, u.UserType
     INTO userStatus, userBalance, userType
-    FROM Users AS u
+    FROM users AS u
     WHERE u.UserID = NEW.UserID;
 
     -- Set max loans based on user type
@@ -117,7 +117,7 @@ BEGIN
     -- Count current active loans
     SELECT COUNT(*)
     INTO currentLoans
-    FROM Loans AS l
+    FROM loans AS l
     WHERE l.UserID = NEW.UserID
       AND l.ReturnDate IS NULL;
 

@@ -1,5 +1,5 @@
 Password,FirstName,LastName,Email,Balance,UserType,LoanPeriodDays,Status,CreatedAt,CreatedBy,UpdatedAt,UpdatedBy
-Pass2876!,James,Smith,james.smith@gmail.com,0,0,14,1,2023-08-05 00:00:00,,2023-10-31 00:00:00,
+Pass2876!,James,Smith,james.smith@gmail.com,0,2,14,1,2023-08-05 00:00:00,,2023-10-31 00:00:00,
 Pass5808!,Mary,Johnson,mary.johnson@yahoo.com,0,0,14,0,2024-01-13 00:00:00,,2024-01-14 00:00:00,
 Pass3927!,John,Williams,john.williams@rice.edu,0,0,14,1,2023-08-01 00:00:00,,2023-12-08 00:00:00,
 Pass4258!,Patricia,Brown,patricia.brown@houstonisd.org,4.03,0,14,1,2022-12-22 00:00:00,,2022-12-22 00:00:00,
