@@ -58,6 +58,7 @@ app.post("/api/login", async (req, res) => {
             FirstName: user.FirstName,
             LastName: user.LastName,
             Balance: user.Balance,
+            UserType: user.UserType,
             ConfirmFlag: 0,
             SelectedItem: null
         };
@@ -85,6 +86,26 @@ app.get("/api/me", (req, res) => {
     res.json({
         loggedIn: true,
         user: req.session.user
+    });
+});
+
+//logout as a user, ends/'destroys' the session
+app.post("/api/logout", (req, res) => {
+    req.session.destroy((err) => {
+        if (err) {
+            console.error("Logout failed: ", err);
+            return res.status(500).json({
+                success: false,
+                message: "Logout failed"
+            });
+        }
+    })
+
+    res.clearCookie("connect.sid");
+
+    return res.json({
+        success: true,
+        message: "Logged out"
     });
 });
 
