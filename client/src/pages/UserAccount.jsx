@@ -7,17 +7,6 @@ export default function UserAccount() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-<<<<<<< Updated upstream
-  useEffect(() => {
-    async function checkLogin() {
-      try {
-        const response = await fetch("http://localhost:3000/me", {
-          credentials: "include",
-        });
-        const data = await response.json();
-        if (response.ok) {
-          setUser(data.user);
-=======
     useEffect(() => {
         async function checkLogin() {
             try {
@@ -38,7 +27,8 @@ export default function UserAccount() {
                 }
             } catch (err) {
                 console.error(err);
-                
+            } finally {
+                setLoading(false);
             }
         }
 
@@ -70,35 +60,8 @@ export default function UserAccount() {
 
         } catch (err) {
             setError(err.message);
->>>>>>> Stashed changes
         }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
     }
-    checkLogin();
-  }, []);
-
-  async function handleLogout() {
-    setError("");
-    try {
-      const response = await fetch("http://localhost:3000/logout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ UserID: user.UserID }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || data.message || "Failed to logout");
-      }
-      navigate("/login");
-    } catch (err) {
-      setError(err.message);
-    }
-  }
 
   if (loading) {
     return (
