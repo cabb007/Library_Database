@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import API from "../api";
 
 export default function UserAccount() {
     const [user, setUser] = useState(null);
@@ -11,8 +12,8 @@ export default function UserAccount() {
     useEffect(() => {
         async function checkLogin() {
             try {
-                const response = await fetch("http://localhost:3000/api/me", {
-                    credentials: "include"
+                const response = await fetch(`${API}/api/me`, {
+                    credentials:"include"
                 });
 
                 const data = await response.json();
@@ -34,7 +35,7 @@ export default function UserAccount() {
         setError("");
 
         try {
-            const response = await fetch("http://localhost:3000/api/logout", {
+            const response = await fetch(`${API}/api/logout`, {
                 method: "POST",
                 credentials: "include"
             });
