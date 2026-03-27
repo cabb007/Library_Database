@@ -57,7 +57,7 @@ BEGIN
     VALUES (
         p_UserID,
         v_CopyID,
-        p_UserID,
+        1, -- Super User
         CURDATE(),
         DATE_ADD(CURDATE(), INTERVAL v_DueDays DAY)
     );
