@@ -22,6 +22,17 @@ app.get("/health", (req, res) => {
     res.status(200).send("ok");
 });
 
+const db = mysql.createPool({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  port: Number(process.env.DB_PORT) || 3306,
+  ssl: {
+    rejectUnauthorized: false
+  }
+});
+
 app.use(express.json());
 app.use(session({
     secret: "secret_key", //need to implement a better secret key later for logged in session security
