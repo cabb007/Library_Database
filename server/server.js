@@ -106,6 +106,12 @@ app.post("/api/login", async (req, res) => {
             Balance: user.Balance
         };
 
+        req.session.save((err) => {
+            if (err) {
+                return res.status(500).json({ error : "session save failed "});
+            }
+        })
+
         return res.json({
             success: true,
             message: "Logged in successfully",
