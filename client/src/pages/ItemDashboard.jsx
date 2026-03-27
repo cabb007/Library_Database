@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import API from "../api";
 
 export default function ItemDashboard() {
   const navigate = useNavigate();
@@ -21,7 +22,7 @@ export default function ItemDashboard() {
   useEffect(() => {
     async function getLiterature() {
       try {
-        const res = await fetch("http://localhost:3000/api/literature");
+        const res = await fetch(`${API}/api/literature`);
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
 
@@ -38,7 +39,7 @@ export default function ItemDashboard() {
   useEffect(() => {
     async function getMedia() {
       try {
-        const res = await fetch("http://localhost:3000/api/media");
+        const res = await fetch(`${API}/api/media`);
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
 
@@ -53,7 +54,7 @@ export default function ItemDashboard() {
   useEffect(() => {
     async function getDevices() {
       try {
-        const res = await fetch("http://localhost:3000/api/devices");
+        const res = await fetch(`${API}/api/devices`);
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
 
@@ -75,12 +76,12 @@ export default function ItemDashboard() {
 
 async function handleCheckout(itemId) {
   try {
-    await fetch("http://localhost:3000/api/changeConfirmflag?value=1", {
+    await fetch(`${API}/api/changeConfirmflag?value=1`, {
       method: "GET",
       credentials: "include",
     });
 
-    await fetch(`http://localhost:3000/api/setSelectedItem?value=${itemId}`, {
+    await fetch(`${API}/api/setSelectedItem?value=${itemId}`, {
       method: "GET",
       credentials: "include",
     });
@@ -97,12 +98,12 @@ async function handleCheckout(itemId) {
 
 async function handleHold(itemId) {
   try {
-    await fetch("http://localhost:3000/api/changeConfirmflag?value=2", {
+    await fetch(`${API}/api/changeConfirmflag?value=2`, {
       method: "GET",
       credentials: "include",
     });
 
-    await fetch(`http://localhost:3000/api/setSelectedItem?value=${itemId}`, {
+    await fetch(`${API}/api/setSelectedItem?value=${itemId}`, {
       method: "GET",
       credentials: "include",
     });

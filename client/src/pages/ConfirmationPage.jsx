@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import API from "../api";
 
 export default function ConfirmationPage() {
   const navigate = useNavigate();
@@ -13,7 +14,7 @@ export default function ConfirmationPage() {
     async function fetchData() {
       try {
         /* ================= AUTH CHECK ================= */
-        const meRes = await fetch("http://localhost:3000/api/me", {
+        const meRes = await fetch(`${API}/api/me`, {
           credentials: "include",
         });
 
@@ -27,7 +28,7 @@ export default function ConfirmationPage() {
         setUser(meData.user);
 
         /* ================= CONFIRM DATA ================= */
-        const res1 = await fetch("http://localhost:3000/api/confirmdata", {
+        const res1 = await fetch(`${API}/api/confirmdata`, {
           credentials: "include",
         });
 
@@ -35,7 +36,7 @@ export default function ConfirmationPage() {
         setConfirmFlag(Number(data1.ConfirmFlag));
 
         /* ================= TITLE ================= */
-        const res2 = await fetch("http://localhost:3000/api/title", {
+        const res2 = await fetch(`${API}/api/title`, {
           credentials: "include",
         });
 
@@ -69,18 +70,18 @@ export default function ConfirmationPage() {
   async function handleConfirm() {
     try {
       if (confirmFlag === 1) {
-        await fetch("http://localhost:3000/api/checkout", {
+        await fetch(`${API}/api/checkout`, {
           method: "POST",
           credentials: "include",
         });
       } else if (confirmFlag === 2) {
-        await fetch("http://localhost:3000/api/hold", {
+        await fetch(`${API}/api/hold`, {
           method: "POST",
           credentials: "include",
         });
       }
 
-      await fetch("http://localhost:3000/api/changeConfirmflag?value=0", {
+      await fetch(`${API}/api/changeConfirmflag?value=0`, {
         credentials: "include",
       });
 
@@ -92,7 +93,7 @@ export default function ConfirmationPage() {
 
   async function handleCancel() {
     try {
-      await fetch("http://localhost:3000/api/changeConfirmflag?value=0", {
+      await fetch(`${API}/api/changeConfirmflag?value=0`, {
         credentials: "include",
       });
     } catch (err) {
