@@ -22,10 +22,12 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: "22.x"
+          cache: "npm"
+          cache-dependency-path: ./server/package-lock.json
 
       - name: Install backend dependencies
         working-directory: ./server
-        run: npm install
+        run: npm ci
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
@@ -46,6 +48,17 @@ jobs:
         with:
           name: node-app
           path: ./server
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+          cache: "npm"
+          cache-dependency-path: ./server/package-lock.json
+
+      - name: Install production dependencies
+        working-directory: ./server
+        run: npm ci --omit=dev
 
       - name: Login to Azure
         uses: azure/login@v2
