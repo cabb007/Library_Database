@@ -43,6 +43,7 @@ app.use(session({
         httpOnly: true,
         secure: true,
         sameSite: "none",
+        proxy: true, // 🔥
         maxAge: 1000 * 60 * 60 * 24 //session lasts 1 day
     }
 }))
