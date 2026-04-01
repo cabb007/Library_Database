@@ -34,6 +34,7 @@ app.get("/health", (req, res) => {
     rejectUnauthorized: false
   }});
 
+console.log("db loaded");
 app.use(express.json());
 app.use(session({
     secret: "secret_key", //need to implement a better secret key later for logged in session security
@@ -41,8 +42,8 @@ app.use(session({
     saveUninitialized: false,
     cookie: {
         httpOnly: true,
-        secure: true,
-        sameSite: "none",
+        secure: false,
+        sameSite: "lax",
         maxAge: 1000 * 60 * 60 * 24 //session lasts 1 day
     }
 }))
@@ -75,7 +76,7 @@ app.post("/api/users", async (req, res) => {
 
 app.post("/api/login", async (req, res) => {
     const { Email, Password } = req.body;
-   
+
     try {
         if (!Email || !Password) {
             return res.status(400).json({ error: "Email and password required" });
@@ -100,8 +101,8 @@ app.post("/api/login", async (req, res) => {
             Email: user.Email,
             FirstName: user.FirstName,
             LastName: user.LastName,
-            Balance: user.Balance,
             UserType: user.UserType,
+            Balance: user.Balance,
             ConfirmFlag: 0,
             SelectedItem: null
         };
@@ -277,6 +278,87 @@ app.post("/api/hold", async (req, res) => {
         }
 
         res.status(500).json({ error: "Hold failed" });
+    }
+});
+
+/* ================= LIBRARIAN ================= */
+
+// middleware: require librarian (UserType 2)
+function requireLibrarian(req, res, next) {
+    if (!req.session.user) {
+        return res.status(401).json({ error: "Not logged in" });
+    }
+    if (req.session.user.UserType !== 2) {
+        return res.status(403).json({ error: "Access denied" });
+    }
+    next();
+}
+
+// get all users
+app.get("/api/librarian/users", requireLibrarian, async (req, res) => {
+    try {
+        const [rows] = await db.execute(
+            "SELECT UserID, FirstName, LastName, Email, Balance, UserType, Status, CreatedAt FROM users ORDER BY UserID"
+        );
+        res.json(rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Failed to fetch users" });
+    }
+});
+
+// add a new user (students and faculty only)
+app.post("/api/librarian/users", requireLibrarian, async (req, res) => {
+    try {
+        const { FirstName, LastName, Email, Password, UserType } = req.body;
+        if (!FirstName || !LastName || !Email || !Password) {
+            return res.status(400).json({ error: "First name, last name, email, and password are required." });
+        }
+
+        const userType = Number(UserType) || 0;
+        if (userType !== 0 && userType !== 1) {
+            return res.status(400).json({ error: "Can only create Student or Faculty accounts" });
+        }
+
+        const loanPeriodDays = userType === 0 ? 7 : 14;
+
+        const [result] = await db.execute(
+            "INSERT INTO users (FirstName, LastName, Email, Password, UserType, LoanPeriodDays) VALUES (?,?,?,?,?,?)",
+            [FirstName, LastName, Email, Password, userType, loanPeriodDays]
+        );
+
+        res.status(201).json({ message: "User created", id: result.insertId });
+    } catch (err) {
+        console.error(err);
+        if (err.code === "ER_DUP_ENTRY") {
+            return res.status(409).json({ error: "A user with that email already exists" });
+        }
+        res.status(500).json({ error: "Failed to create user" });
+    }
+});
+
+// delete a user
+app.delete("/api/librarian/users/:id", requireLibrarian, async (req, res) => {
+    try {
+        const userId = req.params.id;
+
+        if (Number(userId) === req.session.user.UserID) {
+            return res.status(400).json({ error: "Cannot delete your own account" });
+        }
+
+        const [result] = await db.execute("DELETE FROM users WHERE UserID = ?", [userId]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        res.json({ message: "User deleted" });
+    } catch (err) {
+        console.error(err);
+        if (err.code === "ER_ROW_IS_REFERENCED_2") {
+            return res.status(409).json({ error: "Cannot delete user with active loans, holds, or fines" });
+        }
+        res.status(500).json({ error: "Failed to delete user" });
     }
 });
 
