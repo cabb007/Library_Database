@@ -28,7 +28,7 @@ BEGIN
     INTO v_CopyID
     FROM copies
     WHERE ItemID = p_ItemID
-      AND CopyStatus = 1
+      AND CopyStatus = 0
     ORDER BY CopyID
     LIMIT 1
     FOR UPDATE;
@@ -41,7 +41,7 @@ BEGIN
 
     -- MARK AS CHECKED OUT (0)
     UPDATE copies
-    SET CopyStatus = 0,
+    SET CopyStatus = 1,
         UpdatedAt = NOW(),
         UpdatedBy = p_UserID
     WHERE CopyID = v_CopyID;

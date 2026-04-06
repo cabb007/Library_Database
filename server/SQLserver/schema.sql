@@ -22,8 +22,8 @@ CREATE TABLE users (
     LastName  VARCHAR(30) NOT NULL,
     Email     VARCHAR(50) NOT NULL UNIQUE,
     Balance   DECIMAL(7,2) NOT NULL DEFAULT 0.00,
-    UserType  SMALLINT NOT NULL,                    -- 0,1,2
-    LoanPeriodDays  INT NOT NULL,                   -- loan duration
+    UserType  SMALLINT NOT NULL DEFAULT 0,                    -- 0,1,2
+    LoanPeriodDays  INT NOT NULL DEFAULT 14,                   -- loan duration
     Status    SMALLINT NOT NULL DEFAULT 1,          -- 0/1
     CreatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CreatedBy INT NULL,
