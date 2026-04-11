@@ -25,3 +25,6 @@ dist-ssr
 
 # Personal information 
 .env
+
+# ignore api.js to avoid conflict between deployment and local testing
+api.js

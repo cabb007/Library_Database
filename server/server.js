@@ -23,8 +23,14 @@ app.get("/", (req, res) => {
 app.get("/health", (req, res) => {
     res.status(200).send("ok");
 });
+console.log({
+  DB_HOST: process.env.DB_HOST,
+  DB_USER: process.env.DB_USER,
+  DB_NAME: process.env.DB_NAME,
+  DB_PORT: process.env.DB_PORT
+});
   
-  const db = mysql.createPool({
+const db = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
@@ -41,9 +47,9 @@ app.use(session({
     saveUninitialized: false,
     cookie: {
         httpOnly: true,
-        secure: true,
-        sameSite: "none",
-        proxy: true, // 🔥
+        secure: false,
+        sameSite: "lax",
+        //proxy: true, // 🔥
         maxAge: 1000 * 60 * 60 * 24 //session lasts 1 day
     }
 }))
@@ -263,7 +269,7 @@ app.post("/api/hold", async (req, res) => {
 /* ================= DATA ================= */
 
 app.get("/api/literature", async (req, res) => {
-    const [data] = await db.execute("CALL getLiterature()");
+    const [data] = await db.execute("CALL GetLiterature()");
     res.json(data);
 });
 
@@ -273,7 +279,7 @@ app.get("/api/media", async (req, res) => {
 });
 
 app.get("/api/devices", async (req, res) => {
-    const [data] = await db.execute("CALL getDevices()");
+    const [data] = await db.execute("CALL GetDevices()");
     res.json(data);
 });
 
