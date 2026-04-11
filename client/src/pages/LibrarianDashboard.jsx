@@ -5,9 +5,13 @@ export default function LibrarianDashboard() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [view, setView] = useState("home");
+  const [catalogTab, setCatalogTab] = useState("books");
   const [users, setUsers] = useState([]);
   const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [literature, setLiterature] = useState([]);
+  const [media, setMedia] = useState([]);
+  const [devices, setDevices] = useState([]);
   const [form, setForm] = useState({
     FirstName: "", LastName: "", Email: "", Password: "", UserType: 0
   });
@@ -83,6 +87,43 @@ export default function LibrarianDashboard() {
     }
   }
 
+    async function fetchCatalog() {
+    try {
+      const res = await fetch("http://localhost:3000/api/literature");
+      const data = await res.json();
+      setLiterature(Array.isArray(data[0]) ? data[0] : data);
+    } catch {
+      setError("Failed to load catalog");
+    }
+    setView("catalog");
+    setCatalogTab("books");
+  }
+
+   async function fetchMedia() {
+    try {
+      const res = await fetch("http://localhost:3000/api/media");
+      const data = await res.json();
+      setMedia(Array.isArray(data[0]) ? data[0] : data);
+    } catch {
+      setError("Failed to load Media");
+    }
+    setView("catalog");
+    setCatalogTab("media");
+  }
+
+  async function fetchDevices() {
+    try {
+      const res = await fetch("http://localhost:3000/api/devices");
+      const data = await res.json();
+      setDevices(Array.isArray(data[0]) ? data[0] : data);
+    } catch {
+      setError("Failed to load devices");
+    }
+    setView("catalog");
+    setCatalogTab("devices");
+  }
+
+
   async function handleLogout() {
     try {
       await fetch("http://localhost:3000/api/logout", {
@@ -118,8 +159,87 @@ export default function LibrarianDashboard() {
       {error && <p style={{ color: "red", marginBottom: "1rem" }}>{error}</p>}
 
       {view === "home" && (
-        <div>
+        <div style={{ display: "flex", gap: "0.5rem" }}>
           <button onClick={fetchUsers}>Users</button>
+          <button onClick={fetchCatalog}>Catalog</button>
+        </div>
+
+      )}
+
+      {view === "catalog" && (
+        <div>
+          <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
+            <button onClick={() => setView("home")}>Back</button>
+            <button onClick={() => setCatalogTab("books")}>Books</button>
+            <button onClick={fetchMedia}>Media</button>
+            <button onClick={fetchDevices}>Devices</button>
+          </div>
+          {catalogTab === "books" && (
+                <table border="1" cellPadding="8" style={{ borderCollapse: "collapse", width: "100%" }}>
+        <thead>
+          <tr>
+            <th>ISBN</th><th>Title</th><th>Publisher</th>
+            <th>Author</th><th>Year</th><th>Available</th>
+          </tr>
+        </thead>
+        <tbody>
+          {literature.map(item => (
+            <tr key={item.ItemID}>
+              <td>{item.ItemID}</td>
+              <td>{item.Title}</td>
+              <td>{item.Publisher}</td>
+              <td>{item.Author}</td>
+              <td>{item.PublicationYear}</td>
+              <td>{item.AvailableCopies}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+        )}
+          {catalogTab === "media" && (
+                <table border="1" cellPadding="8" style={{ borderCollapse: "collapse", width: "100%" }}>
+        <thead>
+          <tr>
+            <th>Device ID</th><th>Name</th><th>Producer</th><th>Duration(mins)</th>
+            <th>Available</th>
+          </tr>
+        </thead>
+        <tbody>
+          {media.map(item => (
+            <tr key={item.ItemID}>
+              <td>{item.ItemID}</td>
+              <td>{item.Title}</td>
+              <td>{item.Producer}</td>
+              <td>{item.DurationMinutes}</td>
+              <td>{item.AvailableCopies}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+          )}
+          {catalogTab === "devices" && (
+                <table border="1" cellPadding="8" style={{ borderCollapse: "collapse", width: "100%" }}>
+        <thead>
+          <tr>
+            <th>Device ID</th><th>Name</th><th>Manufacturer</th>
+            <th>Model</th><th>Available</th>
+          </tr>
+        </thead>
+        <tbody>
+          {devices.map(item => (
+            <tr key={item.ItemID}>
+              <td>{item.ItemID}</td>
+              <td>{item.Title}</td>
+              <td>{item.Manufacturer}</td>
+              <td>{item.Model}</td>
+              <td>{item.AvailableCopies}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      )}
         </div>
       )}
 
