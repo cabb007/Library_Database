@@ -7,6 +7,10 @@ export default function LibrarianDashboard() {
   const [view, setView] = useState("home");
   const [catalogTab, setCatalogTab] = useState("books");
   const [users, setUsers] = useState([]);
+  const [userSearch, setUserSearch] = useState("");
+  const [bookSearch, setBookSearch] = useState("");
+  const [mediaSearch, setMediaSearch] = useState("");
+  const [deviceSearch, setDeviceSearch] = useState("");
   const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [literature, setLiterature] = useState([]);
@@ -175,6 +179,14 @@ export default function LibrarianDashboard() {
             <button onClick={fetchDevices}>Devices</button>
           </div>
           {catalogTab === "books" && (
+            <div>
+              <input
+                placeholder="Search by title or author..."
+                value={bookSearch}
+                onChange={e => setBookSearch(e.target.value)}
+                style={{ marginBottom: "0.5rem", padding: "0.4rem", width: "100%" }}
+              />
+              <h2>Books ({literature.length})</h2>
                 <table border="1" cellPadding="8" style={{ borderCollapse: "collapse", width: "100%" }}>
         <thead>
           <tr>
@@ -183,7 +195,9 @@ export default function LibrarianDashboard() {
           </tr>
         </thead>
         <tbody>
-          {literature.map(item => (
+          {literature.filter(l =>
+            `${l.Title} ${l.Author}`.toLowerCase().includes(bookSearch.toLowerCase())
+          ).map(item => (
             <tr key={item.ItemID}>
               <td>{item.ItemID}</td>
               <td>{item.Title}</td>
@@ -195,18 +209,28 @@ export default function LibrarianDashboard() {
           ))}
         </tbody>
       </table>
-
+          </div>
         )}
           {catalogTab === "media" && (
+            <div>
+              <input
+                placeholder="Search by ID or Name..."
+                value={mediaSearch}
+                onChange={e => setMediaSearch(e.target.value)}
+                style={{ marginBottom: "0.5rem", padding: "0.4rem", width: "100%" }}
+              />
+              <h2>Media ({media.length})</h2>
                 <table border="1" cellPadding="8" style={{ borderCollapse: "collapse", width: "100%" }}>
         <thead>
           <tr>
-            <th>Device ID</th><th>Name</th><th>Producer</th><th>Duration(mins)</th>
+            <th>Device ID</th><th>Name</th><th>Producer</th><th>Duration</th>
             <th>Available</th>
           </tr>
         </thead>
         <tbody>
-          {media.map(item => (
+          {media.filter(m =>
+            `${m.ItemID} ${m.Title}`.toLowerCase().includes(mediaSearch.toLowerCase())
+          ).map(item => (
             <tr key={item.ItemID}>
               <td>{item.ItemID}</td>
               <td>{item.Title}</td>
@@ -217,9 +241,18 @@ export default function LibrarianDashboard() {
           ))}
         </tbody>
       </table>
+      </div>
 
           )}
           {catalogTab === "devices" && (
+            <div>
+              <input
+                placeholder="Search by ID, Name, or Manufacturer..."
+                value={deviceSearch}
+                onChange={e => setDeviceSearch(e.target.value)}
+                style={{ marginBottom: "0.5rem", padding: "0.4rem", width: "100%" }}
+              />
+              <h2>Devices ({devices.length})</h2>
                 <table border="1" cellPadding="8" style={{ borderCollapse: "collapse", width: "100%" }}>
         <thead>
           <tr>
@@ -228,7 +261,10 @@ export default function LibrarianDashboard() {
           </tr>
         </thead>
         <tbody>
-          {devices.map(item => (
+          {devices.filter(d =>
+            `${d.ItemID} ${d.Title} ${d.Manufacturer}`.toLowerCase().includes(deviceSearch.toLowerCase())
+          ).
+          map(item => (
             <tr key={item.ItemID}>
               <td>{item.ItemID}</td>
               <td>{item.Title}</td>
@@ -239,6 +275,7 @@ export default function LibrarianDashboard() {
           ))}
         </tbody>
       </table>
+      </div>
       )}
         </div>
       )}
@@ -264,6 +301,12 @@ export default function LibrarianDashboard() {
             </form>
           )}
 
+          <input
+            placeholder="Search by name or email..."
+            value={userSearch}
+            onChange={e => setUserSearch(e.target.value)}
+            style={{ marginBottom: "0.5rem", padding: "0.4rem", width: "100%" }}
+          />
           <h2>Users ({users.length})</h2>
           <table border="1" cellPadding="8" style={{ borderCollapse: "collapse", width: "100%", marginTop: "0.5rem" }}>
             <thead>
@@ -278,7 +321,9 @@ export default function LibrarianDashboard() {
               </tr>
             </thead>
             <tbody>
-              {users.map(u => (
+              {users.filter(u =>
+                `${u.FirstName} ${u.LastName} ${u.Email} ${u.UserType}`.toLowerCase().includes(userSearch.toLowerCase())
+              ).map(u => (
                 <tr key={u.UserID}>
                   <td>{u.UserID}</td>
                   <td>{u.FirstName} {u.LastName}</td>
