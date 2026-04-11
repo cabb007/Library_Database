@@ -1,2 +1,4 @@
 server/.env
 client/api.js
+client/.env.development
+client/.env.production
