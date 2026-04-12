@@ -9,6 +9,7 @@ import UserAccount from './pages/UserAccount';
 import ItemDashboard from "./pages/ItemDashboard";
 import FinePayment from './pages/FinePayment';
 import ConfirmationPage from './pages/ConfirmationPage';
+import LibrarianDashboard from './pages/LibrarianDashboard';
 
 
 export default function App() {
@@ -24,6 +25,7 @@ export default function App() {
         <Route path="/itemDashBoard" element={<ItemDashboard />} />
         <Route path="/finepayment" element={<FinePayment />} />
         <Route path="/confirmationpage" element ={<ConfirmationPage />} />
+        <Route path="/librarian" element={<LibrarianDashboard />} />
       </Routes>
     </BrowserRouter>
   );
