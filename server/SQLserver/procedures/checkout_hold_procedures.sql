@@ -1,6 +1,10 @@
 DELIMITER $$
 
-CREATE PROCEDURE checkout_item (
+-- =========================================================
+-- Procedure: Checkout an item for a specific user
+-- =========================================================
+DROP PROCEDURE IF EXISTS CheckoutItem$$
+CREATE PROCEDURE CheckoutItem (
     IN p_UserID INT,
     IN p_ItemID BIGINT
 )
@@ -10,11 +14,11 @@ BEGIN
 
     START TRANSACTION;
 
-    -- LOCK USER + GET LOAN PERIOD
-    SELECT LoanPeriodDays
+    -- Get the user's loan period and lock the row during checkout
+    SELECT u.LoanPeriodDays
     INTO v_DueDays
-    FROM users
-    WHERE UserID = p_UserID
+    FROM users AS u
+    WHERE u.UserID = p_UserID
     FOR UPDATE;
 
     IF v_DueDays IS NULL THEN
@@ -23,13 +27,13 @@ BEGIN
         SET MESSAGE_TEXT = 'Invalid user';
     END IF;
 
-    -- FIND AVAILABLE COPY (status = 1 means available)
-    SELECT CopyID
+    -- Find the first available copy for the selected item
+    SELECT c.CopyID
     INTO v_CopyID
-    FROM copies
-    WHERE ItemID = p_ItemID
-      AND CopyStatus = 0
-    ORDER BY CopyID
+    FROM copies AS c
+    WHERE c.ItemID = p_ItemID
+      AND c.CopyStatus = 0
+    ORDER BY c.CopyID
     LIMIT 1
     FOR UPDATE;
 
@@ -39,14 +43,14 @@ BEGIN
         SET MESSAGE_TEXT = 'No available copy';
     END IF;
 
-    -- MARK AS CHECKED OUT (0)
-    UPDATE copies
-    SET CopyStatus = 1,
-        UpdatedAt = NOW(),
-        UpdatedBy = p_UserID
-    WHERE CopyID = v_CopyID;
+    -- Mark the copy as checked out; note CopyStatus: 0=Available,1=OnLoan
+    UPDATE copies AS c
+    SET c.CopyStatus = 1,
+        c.UpdatedAt = NOW(),
+        c.UpdatedBy = p_UserID
+    WHERE c.CopyID = v_CopyID;
 
-    -- CREATE LOAN RECORD
+    -- Create the loan record using the user's loan period
     INSERT INTO loans (
         UserID,
         CopyID,

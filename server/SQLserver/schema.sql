@@ -70,11 +70,11 @@ CREATE TABLE literature (
         ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- 4) MEDIA subtype (ItemType: 5=DVD/CD,6=BluRay,7=Vinyl)
+-- 4) MEDIA subtype (ItemType: 1=DVD/CD,2=BluRay,3=Vinyl)
 
 CREATE TABLE media (
     ItemID BIGINT PRIMARY KEY,
-    ItemType SMALLINT NOT NULL,                     -- 5..7
+    ItemType SMALLINT NOT NULL,                     -- 1..3
     Producer VARCHAR(100) NULL,
     DurationMinutes INT NULL,
 
@@ -85,11 +85,11 @@ CREATE TABLE media (
         ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- 5) DEVICES subtype (ItemType: 8=Laptop,9=Tablet,10=Calculator)
+-- 5) DEVICES subtype (ItemType: 1=Laptop,2=Tablet,3=Calculator)
 
 CREATE TABLE devices (
     ItemID BIGINT PRIMARY KEY,
-    ItemType SMALLINT NOT NULL,                     -- 8..10
+    ItemType SMALLINT NOT NULL,                     -- 1..3
     Manufacturer VARCHAR(100) NULL,
     Model VARCHAR(100) NULL,
 
@@ -99,7 +99,7 @@ CREATE TABLE devices (
         ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- 6) COPIES (CopyStatus: 0=Available,1=OnLoan,2=Lost,3=Repair)
+-- 6) COPIES (CopyStatus: 0=Available,1=OnLoan) -No longer using "Lost" or "Repair" status for simplicity
 
 CREATE TABLE copies (
     CopyID INT PRIMARY KEY, -- Temp removing autoincrement because of error with csv files
@@ -110,7 +110,7 @@ CREATE TABLE copies (
     UpdatedAt DATETIME NULL,
     UpdatedBy INT NULL,
 
-    CHECK (CopyStatus IN (0,1,2,3)),
+    CHECK (CopyStatus IN (0,1,)),
 
     CONSTRAINT fk_copies_item FOREIGN KEY (ItemID) REFERENCES items(ItemID),
     CONSTRAINT fk_copies_createdby FOREIGN KEY (CreatedBy) REFERENCES users(UserID),

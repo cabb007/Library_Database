@@ -4,6 +4,12 @@ DELIMITER $$
 -- Library Database Stored Procedures - Media, Devices, Literature
 -- =========================================================
 
+
+
+-- =========================================================
+-- Function: Get all available copies of a specific item
+-- =========================================================
+
 CREATE FUNCTION GetAvailableCopies(p_ItemID BIGINT)
 RETURNS INT
 DETERMINISTIC
