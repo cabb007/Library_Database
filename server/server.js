@@ -349,7 +349,7 @@ app.post("/api/librarian/users", requireLibrarian, async (req, res) => {
         const userType = Number(UserType) || 0;
         const librarianID = req.session.user.UserID;
 
-        await db.execute("CALL AddUser(?, ?, ?, ?, ?, ?)", 
+        await db.execute("CALL AddUser(?, ?, ?, ?, ?, ?)",
             [Password, FirstName, LastName, Email, userType, librarianID]);
 
         const [rows] = await db.execute("SELECT UserID FROM users where Email = ?", 
