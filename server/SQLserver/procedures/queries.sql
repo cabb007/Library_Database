@@ -4,6 +4,9 @@ DELIMITER $$
 -- Library Database Stored Procedures - Media, Devices, Literature
 -- =========================================================
 
+-- =================================================================================================================
+--                                               ITEM QUERIES
+-- =================================================================================================================
 
 
 -- =========================================================
@@ -25,6 +28,27 @@ BEGIN
 END$$
 
 -- =========================================================
+-- Function: Get all copies of a specific item, and their copy status
+-- =========================================================
+DROP PROCEDURE IF EXISTS GetItemCopies$$
+CREATE PROCEDURE GetItemCopies(IN p_ItemID BIGINT)
+BEGIN
+    SELECT
+        c.CopyID,
+        c.CopyStatus,
+        i.itemID,
+        i.Title,
+        i.ItemCategory,
+    FROM copies AS c, items AS i
+    WHERE c.ItemID = p_ItemID
+      AND c.ItemID = i.ItemID
+END$$
+
+-- =================================================================================================================
+--                                               MEDIA QUERIES
+-- =================================================================================================================
+
+-- =========================================================
 -- Procedure: Get all media items
 -- =========================================================
 DROP PROCEDURE IF EXISTS GetMedia$$
@@ -42,6 +66,125 @@ BEGIN
     ORDER BY i.Title;
 END$$
 
+-- =========================================================
+-- Procedure: Delete a media item
+-- =========================================================
+DROP PROCEDURE IF EXISTS DeleteMedia$$
+CREATE PROCEDURE DeleteMedia(IN p_MediaID BIGINT)
+BEGIN
+    DECLARE v_activeLoans INT DEFAULT 0;
+    DECLARE v_activeHolds INT DEFAULT 0;
+    DECLARE Flag INT DEFAULT 0;
+
+    -- Check for active loans (no JOIN)
+    SELECT COUNT(*)
+    INTO v_activeLoans
+    FROM loans
+    WHERE CopyID IN (
+        SELECT CopyID
+        FROM copies
+        WHERE ItemID = p_MediaID
+    )
+    AND ReturnDate IS NULL;
+
+    IF v_activeLoans > 0 THEN
+        SET Flag = 1;
+    END IF;
+
+    -- Check for active holds
+    SELECT COUNT(*)
+    INTO v_activeHolds
+    FROM holds
+    WHERE ItemID = p_MediaID
+      AND HoldStatus = 0;
+
+    IF v_activeHolds > 0 THEN
+        SET Flag = 1;
+    END IF;
+
+    -- Only delete if safe
+    IF Flag = 0 THEN
+        DELETE FROM media
+        WHERE ItemID = p_MediaID;
+    ELSE
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Cannot delete media with active loans or holds.';
+    END IF;
+
+END$$
+-- =========================================================
+-- Procedure: Add a media item
+-- =========================================================
+DROP PROCEDURE IF EXISTS AddMedia$$
+CREATE PROCEDURE AddMedia(
+    IN p_ItemID BIGINT,
+    IN p_Title VARCHAR(100),
+    IN p_ItemType SMALLINT,
+    IN p_Producer VARCHAR(100),
+    IN p_DurationMinutes INT,
+    IN p_LibrarianID INT
+)
+BEGIN
+    DECLARE Flag INT DEFAULT 0;
+
+    -- Check if the item ID already exists
+    IF EXISTS (
+        SELECT 1
+        FROM items
+        WHERE ItemID = p_ItemID
+    ) THEN
+        SET Flag = 1;
+    END IF;
+
+    -- Check that the media type is valid
+    IF p_ItemType NOT IN (1,2,3) THEN
+        SET Flag = 1;
+    END IF;
+
+    -- Check that duration is positive if provided
+    IF p_DurationMinutes IS NOT NULL AND p_DurationMinutes <= 0 THEN
+        SET Flag = 1;
+    END IF;
+
+    -- Only insert if no error conditions were found
+    IF Flag = 0 THEN
+        INSERT INTO items (
+            ItemID,
+            ItemCategory,
+            Title,
+            CreatedBy,
+            UpdatedBy
+        )
+        VALUES (
+            p_ItemID,
+            2,
+            p_Title,
+            p_LibrarianID, -- CreatedBy will be setup via server.js, refer to AddUser api for example of how to pass the librarian ID from the API layer to the procedure
+            p_LibrarianID
+        );
+
+        INSERT INTO media (
+            ItemID,
+            ItemType,
+            Producer,
+            DurationMinutes
+        )
+        VALUES (
+            p_ItemID,
+            p_ItemType,
+            p_Producer,
+            p_DurationMinutes
+        );
+    ELSE
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Unable to add media. Check ItemID, ItemType, or DurationMinutes.';
+    END IF;
+
+END$$
+
+-- =================================================================================================================
+--                                               DEVICE QUERIES
+-- =================================================================================================================
 
 -- =========================================================
 -- Procedure: Get all devices data
@@ -61,6 +204,121 @@ BEGIN
     ORDER BY i.Title;
 END$$
 
+-- =========================================================
+-- Procedure: Add a device item
+-- =========================================================
+DROP PROCEDURE IF EXISTS AddDevice$$
+CREATE PROCEDURE AddDevice(
+    IN p_ItemID BIGINT,
+    IN p_Title VARCHAR(100),
+    IN p_ItemType SMALLINT,
+    IN p_Manufacturer VARCHAR(100),
+    IN p_Model VARCHAR(100),
+    IN p_LibrarianID INT
+)
+BEGIN
+    DECLARE Flag INT DEFAULT 0;
+
+    -- Check if the item ID already exists
+    IF EXISTS (
+        SELECT 1
+        FROM items
+        WHERE ItemID = p_ItemID
+    ) THEN
+        SET Flag = 1;
+    END IF;
+
+    -- Check that the device type is valid
+    IF p_ItemType NOT IN (1,2,3) THEN
+        SET Flag = 1;
+    END IF;
+
+    -- Only insert if no error conditions were found
+    IF Flag = 0 THEN
+        INSERT INTO items (
+            ItemID,
+            ItemCategory,
+            Title,
+            CreatedBy,
+            UpdatedBy
+        )
+        VALUES (
+            p_ItemID,
+            3,
+            p_Title,
+            p_LibrarianID,
+            p_LibrarianID
+        );
+
+        INSERT INTO devices (
+            ItemID,
+            ItemType,
+            Manufacturer,
+            Model
+        )
+        VALUES (
+            p_ItemID,
+            p_ItemType,
+            p_Manufacturer,
+            p_Model
+        );
+    ELSE
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Unable to add device. Check ItemID or ItemType.';
+    END IF;
+
+END$$
+
+-- =========================================================
+-- Procedure: Delete a device item
+-- =========================================================
+DROP PROCEDURE IF EXISTS DeleteDevice$$
+CREATE PROCEDURE DeleteDevice(IN p_DeviceID BIGINT)
+BEGIN
+    DECLARE v_activeLoans INT DEFAULT 0;
+    DECLARE v_activeHolds INT DEFAULT 0;
+    DECLARE Flag INT DEFAULT 0;
+
+    -- Check for active loans
+    SELECT COUNT(*)
+    INTO v_activeLoans
+    FROM loans
+    WHERE CopyID IN (
+        SELECT CopyID
+        FROM copies
+        WHERE ItemID = p_DeviceID
+    )
+    AND ReturnDate IS NULL;
+
+    IF v_activeLoans > 0 THEN
+        SET Flag = 1;
+    END IF;
+
+    -- Check for active holds
+    SELECT COUNT(*)
+    INTO v_activeHolds
+    FROM holds
+    WHERE ItemID = p_DeviceID
+      AND HoldStatus = 0;
+
+    IF v_activeHolds > 0 THEN
+        SET Flag = 1;
+    END IF;
+
+    -- Only delete if safe
+    IF Flag = 0 THEN
+        DELETE FROM devices
+        WHERE ItemID = p_DeviceID;
+    ELSE
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Cannot delete device with active loans or holds.';
+    END IF;
+
+END$$
+
+-- =================================================================================================================
+--                                               LITERATURE QUERIES
+-- =================================================================================================================
 
 -- =========================================================
 -- Procedure: Get all literature data
@@ -79,6 +337,125 @@ BEGIN
     JOIN literature l ON i.ItemID = l.ItemID
     WHERE i.ItemCategory = 1
     ORDER BY i.Title;
+END$$
+-- =========================================================
+-- Procedure: Add a literature item
+-- =========================================================
+DROP PROCEDURE IF EXISTS AddLiterature$$
+CREATE PROCEDURE AddLiterature(
+    IN p_ItemID BIGINT,
+    IN p_Title VARCHAR(100),
+    IN p_ItemType SMALLINT,
+    IN p_Author VARCHAR(100),
+    IN p_Publisher VARCHAR(100),
+    IN p_PublicationYear INT,
+    IN p_LibrarianID INT
+)
+BEGIN
+    DECLARE Flag INT DEFAULT 0;
+
+    -- Check if the item ID already exists
+    IF EXISTS (
+        SELECT 1
+        FROM items
+        WHERE ItemID = p_ItemID
+    ) THEN
+        SET Flag = 1;
+    END IF;
+
+    -- Check that the literature type is valid
+    IF p_ItemType NOT IN (1,2,3,4) THEN
+        SET Flag = 1;
+    END IF;
+
+    -- Check that publication year is positive if provided
+    IF p_PublicationYear IS NOT NULL AND p_PublicationYear <= 0 THEN
+        SET Flag = 1;
+    END IF;
+
+    -- Only insert if no error conditions were found
+    IF Flag = 0 THEN
+        INSERT INTO items (
+            ItemID,
+            ItemCategory,
+            Title,
+            CreatedBy,
+            UpdatedBy
+        )
+        VALUES (
+            p_ItemID,
+            1,
+            p_Title,
+            p_LibrarianID,
+            p_LibrarianID
+        );
+
+        INSERT INTO literature (
+            ItemID,
+            ItemType,
+            Author,
+            Publisher,
+            PublicationYear
+        )
+        VALUES (
+            p_ItemID,
+            p_ItemType,
+            p_Author,
+            p_Publisher,
+            p_PublicationYear
+        );
+    ELSE
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Unable to add literature. Check ItemID, ItemType, or PublicationYear.';
+    END IF;
+
+END$$
+
+-- =========================================================
+-- Procedure: Delete a literature item
+-- =========================================================
+DROP PROCEDURE IF EXISTS DeleteLiterature$$
+CREATE PROCEDURE DeleteLiterature(IN p_LiteratureID BIGINT)
+BEGIN
+    DECLARE v_activeLoans INT DEFAULT 0;
+    DECLARE v_activeHolds INT DEFAULT 0;
+    DECLARE Flag INT DEFAULT 0;
+
+    -- Check for active loans
+    SELECT COUNT(*)
+    INTO v_activeLoans
+    FROM loans
+    WHERE CopyID IN (
+        SELECT CopyID
+        FROM copies
+        WHERE ItemID = p_LiteratureID
+    )
+    AND ReturnDate IS NULL;
+
+    IF v_activeLoans > 0 THEN
+        SET Flag = 1;
+    END IF;
+
+    -- Check for active holds
+    SELECT COUNT(*)
+    INTO v_activeHolds
+    FROM holds
+    WHERE ItemID = p_LiteratureID
+      AND HoldStatus = 0;
+
+    IF v_activeHolds > 0 THEN
+        SET Flag = 1;
+    END IF;
+
+    -- Only delete if safe
+    IF Flag = 0 THEN
+        DELETE FROM literature
+        WHERE ItemID = p_LiteratureID;
+    ELSE
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Cannot delete literature with active loans or holds.';
+    END IF;
+
 END$$
 
 -- =========================================================
