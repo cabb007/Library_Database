@@ -430,7 +430,21 @@ app.get("/api/devices", async (req, res) => {
     }
 });
 
+app.get("/api/title", async (req, res) => {
+    if (!req.session.user) {
+        return res.status(401).json({ error: "Not logged in" });
+    }
 
+    const selectedItem = req.session.user.SelectedItem;
+
+    if (!selectedItem) {
+        return res.status(400).json({ error: "No item selected" });
+    }
+
+    const [data] = await db.execute("CALL getTitle(?)", [selectedItem]);
+
+    res.json(data);
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {console.log(`Server running on port ${PORT}`);
