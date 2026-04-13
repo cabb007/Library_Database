@@ -37,7 +37,7 @@ CREATE TABLE users (
     CONSTRAINT fk_users_createdby FOREIGN KEY (CreatedBy) REFERENCES users(UserID)
         ON DELETE CASCADE,
     CONSTRAINT fk_users_updatedby FOREIGN KEY (UpdatedBy) REFERENCES users(UserID)
-        ON DELETE CASCADE,
+        ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 -- 2) ITEMS  (ItemCategory: 1=Literature, 2=Media, 3=Device)
