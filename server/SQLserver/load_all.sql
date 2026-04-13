@@ -1,13 +1,4 @@
-DROP DATABASE IF EXISTS library_db;
-CREATE DATABASE library_db;
-USE library_db;
-
-SOURCE schema.sql;
-SOURCE procedures/queries.sql;
-SOURCE procedures/user_procedures.sql;
-SOURCE procedures/triggers.sql;
-SOURCE procedures/checkout_hold_procedures.sql;
-
+SET FOREIGN_KEY_CHECKS = 0;
 -- =========================================================
 -- USERS
 -- =========================================================
@@ -39,7 +30,7 @@ FIELDS TERMINATED BY ','
 ENCLOSED BY '"'
 LINES TERMINATED BY '\r\n'
 IGNORE 1 ROWS
-(ItemID, ItemCategory, Title, CreatedAt, @cb, UpdatedAt, @ub);
+(ItemID, ItemCategory, Title, CreatedAt, @cb, UpdatedAt, @ub)
 SET
     CreatedBy = NULLIF(TRIM(REPLACE(@cb, '\r', '')), ''),
     UpdatedBy = NULLIF(TRIM(REPLACE(@ub, '\r', '')), '');

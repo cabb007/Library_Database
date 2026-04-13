@@ -401,35 +401,35 @@ app.delete("/api/librarian/users/:id", requireLibrarian, async (req, res) => {
 /* ================= DATA ================= */
 
 app.get("/api/literature", async (req, res) => {
-    const [data] = await db.execute("CALL getLiterature()");
-    res.json(data);
+    try {
+    const [data] = await db.execute("CALL GetLiterature()");
+    res.json(data[0]);
+    } catch (err) {
+        console.error("Failed to fetch literature: ", err);
+        res.status(500).json({ error: "Failed to fetch literature" });
+    }
 });
 
 app.get("/api/media", async (req, res) => {
-    const [data] = await db.execute("CALL GetMedia()");
-    res.json(data);
+    try {
+        const [data] = await db.execute("CALL GetMedia()");
+        res.json(data[0]);
+    } catch (err) {
+        console.error("Failed to fetch media: ", err);
+        res.status(500).json({ error: "Failed to fetch media" });
+    }
 });
 
 app.get("/api/devices", async (req, res) => {
-    const [data] = await db.execute("CALL getDevices()");
-    res.json(data);
+    try {
+        const [data] = await db.execute("CALL GetDevices()");
+        res.json(data[0]);
+    } catch (err) {
+        console.error("Failed to fetch devices: ", err);
+        res.status(500).json({ error: "Failed to fetch devices" });
+    }
 });
 
-app.get("/api/title", async (req, res) => {
-    if (!req.session.user) {
-        return res.status(401).json({ error: "Not logged in" });
-    }
-
-    const selectedItem = req.session.user.SelectedItem;
-
-    if (!selectedItem) {
-        return res.status(400).json({ error: "No item selected" });
-    }
-
-    const [data] = await db.execute("CALL getTitle(?)", [selectedItem]);
-
-    res.json(data);
-});
 
 
 const PORT = process.env.PORT || 3000;

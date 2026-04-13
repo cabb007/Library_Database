@@ -35,7 +35,9 @@ CREATE TABLE users (
     CHECK (Status IN (0,1)),
 
     CONSTRAINT fk_users_createdby FOREIGN KEY (CreatedBy) REFERENCES users(UserID),
-    CONSTRAINT fk_users_updatedby FOREIGN KEY (UpdatedBy) REFERENCES users(UserID)
+        ON DELETE CASCADE,
+    CONSTRAINT fk_users_updatedby FOREIGN KEY (UpdatedBy) REFERENCES users(UserID),
+        ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 -- 2) ITEMS  (ItemCategory: 1=Literature, 2=Media, 3=Device)
@@ -52,7 +54,9 @@ CREATE TABLE items (
     CHECK (ItemCategory IN (1,2,3)),
 
     CONSTRAINT fk_items_createdby FOREIGN KEY (CreatedBy) REFERENCES users(UserID),
-    CONSTRAINT fk_items_updatedby FOREIGN KEY (UpdatedBy) REFERENCES users(UserID)
+        ON DELETE CASCADE,
+    CONSTRAINT fk_items_updatedby FOREIGN KEY (UpdatedBy) REFERENCES users(UserID),
+        ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 -- 3) LITERATURE subtype (ItemType: 1=Book,2=Textbook,3=Magazine,4=Audiobook)
@@ -66,7 +70,7 @@ CREATE TABLE literature (
 
     CHECK (ItemType IN (1,2,3,4)),
 
-    CONSTRAINT fk_lit_item FOREIGN KEY (ItemID) REFERENCES items(ItemID)
+    CONSTRAINT fk_lit_item FOREIGN KEY (ItemID) REFERENCES items(ItemID),
         ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
@@ -81,7 +85,7 @@ CREATE TABLE media (
     CHECK (ItemType IN (1,2,3)),
     CHECK (DurationMinutes IS NULL OR DurationMinutes > 0),
 
-    CONSTRAINT fk_media_item FOREIGN KEY (ItemID) REFERENCES items(ItemID)
+    CONSTRAINT fk_media_item FOREIGN KEY (ItemID) REFERENCES items(ItemID),
         ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
@@ -110,11 +114,14 @@ CREATE TABLE copies (
     UpdatedAt DATETIME NULL,
     UpdatedBy INT NULL,
 
-    CHECK (CopyStatus IN (0,1,)),
+    CHECK (CopyStatus IN (0,1)),
 
     CONSTRAINT fk_copies_item FOREIGN KEY (ItemID) REFERENCES items(ItemID),
+        ON DELETE CASCADE
     CONSTRAINT fk_copies_createdby FOREIGN KEY (CreatedBy) REFERENCES users(UserID),
+        ON DELETE CASCADE
     CONSTRAINT fk_copies_updatedby FOREIGN KEY (UpdatedBy) REFERENCES users(UserID)
+        ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 CREATE INDEX idx_copies_item ON copies(ItemID);
@@ -137,8 +144,11 @@ CREATE TABLE loans (
     ActiveLoan TINYINT AS (ReturnDate IS NULL) STORED,
 
     CONSTRAINT fk_loans_user FOREIGN KEY (UserID) REFERENCES users(UserID),
+        ON DELETE CASCADE,
     CONSTRAINT fk_loans_copy FOREIGN KEY (CopyID) REFERENCES copies(CopyID),
+        ON DELETE CASCADE,
     CONSTRAINT fk_loans_createdby FOREIGN KEY (CreatedBy) REFERENCES users(UserID),
+        ON DELETE CASCADE,
 
     CHECK (DueDate >= CheckoutDate),
     CHECK (ReturnDate IS NULL OR ReturnDate >= CheckoutDate)
@@ -169,7 +179,9 @@ CREATE TABLE holds (
     CHECK (HoldStatus IN (0,1,2)),
 
     CONSTRAINT fk_holds_user FOREIGN KEY (UserID) REFERENCES users(UserID),
-    CONSTRAINT fk_holds_item FOREIGN KEY (ItemID) REFERENCES items(ItemID)
+        ON DELETE CASCADE,
+    CONSTRAINT fk_holds_item FOREIGN KEY (ItemID) REFERENCES items(ItemID),
+        ON DELETE CASCADE,
 ) ENGINE=InnoDB;
 
 CREATE INDEX idx_holds_item_fifo ON holds(ItemID, HoldStatus, RequestDate);

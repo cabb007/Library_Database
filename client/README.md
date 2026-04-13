@@ -24,3 +24,16 @@ npm run dev
 if there are no issues with connecting to the server and website, in the terminal that you ran 'npm run dev',
 you can now type 'o' and press enter to open the web application. In the same terminal, you can stop the hosting of the web application by typing 'q' and pressing enter. To stop the express server, go in the other terminal and press
 CTRL + 'C' at the same time on your keyboard.
+
+
+# copy paste these as one line into the mySQL terminal
+
+DROP DATABASE IF EXISTS library_db;
+CREATE DATABASE library_db;
+USE library_db;
+SOURCE schema.sql;
+SOURCE procedures/queries.sql;
+SOURCE procedures/user_procedures.sql;
+SOURCE procedures/triggers.sql;
+SOURCE procedures/checkout_hold_procedures.sql;
+SOURCE load_all.sql;
