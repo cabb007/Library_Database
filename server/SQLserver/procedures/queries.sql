@@ -100,16 +100,6 @@ BEGIN
 END$$
 
 
--- =========================================================
--- Procedure: Get all users
--- =========================================================
-DROP PROCEDURE IF EXISTS GetUsers$$
-CREATE PROCEDURE GetUsers()
-BEGIN
-    SELECT * FROM users
-    ORDER BY UserID;
-END$$
-
 -- =================================================================================================================
 --                                               LOANS AND FINES QUERIES
 -- =================================================================================================================
@@ -178,18 +168,6 @@ BEGIN
     FROM fines AS f
     JOIN users AS u ON f.UserID = u.UserID
     ORDER BY f.CreatedAt DESC; -- newest fines first
-END$$
-
--- =========================================================
--- NEW: Procedure to get title for selected item
--- =========================================================
-DROP PROCEDURE IF EXISTS getTitle$$
-CREATE PROCEDURE getTitle(IN p_ItemID BIGINT)
-BEGIN
-    SELECT 
-        Title As Title
-    FROM items
-    WHERE ItemID = p_ItemID;
 END$$
 
 DELIMITER ;

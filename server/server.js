@@ -50,24 +50,48 @@ app.use(session({
 
 
 /* ================== REGISTER ================= */
+// When a user self-registers via CreateUser (default UserType 0 = student)
 app.post("/api/users", async (req, res) => {
     try {
-        const { FirstName, LastName, Email, Password } = req.body;
-        if (!FirstName || !LastName || !Email || !Password) {
-            return res.status(400).json({ error: "First name, last name, and email are required." });
+        const { Password, FirstName, LastName, Email } = req.body;
+
+        // '?.trim()' checks for empty strings or strings with only whitespace
+        if (!Password?.trim() || !FirstName?.trim() || !LastName?.trim() || !Email?.trim()) { 
+            return res.status(400).json({ error: "First name, last name, email and password are required." });
         }
 
-        const [result] = await db.execute(
-            "INSERT INTO users (FirstName, LastName, Email, Password) VALUES (?,?,?,?)",
-            [FirstName, LastName, Email, Password]
+        await db.execute(
+            "CALL CreateUser(?,?,?,?)",
+            [Password, FirstName, LastName, Email]
         );
+
+        const [rows] = await db.execute(
+            "SELECT UserID FROM users WHERE Email = ?",
+            [Email]
+        );
+
 
         res.status(201).json({
             message: "User registered successfully.",
-            id: result.insertId,
+            id: rows[0].UserID
         });
+    
     } catch (error) {
         console.error("Insert Failed: ", error);
+        
+        // Handles duplicate email error due to UNIQUE constraint on Email in users table
+        if (error.code === "ER_DUP_ENTRY") {  
+            return res.status(409).json({
+                error: "A user with that email already exists."
+            });
+        }
+        // Various SQL SIGNAL errors from CreateUser procedure (e.g. invalid email format, password length too short)
+        if (error.sqlState === "45000") { 
+            return res.status(400).json({
+                error: error.sqlMessage
+            });
+        }
+
         res.status(500).json({ error: "Failed to register user" });
     }
 });
@@ -78,7 +102,7 @@ app.post("/api/login", async (req, res) => {
     const { Email, Password } = req.body;
 
     try {
-        if (!Email || !Password) {
+        if (!Email?.trim() || !Password?.trim()) {
             return res.status(400).json({ error: "Email and password required" });
         }
         const [rows] = await db.execute(
@@ -229,8 +253,8 @@ app.post("/api/checkout", async (req, res) => {
         return res.status(400).json({ error: "No item selected" });
     }
 
-    try {  // Checking out as any user with any balance returns a 500 server status from this try/catch... error must be in the try portion or from a reference in the try portion
-        await db.execute("CALL checkout_item(?, ?)", [userID, itemID]);
+    try {
+        await db.execute("CALL CheckoutItem(?, ?)", [userID, itemID]);
 
         // reset selection after success
         req.session.user.SelectedItem = null;
@@ -241,10 +265,16 @@ app.post("/api/checkout", async (req, res) => {
 
     } catch (err) {
         console.error(err);
+
+        // Custom SQL SIGNAL error, should fix the 500 server status issue and return a 400 with the specific error message from the procedure
+        if (err.sqlState === "45000") {
+            return res.status(400).json({ error: err.sqlMessage });
+        }
         res.status(500).json({ error: err.sqlMessage || "Checkout failed" });
     }
 });
 
+// Create a hold for the selected item via CreateHold
 app.post("/api/hold", async (req, res) => {
     if (!req.session.user) {
         return res.status(401).json({ error: "Not logged in" });
@@ -258,11 +288,7 @@ app.post("/api/hold", async (req, res) => {
     }
 
     try {
-        await db.execute(
-            `INSERT INTO holds (UserID, ItemID, RequestDate, HoldStatus)
-             VALUES (?, ?, NOW(), 1)`,
-            [userID, itemID]
-        );
+        await db.execute("CALL CreateHold(?, ?)", [userID, itemID]);
 
         req.session.user.SelectedItem = null;
 
@@ -275,6 +301,11 @@ app.post("/api/hold", async (req, res) => {
 
         if (err.code === "ER_DUP_ENTRY") {
             return res.status(409).json({ error: "Already holding this item" });
+        }
+
+        // Custom SQL SIGNAL errors from CreateHold procedure (e.g. user already has a loan or hold on this item)
+        if (err.sqlState === "45000") {
+            return res.status(409).json({ error: err.sqlMessage });
         }
 
         res.status(500).json({ error: "Hold failed" });
@@ -297,47 +328,49 @@ function requireLibrarian(req, res, next) {
 // get all users
 app.get("/api/librarian/users", requireLibrarian, async (req, res) => {
     try {
-        const [rows] = await db.execute(
-            "SELECT UserID, FirstName, LastName, Email, Balance, UserType, Status, CreatedAt FROM users ORDER BY UserID"
-        );
-        res.json(rows);
+        const [rows] = await db.execute("CALL GetUsers()");
+        res.json(rows[0]); // Stored procedure returns results in nested arrays
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: "Failed to fetch users" });
     }
 });
 
-// add a new user (students and faculty only)
+// Add a new user via AddUser (students and faculty only)
 app.post("/api/librarian/users", requireLibrarian, async (req, res) => {
     try {
-        const { FirstName, LastName, Email, Password, UserType } = req.body;
-        if (!FirstName || !LastName || !Email || !Password) {
+        const { Password, FirstName, LastName, Email, UserType } = req.body;
+
+        // '?.trim()' checks for empty strings or strings with only whitespace
+        if (!Password?.trim() || !FirstName?.trim() || !LastName?.trim() || !Email?.trim()) {
             return res.status(400).json({ error: "First name, last name, email, and password are required." });
         }
 
         const userType = Number(UserType) || 0;
-        if (userType !== 0 && userType !== 1) {
-            return res.status(400).json({ error: "Can only create Student or Faculty accounts" });
-        }
+        const librarianID = req.session.user.UserID;
 
-        const loanPeriodDays = userType === 0 ? 7 : 14;
+        await db.execute("CALL AddUser(?, ?, ?, ?, ?, ?)", 
+            [Password, FirstName, LastName, Email, userType, librarianID]);
 
-        const [result] = await db.execute(
-            "INSERT INTO users (FirstName, LastName, Email, Password, UserType, LoanPeriodDays) VALUES (?,?,?,?,?,?)",
-            [FirstName, LastName, Email, Password, userType, loanPeriodDays]
-        );
+        const [rows] = await db.execute("SELECT UserID FROM users where Email = ?", 
+            [Email]);
 
-        res.status(201).json({ message: "User created", id: result.insertId });
+        res.status(201).json({ 
+            message: "User added", 
+            id: rows[0].UserID });
     } catch (err) {
         console.error(err);
         if (err.code === "ER_DUP_ENTRY") {
             return res.status(409).json({ error: "A user with that email already exists" });
         }
-        res.status(500).json({ error: "Failed to create user" });
+        if (err.sqlState === "45000") {
+            return res.status(400).json({ error: err.sqlMessage});
+        }
+        res.status(500).json({ error: "Failed to add user" });
     }
 });
 
-// delete a user
+// Delete a user via DeleteUser (prevents deletion if there are fines, loans, or holds active)
 app.delete("/api/librarian/users/:id", requireLibrarian, async (req, res) => {
     try {
         const userId = req.params.id;
@@ -346,18 +379,21 @@ app.delete("/api/librarian/users/:id", requireLibrarian, async (req, res) => {
             return res.status(400).json({ error: "Cannot delete your own account" });
         }
 
-        const [result] = await db.execute("DELETE FROM users WHERE UserID = ?", [userId]);
+        await db.execute("CALL DeleteUser(?)", [userId]);
+        res.json({ message: "User deleted" });
 
-        if (result.affectedRows === 0) {
+    } catch (err) {
+        console.error(err);
+
+        //SQL SIGNAL errors - used in DeleteUser procedure
+        if (err.sqlState === "45000") {
+            return res.status(409).json({ error: err.sqlMessage });
+        }
+        // If user didn't exist (no rows deleted)
+        if (err.sqlMessage === "User not found.") {
             return res.status(404).json({ error: "User not found" });
         }
 
-        res.json({ message: "User deleted" });
-    } catch (err) {
-        console.error(err);
-        if (err.code === "ER_ROW_IS_REFERENCED_2") {
-            return res.status(409).json({ error: "Cannot delete user with active loans, holds, or fines" });
-        }
         res.status(500).json({ error: "Failed to delete user" });
     }
 });

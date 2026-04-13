@@ -70,4 +70,76 @@ BEGIN
 
 END$$
 
+-- =========================================================
+-- Procedure: Create a new hold request for a specific user and item
+-- =========================================================
+DROP PROCEDURE IF EXISTS CreateHold$$
+CREATE PROCEDURE CreateHold (
+    IN p_UserID INT,
+    IN p_ItemID BIGINT
+)
+BEGIN
+    DECLARE v_UserStatus INT;
+    DECLARE v_UserBalance DECIMAL(7,2);
+    DECLARE v_AvailableCopies INT;
+
+    -- Check if the user exists and has an active status
+    SELECT Status, Balance
+    INTO v_UserStatus, v_UserBalance
+    FROM users
+    WHERE UserID = p_UserID;
+
+    IF v_UserStatus IS NULL THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Invalid user';
+    END IF;
+
+    IF v_UserStatus <> 1 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'User is not active';
+    END IF;
+
+    IF v_UserBalance > 0 THEN -- I'm not sure if this is a rule we made yet, but it makes sense to prevent users with outstanding fines from placing holds (Mikkel)
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Users with unpaid balances cannot place holds';
+    END IF;
+
+    -- Check that the item exists
+    IF NOT EXISTS (
+        SELECT 1 
+        FROM items 
+        WHERE ITEMID = p_ItemID
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Invalid item';
+    END IF;
+
+    -- Only allow holds when no copies are currently available
+    SELECT COUNT(*)
+    INTO v_AvailableCopies
+    FROM copies
+    WHERE ItemID = p_ItemID
+      AND CopyStatus = 0;
+
+    IF v_AvailableCopies > 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Copies are currently available; no need to place a hold';
+    END IF;
+
+    -- Create the hold request
+    INSERT INTO holds (
+        UserID,
+        ItemID,
+        RequestDate,
+        HoldStatus
+    )
+    VALUES ( -- This needs some work to set the CreatedBy/UpdatedBy fields, but we can discuss how to do that since holds don't have those columns (Mikkel)
+        p_UserID,
+        p_ItemID,
+        NOW(),
+        0
+    )
+END$$
+
+
 DELIMITER ;

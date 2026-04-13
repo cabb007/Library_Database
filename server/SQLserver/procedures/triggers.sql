@@ -97,7 +97,7 @@ BEFORE INSERT ON loans
 FOR EACH ROW
 BEGIN
     DECLARE userStatus INT;
-    DECLARE userBalance DECIMAL(10, 2);
+    DECLARE userBalance DECIMAL(7, 2);
     DECLARE maxLoans INT;
     DECLARE currentLoans INT;
 
