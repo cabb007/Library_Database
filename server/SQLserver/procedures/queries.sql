@@ -123,10 +123,13 @@ CREATE PROCEDURE AddMedia(
     IN p_ItemType SMALLINT,
     IN p_Producer VARCHAR(100),
     IN p_DurationMinutes INT,
+    IN p_Copies INT,
     IN p_LibrarianID INT
 )
 BEGIN
     DECLARE Flag INT DEFAULT 0;
+    DECLARE v_NextCopyID INT;
+    DECLARE i INT DEFAULT 0;
 
     -- Check if the item ID already exists
     IF EXISTS (
@@ -147,38 +150,32 @@ BEGIN
         SET Flag = 1;
     END IF;
 
+    -- Check that at least 1 copy is being added
+    IF p_Copies IS NULL OR p_Copies < 1 THEN
+        SET Flag = 1;
+    END IF;
+
     -- Only insert if no error conditions were found
     IF Flag = 0 THEN
-        INSERT INTO items (
-            ItemID,
-            ItemCategory,
-            Title,
-            CreatedBy,
-            UpdatedBy
-        )
-        VALUES (
-            p_ItemID,
-            2,
-            p_Title,
-            p_LibrarianID, -- CreatedBy will be setup via server.js, refer to AddUser api for example of how to pass the librarian ID from the API layer to the procedure
-            p_LibrarianID
-        );
+        INSERT INTO items (ItemID, ItemCategory, Title, CreatedBy, UpdatedBy)
+        VALUES (p_ItemID, 2, p_Title, p_LibrarianID, p_LibrarianID);
 
-        INSERT INTO media (
-            ItemID,
-            ItemType,
-            Producer,
-            DurationMinutes
-        )
-        VALUES (
-            p_ItemID,
-            p_ItemType,
-            p_Producer,
-            p_DurationMinutes
-        );
+        INSERT INTO media (ItemID, ItemType, Producer, DurationMinutes)
+        VALUES (p_ItemID, p_ItemType, p_Producer, p_DurationMinutes);
+
+        -- Generate CopyIDs sequentially and insert each copy
+        SELECT COALESCE(MAX(CopyID), 0) INTO v_NextCopyID FROM copies;
+
+        WHILE i < p_Copies DO
+            SET v_NextCopyID = v_NextCopyID + 1;
+            INSERT INTO copies (CopyID, ItemID, CopyStatus, CreatedBy, UpdatedBy)
+            VALUES (v_NextCopyID, p_ItemID, 0, p_LibrarianID, p_LibrarianID);
+            SET i = i + 1;
+        END WHILE;
+
     ELSE
         SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Unable to add media. Check ItemID, ItemType, or DurationMinutes.';
+        SET MESSAGE_TEXT = 'Unable to add media. Check ItemID, ItemType, DurationMinutes, or Copies.';
     END IF;
 
 END$$

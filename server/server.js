@@ -459,6 +459,35 @@ app.delete("/api/librarian/catalog/literature/:id", requireLibrarian, async (req
     }
 });
 
+// Delete a media item via DeleteMedia
+app.delete("/api/librarian/catalog/media/:id", requireLibrarian, async (req, res) => {
+    const { id } = req.params;
+    try {
+        await db.execute("CALL DeleteMedia(?)", [id]);
+        res.json({ message: "Media deleted" });
+    } catch (err) {
+        console.error(err);
+        if (err.sqlState === "45000") return res.status(400).json({ error: err.sqlMessage });
+        res.status(500).json({ error: "Failed to delete media" });
+    }
+});
+
+// Add a new media item via AddMedia
+app.post("/api/librarian/catalog/media", requireLibrarian, async (req, res) => {
+    const { Title, ItemType, Producer, DurationMinutes, Copies } = req.body;
+    try {
+        // Auto-generate ItemID since media has no natural ID like ISBN
+        const [[{ nextID }]] = await db.execute("SELECT COALESCE(MAX(ItemID), 0) + 1 AS nextID FROM items");
+        await db.execute("CALL AddMedia(?, ?, ?, ?, ?, ?, ?)",
+            [nextID, Title, ItemType, Producer, DurationMinutes || null, Copies, req.session.user.UserID]);
+        res.status(201).json({ message: "Media added" });
+    } catch (err) {
+        console.error(err);
+        if (err.sqlState === "45000") return res.status(400).json({ error: err.sqlMessage });
+        res.status(500).json({ error: "Failed to add media" });
+    }
+});
+
 // Add a new literature item via AddLiterature
 app.post("/api/librarian/catalog/literature", requireLibrarian, async (req, res) => {
     const { ItemID, Title, ItemType, Author, Publisher, PublicationYear, Copies } = req.body;

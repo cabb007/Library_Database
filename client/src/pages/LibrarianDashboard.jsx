@@ -129,6 +129,47 @@ export default function LibrarianDashboard() {
     }
   }
 
+  async function handleAddMedia(e) {
+    e.preventDefault();
+    setError("");
+    try {
+      const res = await fetch("http://localhost:3000/api/librarian/catalog/media", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          ...mediaForm,
+          ItemType: Number(mediaForm.ItemType),
+          DurationMinutes: mediaForm.DurationMinutes ? Number(mediaForm.DurationMinutes) : null,
+          Copies: Number(mediaForm.Copies)
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error); return; }
+      setMediaForm({ Title: "", ItemType: 1, Producer: "", DurationMinutes: "", Copies: 1 });
+      setShowMediaForm(false);
+      fetchMedia();
+    } catch {
+      setError("Failed to add media");
+    }
+  }
+
+  async function handleDeleteMedia(itemId) {
+    if (!confirm("Are you sure you want to delete this item?")) return;
+    setError("");
+    try {
+      const res = await fetch(`http://localhost:3000/api/librarian/catalog/media/${itemId}`, {
+        method: "DELETE",
+        credentials: "include"
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error); return; }
+      fetchMedia();
+    } catch {
+      setError("Failed to delete media");
+    }
+  }
+
   async function handleDeleteLiterature(itemId) {
     if (!confirm("Are you sure you want to delete this item?")) return;
     setError("");
@@ -303,7 +344,7 @@ export default function LibrarianDashboard() {
               </div>
 
               {showMediaForm && (
-                <form style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "1rem", padding: "0.75rem", border: "1px solid #ccc" }}>
+                <form onSubmit={handleAddMedia} style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "1rem", padding: "0.75rem", border: "1px solid #ccc" }}>
                   <input placeholder="Title *" value={mediaForm.Title} onChange={e => setMediaForm({ ...mediaForm, Title: e.target.value })} />
                   <select value={mediaForm.ItemType} onChange={e => setMediaForm({ ...mediaForm, ItemType: Number(e.target.value) })}>
                     <option value={1}>DVD / CD</option>
@@ -313,7 +354,7 @@ export default function LibrarianDashboard() {
                   <input placeholder="Producer" value={mediaForm.Producer} onChange={e => setMediaForm({ ...mediaForm, Producer: e.target.value })} />
                   <input placeholder="Duration (minutes)" type="number" min="1" value={mediaForm.DurationMinutes} onChange={e => setMediaForm({ ...mediaForm, DurationMinutes: e.target.value })} />
                   <input placeholder="Copies *" type="number" min="1" value={mediaForm.Copies} onChange={e => setMediaForm({ ...mediaForm, Copies: e.target.value })} />
-                  <button type="button">Add</button>
+                  <button type="submit">Add</button>
                 </form>
               )}
 
@@ -342,8 +383,8 @@ export default function LibrarianDashboard() {
               <td>{item.DurationMinutes}</td>
               <td>{item.AvailableCopies}</td>
               <td>
-                    <button>
-                      Delete (DWY) 
+                    <button onClick={() => handleDeleteMedia(item.ItemID)}>
+                      Delete
                     </button>
                   </td>
             </tr>
