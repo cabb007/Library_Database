@@ -459,6 +459,31 @@ app.delete("/api/librarian/catalog/literature/:id", requireLibrarian, async (req
     }
 });
 
+// Get all copies for a specific item
+app.get("/api/librarian/catalog/:id/copies", requireLibrarian, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const [rows] = await db.execute("CALL GetItemCopies(?)", [id]);
+        res.json(rows[0]);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Failed to fetch copies" });
+    }
+});
+
+// Delete a single copy via DeleteCopy
+app.delete("/api/librarian/catalog/copies/:copyId", requireLibrarian, async (req, res) => {
+    const { copyId } = req.params;
+    try {
+        await db.execute("CALL DeleteCopy(?)", [copyId]);
+        res.json({ message: "Copy deleted" });
+    } catch (err) {
+        console.error(err);
+        if (err.sqlState === "45000") return res.status(400).json({ error: err.sqlMessage });
+        res.status(500).json({ error: "Failed to delete copy" });
+    }
+});
+
 // Delete a device item via DeleteDevice
 app.delete("/api/librarian/catalog/devices/:id", requireLibrarian, async (req, res) => {
     const { id } = req.params;

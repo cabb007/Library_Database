@@ -45,6 +45,32 @@ BEGIN
     WHERE c.ItemID = p_ItemID;
 END$$
 
+-- =========================================================
+-- Procedure: Delete a single copy (blocks if copy is on active loan)
+-- =========================================================
+DROP PROCEDURE IF EXISTS DeleteCopy$$
+CREATE PROCEDURE DeleteCopy(IN p_CopyID INT)
+BEGIN
+    DECLARE v_activeLoans INT DEFAULT 0;
+
+    -- Check if this copy is currently on loan
+    SELECT COUNT(*) INTO v_activeLoans
+    FROM loans
+    WHERE CopyID = p_CopyID AND ReturnDate IS NULL;
+
+    IF v_activeLoans > 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Cannot delete a copy that is currently on loan.';
+    END IF;
+
+    DELETE FROM copies WHERE CopyID = p_CopyID;
+
+    IF ROW_COUNT() = 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Copy not found.';
+    END IF;
+END$$
+
 -- =================================================================================================================
 --                                               MEDIA QUERIES
 -- =================================================================================================================

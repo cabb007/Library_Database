@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function LibrarianDashboard() {
@@ -19,6 +19,9 @@ export default function LibrarianDashboard() {
   const [form, setForm] = useState({
     FirstName: "", LastName: "", Email: "", Password: "", UserType: 0
   });
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [copies, setCopies] = useState([]);
+  const copiesPanelRef = useRef(null);
   const [showLitForm, setShowLitForm] = useState(false);
   const [showMediaForm, setShowMediaForm] = useState(false);
   const [showDeviceForm, setShowDeviceForm] = useState(false);
@@ -129,6 +132,43 @@ export default function LibrarianDashboard() {
     }
   }
 
+  async function fetchCopies(item) {
+    if (selectedItem?.ItemID === item.ItemID) {
+      setSelectedItem(null);
+      setCopies([]);
+      return;
+    }
+    setError("");
+    try {
+      const res = await fetch(`http://localhost:3000/api/librarian/catalog/${item.ItemID}/copies`, {
+        credentials: "include"
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error); return; }
+      setSelectedItem(item);
+      setCopies(data);
+      setTimeout(() => copiesPanelRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+    } catch {
+      setError("Failed to fetch copies");
+    }
+  }
+
+  async function handleDeleteCopy(copyId) {
+    if (!confirm("Are you sure you want to delete this copy?")) return;
+    setError("");
+    try {
+      const res = await fetch(`http://localhost:3000/api/librarian/catalog/copies/${copyId}`, {
+        method: "DELETE",
+        credentials: "include"
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error); return; }
+      fetchCopies(selectedItem);
+    } catch {
+      setError("Failed to delete copy");
+    }
+  }
+
   async function handleAddDevice(e) {
     e.preventDefault();
     setError("");
@@ -236,6 +276,8 @@ export default function LibrarianDashboard() {
     }
     setView("catalog");
     setCatalogTab("books");
+    setSelectedItem(null);
+    setCopies([]);
   }
 
    async function fetchMedia() {
@@ -248,6 +290,8 @@ export default function LibrarianDashboard() {
     }
     setView("catalog");
     setCatalogTab("media");
+    setSelectedItem(null);
+    setCopies([]);
   }
 
   async function fetchDevices() {
@@ -260,6 +304,8 @@ export default function LibrarianDashboard() {
     }
     setView("catalog");
     setCatalogTab("devices");
+    setSelectedItem(null);
+    setCopies([]);
   }
 
 
@@ -309,7 +355,7 @@ export default function LibrarianDashboard() {
         <div>
           <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
             <button onClick={() => setView("home")}>Back</button>
-            <button onClick={() => setCatalogTab("books")}>Books</button>
+            <button onClick={() => { setCatalogTab("books"); setSelectedItem(null); setCopies([]); }}>Books</button>
             <button onClick={fetchMedia}>Media</button>
             <button onClick={fetchDevices}>Devices</button>
           </div>
@@ -364,7 +410,10 @@ export default function LibrarianDashboard() {
               <td>{item.Author}</td>
               <td>{item.PublicationYear}</td>
               <td>{item.AvailableCopies}</td>
-              <td>
+              <td style={{ display: "flex", gap: "0.4rem" }}>
+                    <button onClick={() => fetchCopies(item)}>
+                      {selectedItem?.ItemID === item.ItemID ? "Close" : "Manage Copies"}
+                    </button>
                     <button onClick={() => handleDeleteLiterature(item.ItemID)}>
                       Delete
                     </button>
@@ -373,6 +422,41 @@ export default function LibrarianDashboard() {
           ))}
         </tbody>
       </table>
+
+              {selectedItem && catalogTab === "books" && (
+                <div ref={copiesPanelRef} style={{ marginTop: "1rem", padding: "1rem", border: "1px solid #aaa", background: "#f9f9f9" }}>
+                  <h3>Copies of "{selectedItem.Title}"</h3>
+                  {copies.length === 0 ? (
+                    <p>No copies found.</p>
+                  ) : (
+                    <table border="1" cellPadding="6" style={{ borderCollapse: "collapse", width: "100%" }}>
+                      <thead>
+                        <tr>
+                          <th>Copy ID</th>
+                          <th>Status</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {copies.map(copy => (
+                          <tr key={copy.CopyID}>
+                            <td>{copy.CopyID}</td>
+                            <td>{copy.CopyStatus === 0 ? "Available" : "On Loan"}</td>
+                            <td>
+                              <button
+                                onClick={() => handleDeleteCopy(copy.CopyID)}
+                                disabled={copy.CopyStatus !== 0}
+                              >
+                                Delete
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              )}
           </div>
         )}
           {catalogTab === "media" && (
@@ -422,7 +506,10 @@ export default function LibrarianDashboard() {
               <td>{item.Producer}</td>
               <td>{item.DurationMinutes}</td>
               <td>{item.AvailableCopies}</td>
-              <td>
+              <td style={{ display: "flex", gap: "0.4rem" }}>
+                    <button onClick={() => fetchCopies(item)}>
+                      {selectedItem?.ItemID === item.ItemID ? "Close" : "Manage Copies"}
+                    </button>
                     <button onClick={() => handleDeleteMedia(item.ItemID)}>
                       Delete
                     </button>
@@ -431,6 +518,41 @@ export default function LibrarianDashboard() {
           ))}
         </tbody>
       </table>
+
+              {selectedItem && catalogTab === "media" && (
+                <div ref={copiesPanelRef} style={{ marginTop: "1rem", padding: "1rem", border: "1px solid #aaa", background: "#f9f9f9" }}>
+                  <h3>Copies of "{selectedItem.Title}"</h3>
+                  {copies.length === 0 ? (
+                    <p>No copies found.</p>
+                  ) : (
+                    <table border="1" cellPadding="6" style={{ borderCollapse: "collapse", width: "100%" }}>
+                      <thead>
+                        <tr>
+                          <th>Copy ID</th>
+                          <th>Status</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {copies.map(copy => (
+                          <tr key={copy.CopyID}>
+                            <td>{copy.CopyID}</td>
+                            <td>{copy.CopyStatus === 0 ? "Available" : "On Loan"}</td>
+                            <td>
+                              <button
+                                onClick={() => handleDeleteCopy(copy.CopyID)}
+                                disabled={copy.CopyStatus !== 0}
+                              >
+                                Delete
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              )}
       </div>
 
           )}
@@ -482,15 +604,53 @@ export default function LibrarianDashboard() {
               <td>{item.Manufacturer}</td>
               <td>{item.Model}</td>
               <td>{item.AvailableCopies}</td>
-              <td>
+              <td style={{ display: "flex", gap: "0.4rem" }}>
+                    <button onClick={() => fetchCopies(item)}>
+                      {selectedItem?.ItemID === item.ItemID ? "Close" : "Manage Copies"}
+                    </button>
                     <button onClick={() => handleDeleteDevice(item.ItemID)}>
-                      Delete 
+                      Delete
                     </button>
                   </td>
             </tr>
           ))}
         </tbody>
       </table>
+
+              {selectedItem && catalogTab === "devices" && (
+                <div ref={copiesPanelRef} style={{ marginTop: "1rem", padding: "1rem", border: "1px solid #aaa", background: "#f9f9f9" }}>
+                  <h3>Copies of "{selectedItem.Title}"</h3>
+                  {copies.length === 0 ? (
+                    <p>No copies found.</p>
+                  ) : (
+                    <table border="1" cellPadding="6" style={{ borderCollapse: "collapse", width: "100%" }}>
+                      <thead>
+                        <tr>
+                          <th>Copy ID</th>
+                          <th>Status</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {copies.map(copy => (
+                          <tr key={copy.CopyID}>
+                            <td>{copy.CopyID}</td>
+                            <td>{copy.CopyStatus === 0 ? "Available" : "On Loan"}</td>
+                            <td>
+                              <button
+                                onClick={() => handleDeleteCopy(copy.CopyID)}
+                                disabled={copy.CopyStatus !== 0}
+                              >
+                                Delete
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              )}
       </div>
       )}
         </div>
