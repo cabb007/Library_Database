@@ -212,10 +212,13 @@ CREATE PROCEDURE AddDevice(
     IN p_ItemType SMALLINT,
     IN p_Manufacturer VARCHAR(100),
     IN p_Model VARCHAR(100),
+    IN p_Copies INT,
     IN p_LibrarianID INT
 )
 BEGIN
     DECLARE Flag INT DEFAULT 0;
+    DECLARE v_NextCopyID INT;
+    DECLARE i INT DEFAULT 0;
 
     -- Check if the item ID already exists
     IF EXISTS (
@@ -231,38 +234,32 @@ BEGIN
         SET Flag = 1;
     END IF;
 
+    -- Check that at least 1 copy is being added
+    IF p_Copies IS NULL OR p_Copies < 1 THEN
+        SET Flag = 1;
+    END IF;
+
     -- Only insert if no error conditions were found
     IF Flag = 0 THEN
-        INSERT INTO items (
-            ItemID,
-            ItemCategory,
-            Title,
-            CreatedBy,
-            UpdatedBy
-        )
-        VALUES (
-            p_ItemID,
-            3,
-            p_Title,
-            p_LibrarianID,
-            p_LibrarianID
-        );
+        INSERT INTO items (ItemID, ItemCategory, Title, CreatedBy, UpdatedBy)
+        VALUES (p_ItemID, 3, p_Title, p_LibrarianID, p_LibrarianID);
 
-        INSERT INTO devices (
-            ItemID,
-            ItemType,
-            Manufacturer,
-            Model
-        )
-        VALUES (
-            p_ItemID,
-            p_ItemType,
-            p_Manufacturer,
-            p_Model
-        );
+        INSERT INTO devices (ItemID, ItemType, Manufacturer, Model)
+        VALUES (p_ItemID, p_ItemType, p_Manufacturer, p_Model);
+
+        -- Generate CopyIDs sequentially and insert each copy
+        SELECT COALESCE(MAX(CopyID), 0) INTO v_NextCopyID FROM copies;
+
+        WHILE i < p_Copies DO
+            SET v_NextCopyID = v_NextCopyID + 1;
+            INSERT INTO copies (CopyID, ItemID, CopyStatus, CreatedBy, UpdatedBy)
+            VALUES (v_NextCopyID, p_ItemID, 0, p_LibrarianID, p_LibrarianID);
+            SET i = i + 1;
+        END WHILE;
+
     ELSE
         SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Unable to add device. Check ItemID or ItemType.';
+        SET MESSAGE_TEXT = 'Unable to add device. Check ItemID, ItemType, or Copies.';
     END IF;
 
 END$$
@@ -305,8 +302,9 @@ BEGIN
 
     -- Only delete if safe
     IF Flag = 0 THEN
-        DELETE FROM devices
-        WHERE ItemID = p_DeviceID;
+        DELETE FROM copies WHERE ItemID = p_DeviceID;
+        DELETE FROM devices WHERE ItemID = p_DeviceID;
+        DELETE FROM items WHERE ItemID = p_DeviceID;
     ELSE
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Cannot delete device with active loans or holds.';

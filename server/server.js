@@ -459,6 +459,34 @@ app.delete("/api/librarian/catalog/literature/:id", requireLibrarian, async (req
     }
 });
 
+// Delete a device item via DeleteDevice
+app.delete("/api/librarian/catalog/devices/:id", requireLibrarian, async (req, res) => {
+    const { id } = req.params;
+    try {
+        await db.execute("CALL DeleteDevice(?)", [id]);
+        res.json({ message: "Device deleted" });
+    } catch (err) {
+        console.error(err);
+        if (err.sqlState === "45000") return res.status(400).json({ error: err.sqlMessage });
+        res.status(500).json({ error: "Failed to delete device" });
+    }
+});
+
+// Add a new device item via AddDevice
+app.post("/api/librarian/catalog/devices", requireLibrarian, async (req, res) => {
+    const { Title, ItemType, Manufacturer, Model, Copies } = req.body;
+    try {
+        const [[{ nextID }]] = await db.execute("SELECT COALESCE(MAX(ItemID), 0) + 1 AS nextID FROM items");
+        await db.execute("CALL AddDevice(?, ?, ?, ?, ?, ?, ?)",
+            [nextID, Title, ItemType, Manufacturer, Model || null, Copies, req.session.user.UserID]);
+        res.status(201).json({ message: "Device added" });
+    } catch (err) {
+        console.error(err);
+        if (err.sqlState === "45000") return res.status(400).json({ error: err.sqlMessage });
+        res.status(500).json({ error: "Failed to add device" });
+    }
+});
+
 // Delete a media item via DeleteMedia
 app.delete("/api/librarian/catalog/media/:id", requireLibrarian, async (req, res) => {
     const { id } = req.params;

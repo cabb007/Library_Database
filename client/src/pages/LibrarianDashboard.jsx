@@ -129,6 +129,46 @@ export default function LibrarianDashboard() {
     }
   }
 
+  async function handleAddDevice(e) {
+    e.preventDefault();
+    setError("");
+    try {
+      const res = await fetch("http://localhost:3000/api/librarian/catalog/devices", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          ...deviceForm,
+          ItemType: Number(deviceForm.ItemType),
+          Copies: Number(deviceForm.Copies)
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error); return; }
+      setDeviceForm({ Title: "", ItemType: 1, Manufacturer: "", Model: "", Copies: 1 });
+      setShowDeviceForm(false);
+      fetchDevices();
+    } catch {
+      setError("Failed to add device");
+    }
+  }
+
+  async function handleDeleteDevice(itemId) {
+    if (!confirm("Are you sure you want to delete this item?")) return;
+    setError("");
+    try {
+      const res = await fetch(`http://localhost:3000/api/librarian/catalog/devices/${itemId}`, {
+        method: "DELETE",
+        credentials: "include"
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error); return; }
+      fetchDevices();
+    } catch {
+      setError("Failed to delete device");
+    }
+  }
+
   async function handleAddMedia(e) {
     e.preventDefault();
     setError("");
@@ -403,7 +443,7 @@ export default function LibrarianDashboard() {
               </div>
 
               {showDeviceForm && (
-                <form style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "1rem", padding: "0.75rem", border: "1px solid #ccc" }}>
+                <form onSubmit={handleAddDevice} style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "1rem", padding: "0.75rem", border: "1px solid #ccc" }}>
                   <input placeholder="Title *" value={deviceForm.Title} onChange={e => setDeviceForm({ ...deviceForm, Title: e.target.value })} />
                   <select value={deviceForm.ItemType} onChange={e => setDeviceForm({ ...deviceForm, ItemType: Number(e.target.value) })}>
                     <option value={1}>Laptop</option>
@@ -413,7 +453,7 @@ export default function LibrarianDashboard() {
                   <input placeholder="Manufacturer" value={deviceForm.Manufacturer} onChange={e => setDeviceForm({ ...deviceForm, Manufacturer: e.target.value })} />
                   <input placeholder="Model" value={deviceForm.Model} onChange={e => setDeviceForm({ ...deviceForm, Model: e.target.value })} />
                   <input placeholder="Copies *" type="number" min="1" value={deviceForm.Copies} onChange={e => setDeviceForm({ ...deviceForm, Copies: e.target.value })} />
-                  <button type="button">Add</button>
+                  <button type="submit">Add</button>
                 </form>
               )}
 
@@ -443,8 +483,8 @@ export default function LibrarianDashboard() {
               <td>{item.Model}</td>
               <td>{item.AvailableCopies}</td>
               <td>
-                    <button>
-                      Delete (DWY) 
+                    <button onClick={() => handleDeleteDevice(item.ItemID)}>
+                      Delete 
                     </button>
                   </td>
             </tr>
