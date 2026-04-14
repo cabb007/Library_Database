@@ -446,6 +446,33 @@ app.get("/api/title", async (req, res) => {
     res.json(data);
 });
 
+// Delete a literature item via DeleteLiterature
+app.delete("/api/librarian/catalog/literature/:id", requireLibrarian, async (req, res) => {
+    const { id } = req.params;
+    try {
+        await db.execute("CALL DeleteLiterature(?)", [id]);
+        res.json({ message: "Literature deleted" });
+    } catch (err) {
+        console.error(err);
+        if (err.sqlState === "45000") return res.status(400).json({ error: err.sqlMessage });
+        res.status(500).json({ error: "Failed to delete literature" });
+    }
+});
+
+// Add a new literature item via AddLiterature
+app.post("/api/librarian/catalog/literature", requireLibrarian, async (req, res) => {
+    const { ItemID, Title, ItemType, Author, Publisher, PublicationYear, Copies } = req.body;
+    try {
+        await db.execute("CALL AddLiterature(?, ?, ?, ?, ?, ?, ?, ?)",
+            [ItemID, Title, ItemType, Author, Publisher, PublicationYear || null, Copies, req.session.user.UserID]);
+        res.status(201).json({ message: "Literature added" });
+    } catch (err) {
+        console.error(err);
+        if (err.sqlState === "45000") return res.status(400).json({ error: err.sqlMessage });
+        res.status(500).json({ error: "Failed to add literature" });
+    }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {console.log(`Server running on port ${PORT}`);
 });

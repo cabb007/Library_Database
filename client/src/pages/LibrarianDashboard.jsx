@@ -103,6 +103,48 @@ export default function LibrarianDashboard() {
     }
   }
 
+  async function handleAddLiterature(e) {
+    e.preventDefault();
+    setError("");
+    try {
+      const res = await fetch("http://localhost:3000/api/librarian/catalog/literature", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          ...litForm,
+          ItemID: Number(litForm.ItemID),
+          ItemType: Number(litForm.ItemType),
+          PublicationYear: litForm.PublicationYear ? Number(litForm.PublicationYear) : null,
+          Copies: Number(litForm.Copies)
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error); return; }
+      setLitForm({ ItemID: "", Title: "", ItemType: 1, Author: "", Publisher: "", PublicationYear: "", Copies: 1 });
+      setShowLitForm(false);
+      fetchCatalog();
+    } catch {
+      setError("Failed to add literature");
+    }
+  }
+
+  async function handleDeleteLiterature(itemId) {
+    if (!confirm("Are you sure you want to delete this item?")) return;
+    setError("");
+    try {
+      const res = await fetch(`http://localhost:3000/api/librarian/catalog/literature/${itemId}`, {
+        method: "DELETE",
+        credentials: "include"
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error); return; }
+      fetchCatalog();
+    } catch {
+      setError("Failed to delete literature");
+    }
+  }
+
     async function fetchCatalog() {
     try {
       const res = await fetch("http://localhost:3000/api/literature");
@@ -199,7 +241,7 @@ export default function LibrarianDashboard() {
               </div>
 
               {showLitForm && (
-                <form style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "1rem", padding: "0.75rem", border: "1px solid #ccc" }}>
+                <form onSubmit={handleAddLiterature} style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "1rem", padding: "0.75rem", border: "1px solid #ccc" }}>
                   <input placeholder="ISBN / Item ID *" value={litForm.ItemID} onChange={e => setLitForm({ ...litForm, ItemID: e.target.value })} />
                   <input placeholder="Title *" value={litForm.Title} onChange={e => setLitForm({ ...litForm, Title: e.target.value })} />
                   <select value={litForm.ItemType} onChange={e => setLitForm({ ...litForm, ItemType: Number(e.target.value) })}>
@@ -212,7 +254,7 @@ export default function LibrarianDashboard() {
                   <input placeholder="Publisher" value={litForm.Publisher} onChange={e => setLitForm({ ...litForm, Publisher: e.target.value })} />
                   <input placeholder="Publication Year" type="number" value={litForm.PublicationYear} onChange={e => setLitForm({ ...litForm, PublicationYear: e.target.value })} />
                   <input placeholder="Copies *" type="number" min="1" value={litForm.Copies} onChange={e => setLitForm({ ...litForm, Copies: e.target.value })} />
-                  <button type="button">Add</button>
+                  <button type="submit">Add</button>
                 </form>
               )}
 
@@ -242,8 +284,8 @@ export default function LibrarianDashboard() {
               <td>{item.PublicationYear}</td>
               <td>{item.AvailableCopies}</td>
               <td>
-                    <button>
-                      Delete (DWY) 
+                    <button onClick={() => handleDeleteLiterature(item.ItemID)}>
+                      Delete
                     </button>
                   </td>
             </tr>

@@ -13,6 +13,7 @@ DELIMITER $$
 -- Function: Get all available copies of a specific item
 -- =========================================================
 
+DROP FUNCTION IF EXISTS GetAvailableCopies$$
 CREATE FUNCTION GetAvailableCopies(p_ItemID BIGINT)
 RETURNS INT
 DETERMINISTIC
@@ -36,12 +37,12 @@ BEGIN
     SELECT
         c.CopyID,
         c.CopyStatus,
-        i.itemID,
+        i.ItemID,
         i.Title,
-        i.ItemCategory,
-    FROM copies AS c, items AS i
-    WHERE c.ItemID = p_ItemID
-      AND c.ItemID = i.ItemID
+        i.ItemCategory
+    FROM copies AS c
+    JOIN items AS i ON c.ItemID = i.ItemID
+    WHERE c.ItemID = p_ItemID;
 END$$
 
 -- =================================================================================================================
@@ -349,10 +350,13 @@ CREATE PROCEDURE AddLiterature(
     IN p_Author VARCHAR(100),
     IN p_Publisher VARCHAR(100),
     IN p_PublicationYear INT,
+    IN p_Copies INT,
     IN p_LibrarianID INT
 )
 BEGIN
     DECLARE Flag INT DEFAULT 0;
+    DECLARE v_NextCopyID INT;
+    DECLARE i INT DEFAULT 0;
 
     -- Check if the item ID already exists
     IF EXISTS (
@@ -370,6 +374,11 @@ BEGIN
 
     -- Check that publication year is positive if provided
     IF p_PublicationYear IS NOT NULL AND p_PublicationYear <= 0 THEN
+        SET Flag = 1;
+    END IF;
+
+    -- Check that at least 1 copy is being added
+    IF p_Copies IS NULL OR p_Copies < 1 THEN
         SET Flag = 1;
     END IF;
 
@@ -404,9 +413,20 @@ BEGIN
             p_Publisher,
             p_PublicationYear
         );
+
+        -- Generate CopyIDs sequentially and insert each copy
+        SELECT COALESCE(MAX(CopyID), 0) INTO v_NextCopyID FROM copies;
+
+        WHILE i < p_Copies DO
+            SET v_NextCopyID = v_NextCopyID + 1;
+            INSERT INTO copies (CopyID, ItemID, CopyStatus, CreatedBy, UpdatedBy)
+            VALUES (v_NextCopyID, p_ItemID, 0, p_LibrarianID, p_LibrarianID);
+            SET i = i + 1;
+        END WHILE;
+
     ELSE
         SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Unable to add literature. Check ItemID, ItemType, or PublicationYear.';
+        SET MESSAGE_TEXT = 'Unable to add literature. Check ItemID, ItemType, PublicationYear, or Copies.';
     END IF;
 
 END$$
@@ -449,8 +469,9 @@ BEGIN
 
     -- Only delete if safe
     IF Flag = 0 THEN
-        DELETE FROM literature
-        WHERE ItemID = p_LiteratureID;
+        DELETE FROM copies WHERE ItemID = p_LiteratureID;
+        DELETE FROM literature WHERE ItemID = p_LiteratureID;
+        DELETE FROM items WHERE ItemID = p_LiteratureID;
     ELSE
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Cannot delete literature with active loans or holds.';
