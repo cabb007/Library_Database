@@ -22,7 +22,7 @@ export default function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/registersuccess" element={<RegisterSuccess />} />
         <Route path="/useraccount" element={<UserAccount />} />
-        <Route path="/itemDashBoard" element={<Catalog />} />
+        <Route path="/catalog" element={<Catalog />} />
         <Route path="/finepayment" element={<FinePayment />} />
         <Route path="/confirmationpage" element ={<ConfirmationPage />} />
         <Route path="/librarian" element={<LibrarianDashboard />} />

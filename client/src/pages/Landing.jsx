@@ -25,8 +25,20 @@ const CATEGORY_ICONS = {
 export default function Landing() {
   const navigate = useNavigate();
   const [counts, setCounts] = useState({ Literature: "—", Media: "—", Devices: "—" });
+  const [loggedIn, setLoggedIn] = useState(false);
 
   useEffect(() => {
+    async function checkAuth() {
+      try {
+        const res = await fetch(`${API}/api/me`, { credentials: "include" });
+        const data = await res.json();
+        setLoggedIn(data.loggedIn === true);
+      } catch {
+        setLoggedIn(false);
+      }
+    }
+    checkAuth();
+
     async function fetchCounts() {
       try {
         const [litRes, mediaRes, devRes] = await Promise.all([
@@ -63,18 +75,22 @@ export default function Landing() {
           Cougar Commons
         </h1>
         <div className="flex gap-4">
-          <button
-            onClick={() => navigate("/login")}
-            className="px-5 py-2 border border-amber-700 text-amber-300 hover:bg-amber-900/30 transition rounded text-sm tracking-wide"
-          >
-            Login
-          </button>
-          <button
-            onClick={() => navigate("/register")}
-            className="px-5 py-2 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold transition rounded text-sm tracking-wide"
-          >
-            Register
-          </button>
+          {!loggedIn && (
+            <>
+              <button
+                onClick={() => navigate("/login")}
+                className="px-5 py-2 border border-amber-700 text-amber-300 hover:bg-amber-900/30 transition rounded text-sm tracking-wide"
+              >
+                Login
+              </button>
+              <button
+                onClick={() => navigate("/register")}
+                className="px-5 py-2 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold transition rounded text-sm tracking-wide"
+              >
+                Register
+              </button>
+            </>
+          )}
           <button
             onClick={() => navigate("/useraccount")}
             className="px-5 py-2 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold transition rounded text-sm tracking-wide">
@@ -105,13 +121,13 @@ export default function Landing() {
               Get Started
             </button>
             <button
-              onClick={() => navigate("/litcatalogue")} 
+              onClick={() => navigate("catalog")} 
               className="px-7 py-3 border border-stone-600 text-stone-300 hover:border-amber-700 hover:text-amber-300 rounded transition tracking-wide">
               Browse Catalog
             </button>
 
             <button
-            onClick={() => navigate("/itemDashboard")}
+            onClick={() => navigate("/litcatalogue")}
             className="px-7 py-3 border border-stone-600 text-stone-300 hover:border-amber-700 hover:text-amber-300 rounded transition tracking-wide"
             >
               Dashboard
