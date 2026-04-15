@@ -45,7 +45,11 @@ export default function Login() {
 
       setMessage("Logged in successfully");
       console.log("Logged in as ", data);
-      navigate("/useraccount");
+      if (data.user?.UserType === 2) {
+        navigate("/librarian");
+      } else {
+        navigate("/useraccount");
+      }
 
     } catch(err){
       alert("Invalid Email or Password");

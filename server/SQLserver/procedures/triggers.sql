@@ -1,684 +1,151 @@
 DELIMITER $$
 
--- =========================================================
--- Library Database Stored Procedures - Media, Devices, Literature
--- =========================================================
-
 -- =================================================================================================================
---                                               ITEM QUERIES
+--                                               TRIGGERS
 -- =================================================================================================================
 
-
 -- =========================================================
--- Function: Get all available copies of a specific item
+-- Trigger: Hold Fulfillment Trigger
 -- =========================================================
-
-DROP FUNCTION IF EXISTS GetAvailableCopies$$
-CREATE FUNCTION GetAvailableCopies(p_ItemID BIGINT)
-RETURNS INT
-DETERMINISTIC
+DROP TRIGGER IF EXISTS HoldFulfillmentTrigger$$
+CREATE TRIGGER HoldFulfillmentTrigger
+AFTER UPDATE ON copies
+FOR EACH ROW
 BEGIN
-    DECLARE available INT;
+    DECLARE v_HoldID INT DEFAULT NULL;
+    DECLARE v_HoldUserID INT DEFAULT NULL;
+    DECLARE v_UserStatus INT;
+    DECLARE v_UserBalance DECIMAL(7,2);
+    DECLARE v_LoanPeriodDays INT;
+    DECLARE v_UserType INT;
+    DECLARE v_CurrentLoans INT DEFAULT 0;
+    DECLARE v_MaxLoans INT DEFAULT 0;
 
-    SELECT COUNT(*) INTO available
-    FROM copies
-    WHERE ItemID = p_ItemID
-      AND CopyStatus = 0;
+    -- Only run when a copy becomes Available (CopyStatus changes from 1 to 0)
+    IF OLD.CopyStatus = 1 AND NEW.CopyStatus = 0 THEN
+        
+        -- Find the earliest Active hold for this item (FIFO ordering by RequestDate)
+        SELECT h.HoldID, h.UserID
+        INTO v_HoldID, v_HoldUserID
+        FROM holds AS h
+        WHERE h.ItemID = NEW.ItemID
+          AND h.HoldStatus = 0 -- HoldStatus: 0=Active, 1=Fulfilled, 2=Cancelled
+        ORDER BY h.RequestDate
+        LIMIT 1;
 
-    RETURN available;
+        -- Only continue if a hold exists for this item
+        IF v_HoldID IS NOT NULL THEN
+
+            SELECT u.Status, u.Balance, u.LoanPeriodDays, u.UserType
+            INTO v_UserStatus, v_UserBalance, v_LoanPeriodDays, v_UserType
+            FROM users AS u
+            WHERE u.UserID = v_HoldUserID;
+
+            -- Determine max allowed loans
+            IF v_UserType = 0 THEN
+                SET v_MaxLoans = 3; -- Student
+            ELSE
+                SET v_MaxLoans = 5; -- Librarian and Faculty
+            END IF;
+
+            -- Count user's current active loans
+            SELECT COUNT(*)
+            INTO v_CurrentLoans
+            FROM loans
+            WHERE UserID = v_HoldUserID
+              AND ReturnDate IS NULL;
+
+            -- Check eligibility (active status, no unpaid balance, under loan limit)
+            IF v_UserStatus = 1
+               AND v_UserBalance <= 0
+               AND v_CurrentLoans < v_MaxLoans THEN
+
+                -- Mark hold as fulfilled
+                UPDATE holds
+                SET HoldStatus = 1 -- 1=Fulfilled
+                WHERE HoldID = v_HoldID;
+
+                -- Create a new loan for this copy
+                INSERT INTO loans (
+                    UserID,
+                    CopyID,
+                    CreatedBy,
+                    CheckoutDate,
+                    DueDate
+                ) VALUES (
+                    v_HoldUserID,
+                    NEW.CopyID,
+                    v_HoldUserID, -- CreatedBy is the user who is fulfilling the hold
+                    CURDATE(),
+                    DATE_ADD(CURDATE(), INTERVAL v_LoanPeriodDays DAY)
+                );
+
+            END IF;
+        END IF;
+    END IF;
 END$$
 
 -- =========================================================
--- Function: Get all copies of a specific item, and their copy status
+-- Trigger: EnforceBorrowingLimitTrigger
+-- Only checks borrower eligibility when attempting to loan/checkout an item
 -- =========================================================
-DROP PROCEDURE IF EXISTS GetItemCopies$$
-CREATE PROCEDURE GetItemCopies(IN p_ItemID BIGINT)
+DROP TRIGGER IF EXISTS EnforceBorrowingLimitTrigger$$
+CREATE TRIGGER EnforceBorrowingLimitTrigger
+BEFORE INSERT ON loans
+FOR EACH ROW
 BEGIN
-    SELECT
-        c.CopyID,
-        c.CopyStatus,
-        i.ItemID,
-        i.Title,
-        i.ItemCategory
-    FROM copies AS c
-    JOIN items AS i ON c.ItemID = i.ItemID
-    WHERE c.ItemID = p_ItemID;
-END$$
+    DECLARE v_UserStatus INT DEFAULT NULL;
+    DECLARE v_UserBalance DECIMAL(7,2) DEFAULT NULL;
+    DECLARE v_UserType INT DEFAULT NULL;
+    DECLARE v_MaxLoans INT DEFAULT 0;
+    DECLARE v_CurrentLoans INT DEFAULT 0;
+    
+    -- Get user status, balance, and type
+    SELECT u.Status, u.Balance, u.UserType
+    INTO v_UserStatus, v_UserBalance, v_UserType
+    FROM users AS u
+    WHERE u.UserID = NEW.UserID;
 
--- =========================================================
--- Procedure: Delete a single copy (blocks if copy is on active loan)
--- =========================================================
-DROP PROCEDURE IF EXISTS DeleteCopy$$
-CREATE PROCEDURE DeleteCopy(IN p_CopyID INT)
-BEGIN
-    DECLARE v_activeLoans INT DEFAULT 0;
-
-    -- Check if this copy is currently on loan
-    SELECT COUNT(*) INTO v_activeLoans
-    FROM loans
-    WHERE CopyID = p_CopyID AND ReturnDate IS NULL;
-
-    IF v_activeLoans > 0 THEN
+    -- Make sure the user exists
+    IF v_UserStatus IS NULL THEN
         SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Cannot delete a copy that is currently on loan.';
+        SET MESSAGE_TEXT = 'User does not exist.';
     END IF;
 
-    DELETE FROM copies WHERE CopyID = p_CopyID;
-
-    IF ROW_COUNT() = 0 THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Copy not found.';
-    END IF;
-END$$
-
--- =========================================================
--- Procedure: Add a single copy (blocks if copy exists or item ID does not exist)
--- =========================================================
-DROP PROCEDURE IF EXISTS AddCopy$$
-CREATE PROCEDURE AddCopy(
-    IN p_ItemID BIGINT,
-    IN p_CopyStatus SMALLINT, -- CopyStatus: 0=Available, 1=OnLoan
-    IN p_LibrarianID INT -- Use LibrarianID for CreatedBy and UpdatedBy
-) 
-BEGIN
-    DECLARE Flag INT DEFAULT 0;
-
-    -- Check if the item ID exists
-    IF NOT EXISTS (
-        SELECT 1
-        FROM items
-        WHERE ItemID = p_ItemID
-    ) THEN
-        SET Flag = 1;
-    END IF;
-
-    -- Check that the copy ID does not already exist
-    IF EXISTS (
-        SELECT 1
-        FROM copies
-        WHERE CopyID = p_CopyID
-    ) THEN
-        SET Flag = 1;
-    END IF;
-
-    -- Check that the copy status is valid
-    IF p_CopyStatus NOT IN (0,1) THEN
-        SET Flag = 1;
-    END IF;
-
-    -- Only insert if no error conditions were found
-    IF Flag = 0 THEN
-        INSERT INTO copies (
-            ItemID,
-            CopyStatus,
-            CreatedBy,
-            UpdatedBy
-        ) VALUES (
-            p_ItemID,
-            p_CopyStatus,
-            p_LibrarianID,
-            p_LibrarianID
-        );
+    -- Set max loans based on user type
+    IF v_UserType = 0 THEN
+        SET v_MaxLoans = 3;  -- Student
+    ELSEIF v_UserType IN (1, 2) THEN
+        SET v_MaxLoans = 5;  -- Librarian and Faculty
     ELSE
         SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Unable to add copy. Check ItemID or CopyStatus.';
+        SET MESSAGE_TEXT = 'Invalid user type.';
     END IF;
-END$$
 
--- =================================================================================================================
---                                               MEDIA QUERIES
--- =================================================================================================================
-
--- =========================================================
--- Procedure: Get all media items
--- =========================================================
-DROP PROCEDURE IF EXISTS GetMedia$$
-CREATE PROCEDURE GetMedia()
-BEGIN
-    SELECT 
-        i.ItemID,
-        i.Title,
-        m.Producer,
-        m.DurationMinutes,
-        GetAvailableCopies(i.ItemID) AS AvailableCopies
-    FROM items i
-    JOIN media m ON i.ItemID = m.ItemID
-    WHERE i.ItemCategory = 2
-    ORDER BY i.Title;
-END$$
-
--- =========================================================
--- Procedure: Delete a media item
--- =========================================================
-DROP PROCEDURE IF EXISTS DeleteMedia$$
-CREATE PROCEDURE DeleteMedia(IN p_MediaID BIGINT)
-BEGIN
-    DECLARE v_activeLoans INT DEFAULT 0;
-    DECLARE v_activeHolds INT DEFAULT 0;
-    DECLARE Flag INT DEFAULT 0;
-
-    -- Check for active loans (no JOIN)
+    -- Count current active loans
     SELECT COUNT(*)
-    INTO v_activeLoans
-    FROM loans
-    WHERE CopyID IN (
-        SELECT CopyID
-        FROM copies
-        WHERE ItemID = p_MediaID
-    )
-    AND ReturnDate IS NULL;
-
-    IF v_activeLoans > 0 THEN
-        SET Flag = 1;
-    END IF;
-
-    -- Check for active holds
-    SELECT COUNT(*)
-    INTO v_activeHolds
-    FROM holds
-    WHERE ItemID = p_MediaID
-      AND HoldStatus = 0;
-
-    IF v_activeHolds > 0 THEN
-        SET Flag = 1;
-    END IF;
-
-    -- Only delete if safe
-    IF Flag = 0 THEN
-        DELETE FROM media
-        WHERE ItemID = p_MediaID;
-    ELSE
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Cannot delete media with active loans or holds.';
-    END IF;
-
-END$$
--- =========================================================
--- Procedure: Add a media item
--- =========================================================
-DROP PROCEDURE IF EXISTS AddMedia$$
-CREATE PROCEDURE AddMedia(
-    IN p_ItemID BIGINT,
-    IN p_Title VARCHAR(100),
-    IN p_ItemType SMALLINT,
-    IN p_Producer VARCHAR(100),
-    IN p_DurationMinutes INT,
-    IN p_Copies INT,
-    IN p_LibrarianID INT
-)
-BEGIN
-    DECLARE Flag INT DEFAULT 0;
-    DECLARE i INT DEFAULT 0;
-
-    -- Check if the item ID already exists
-    IF EXISTS (
-        SELECT 1
-        FROM items
-        WHERE ItemID = p_ItemID
-    ) THEN
-        SET Flag = 1;
-    END IF;
-
-    -- Check that the media type is valid
-    IF p_ItemType NOT IN (1,2,3) THEN
-        SET Flag = 1;
-    END IF;
-
-    -- Check that duration is positive if provided
-    IF p_DurationMinutes IS NOT NULL AND p_DurationMinutes <= 0 THEN
-        SET Flag = 1;
-    END IF;
-
-    -- Check that at least 1 copy is being added
-    IF p_Copies IS NULL OR p_Copies < 1 THEN
-        SET Flag = 1;
-    END IF;
-
-    -- Only insert if no error conditions were found
-    IF Flag = 0 THEN
-        INSERT INTO items (
-            ItemID, 
-            ItemCategory, 
-            Title, 
-            CreatedBy, 
-            UpdatedBy
-        ) VALUES (
-            p_ItemID, 
-            2, 
-            p_Title, 
-            p_LibrarianID, 
-            p_LibrarianID
-        );
-
-        INSERT INTO media (
-            ItemID, 
-            ItemType, 
-            Producer, 
-            DurationMinutes
-        ) VALUES (
-            p_ItemID, 
-            p_ItemType, 
-            p_Producer, 
-            p_DurationMinutes
-        );
-
-    -- Insert each copy; CopyID is generated automatically
-    WHILE i < p_Copies DO
-        INSERT INTO copies (
-            ItemID,
-            CopyStatus,
-            CreatedBy,
-            UpdatedBy
-        ) VALUES (
-            p_ItemID,
-            0,
-            p_LibrarianID,
-            p_LibrarianID
-        );
-
-        SET i = i + 1;
-    END WHILE;
-
-    ELSE
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Unable to add media. Check ItemID, ItemType, DurationMinutes, or Copies.';
-    END IF;
-
-END$$
-
--- =================================================================================================================
---                                               DEVICE QUERIES
--- =================================================================================================================
-
--- =========================================================
--- Procedure: Get all devices data
--- =========================================================
-DROP PROCEDURE IF EXISTS GetDevices$$
-CREATE PROCEDURE GetDevices()
-BEGIN
-    SELECT 
-        i.ItemID,
-        i.Title,
-        d.Manufacturer,
-        d.Model,
-        GetAvailableCopies(i.ItemID) AS AvailableCopies
-    FROM items i
-    JOIN devices d ON i.ItemID = d.ItemID
-    WHERE i.ItemCategory = 3
-    ORDER BY i.Title;
-END$$
-
--- =========================================================
--- Procedure: Add a device item
--- =========================================================
-DROP PROCEDURE IF EXISTS AddDevice$$
-CREATE PROCEDURE AddDevice(
-    IN p_ItemID BIGINT,
-    IN p_Title VARCHAR(100),
-    IN p_ItemType SMALLINT,
-    IN p_Manufacturer VARCHAR(100),
-    IN p_Model VARCHAR(100),
-    IN p_Copies INT,
-    IN p_LibrarianID INT
-)
-BEGIN
-    DECLARE Flag INT DEFAULT 0;
-    DECLARE i INT DEFAULT 0;
-
-    -- Check if the item ID already exists
-    IF EXISTS (
-        SELECT 1
-        FROM items
-        WHERE ItemID = p_ItemID
-    ) THEN
-        SET Flag = 1;
-    END IF;
-
-    -- Check that the device type is valid
-    IF p_ItemType NOT IN (1,2,3) THEN
-        SET Flag = 1;
-    END IF;
-
-    -- Check that at least 1 copy is being added
-    IF p_Copies IS NULL OR p_Copies < 1 THEN
-        SET Flag = 1;
-    END IF;
-
-    -- Only insert if no error conditions were found
-    IF Flag = 0 THEN
-        INSERT INTO items (ItemID, ItemCategory, Title, CreatedBy, UpdatedBy)
-        VALUES (p_ItemID, 3, p_Title, p_LibrarianID, p_LibrarianID);
-
-        INSERT INTO devices (ItemID, ItemType, Manufacturer, Model)
-        VALUES (p_ItemID, p_ItemType, p_Manufacturer, p_Model);
-
-    -- Insert each copy; CopyID is generated automatically
-    WHILE i < p_Copies DO
-        INSERT INTO copies (
-            ItemID,
-            CopyStatus,
-            CreatedBy,
-            UpdatedBy
-        ) VALUES (
-            p_ItemID,
-            0,
-            p_LibrarianID,
-            p_LibrarianID
-        );
-
-        SET i = i + 1;
-    END WHILE;
-
-    ELSE
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Unable to add device. Check ItemID, ItemType, or Copies.';
-    END IF;
-
-END$$
-
--- =========================================================
--- Procedure: Delete a device item
--- =========================================================
-DROP PROCEDURE IF EXISTS DeleteDevice$$
-CREATE PROCEDURE DeleteDevice(IN p_DeviceID BIGINT)
-BEGIN
-    DECLARE v_activeLoans INT DEFAULT 0;
-    DECLARE v_activeHolds INT DEFAULT 0;
-    DECLARE Flag INT DEFAULT 0;
-
-    -- Check for active loans
-    SELECT COUNT(*)
-    INTO v_activeLoans
-    FROM loans
-    WHERE CopyID IN (
-        SELECT CopyID
-        FROM copies
-        WHERE ItemID = p_DeviceID
-    )
-    AND ReturnDate IS NULL;
-
-    IF v_activeLoans > 0 THEN
-        SET Flag = 1;
-    END IF;
-
-    -- Check for active holds
-    SELECT COUNT(*)
-    INTO v_activeHolds
-    FROM holds
-    WHERE ItemID = p_DeviceID
-      AND HoldStatus = 0;
-
-    IF v_activeHolds > 0 THEN
-        SET Flag = 1;
-    END IF;
-
-    -- Only delete if safe
-    IF Flag = 0 THEN
-        DELETE FROM copies WHERE ItemID = p_DeviceID;
-        DELETE FROM devices WHERE ItemID = p_DeviceID;
-        DELETE FROM items WHERE ItemID = p_DeviceID;
-    ELSE
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Cannot delete device with active loans or holds.';
-    END IF;
-
-END$$
-
--- =================================================================================================================
---                                               LITERATURE QUERIES
--- =================================================================================================================
-
--- =========================================================
--- Procedure: Get all literature data
--- =========================================================
-DROP PROCEDURE IF EXISTS GetLiterature$$
-CREATE PROCEDURE GetLiterature()
-BEGIN
-    SELECT 
-        i.ItemID,
-        i.Title,
-        l.Author,
-        l.Publisher,
-        l.PublicationYear,
-        GetAvailableCopies(i.ItemID) AS AvailableCopies
-    FROM items i
-    JOIN literature l ON i.ItemID = l.ItemID
-    WHERE i.ItemCategory = 1
-    ORDER BY i.Title;
-END$$
--- =========================================================
--- Procedure: Add a literature item
--- =========================================================
-DROP PROCEDURE IF EXISTS AddLiterature$$
-CREATE PROCEDURE AddLiterature(
-    IN p_ItemID BIGINT,
-    IN p_Title VARCHAR(100),
-    IN p_ItemType SMALLINT,
-    IN p_Author VARCHAR(100),
-    IN p_Publisher VARCHAR(100),
-    IN p_PublicationYear INT,
-    IN p_Copies INT,
-    IN p_LibrarianID INT
-)
-BEGIN
-    DECLARE Flag INT DEFAULT 0;
-    DECLARE i INT DEFAULT 0;
-
-    -- Check if the item ID already exists
-    IF EXISTS (
-        SELECT 1
-        FROM items
-        WHERE ItemID = p_ItemID
-    ) THEN
-        SET Flag = 1;
-    END IF;
-
-    -- Check that the literature type is valid
-    IF p_ItemType NOT IN (1,2,3,4) THEN
-        SET Flag = 1;
-    END IF;
-
-    -- Check that publication year is positive if provided
-    IF p_PublicationYear IS NOT NULL AND p_PublicationYear <= 0 THEN
-        SET Flag = 1;
-    END IF;
-
-    -- Check that at least 1 copy is being added
-    IF p_Copies IS NULL OR p_Copies < 1 THEN
-        SET Flag = 1;
-    END IF;
-
-    -- Only insert if no error conditions were found
-    IF Flag = 0 THEN
-        INSERT INTO items (
-            ItemID,
-            ItemCategory,
-            Title,
-            CreatedBy,
-            UpdatedBy
-        )
-        VALUES (
-            p_ItemID,
-            1,
-            p_Title,
-            p_LibrarianID,
-            p_LibrarianID
-        );
-
-        INSERT INTO literature (
-            ItemID,
-            ItemType,
-            Author,
-            Publisher,
-            PublicationYear
-        )
-        VALUES (
-            p_ItemID,
-            p_ItemType,
-            p_Author,
-            p_Publisher,
-            p_PublicationYear
-        );
-
-    -- Insert each copy; CopyID is generated automatically
-    WHILE i < p_Copies DO
-        INSERT INTO copies (
-            ItemID,
-            CopyStatus,
-            CreatedBy,
-            UpdatedBy
-        ) VALUES (
-            p_ItemID,
-            0,
-            p_LibrarianID,
-            p_LibrarianID
-        );
-
-        SET i = i + 1;
-    END WHILE;
-
-    ELSE
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Unable to add literature. Check ItemID, ItemType, PublicationYear, or Copies.';
-    END IF;
-
-END$$
-
--- =========================================================
--- Procedure: Delete a literature item
--- =========================================================
-DROP PROCEDURE IF EXISTS DeleteLiterature$$
-CREATE PROCEDURE DeleteLiterature(IN p_LiteratureID BIGINT)
-BEGIN
-    DECLARE v_activeLoans INT DEFAULT 0;
-    DECLARE v_activeHolds INT DEFAULT 0;
-    DECLARE Flag INT DEFAULT 0;
-
-    -- Check for active loans
-    SELECT COUNT(*)
-    INTO v_activeLoans
-    FROM loans
-    WHERE CopyID IN (
-        SELECT CopyID
-        FROM copies
-        WHERE ItemID = p_LiteratureID
-    )
-    AND ReturnDate IS NULL;
-
-    IF v_activeLoans > 0 THEN
-        SET Flag = 1;
-    END IF;
-
-    -- Check for active holds
-    SELECT COUNT(*)
-    INTO v_activeHolds
-    FROM holds
-    WHERE ItemID = p_LiteratureID
-      AND HoldStatus = 0;
-
-    IF v_activeHolds > 0 THEN
-        SET Flag = 1;
-    END IF;
-
-    -- Only delete if safe
-    IF Flag = 0 THEN
-        DELETE FROM copies WHERE ItemID = p_LiteratureID;
-        DELETE FROM literature WHERE ItemID = p_LiteratureID;
-        DELETE FROM items WHERE ItemID = p_LiteratureID;
-    ELSE
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Cannot delete literature with active loans or holds.';
-    END IF;
-
-END$$
-
--- =========================================================
--- Procedure: Get item availability summary of whole catalog
--- =========================================================
-DROP PROCEDURE IF EXISTS GetItemCatalog$$
-CREATE PROCEDURE GetItemCatalog()
-BEGIN
-    SELECT 
-        i.ItemID,
-        i.ItemCategory,
-        i.Title,
-        COUNT(c.CopyID) AS TotalCopies,
-        SUM(CASE WHEN c.CopyStatus = 0 THEN 1 ELSE 0 END) AS AvailableCopies
-    FROM items as i
-    LEFT JOIN copies AS c ON i.ItemID = c.ItemID -- keeps items even if they have no copies currently
-    GROUP BY i.ItemID, i.ItemCategory, i.Title
-    ORDER BY i.Title;
-END$$
-
-
--- =================================================================================================================
---                                               LOANS AND FINES QUERIES
--- =================================================================================================================
-
--- =========================================================
--- Procedure: Get all active loans (with user and item details)
--- =========================================================
-DROP PROCEDURE IF EXISTS GetActiveLoans$$
-CREATE PROCEDURE GetActiveLoans()
-BEGIN
-    SELECT
-        l.LoanID,
-        l.UserID,
-        CONCAT(u.FirstName, ' ', u.LastName) AS UserName, -- combining names for legibility
-        l.CopyID,
-        c.ItemID,
-        i.Title,
-        l.CheckoutDate,
-        l.Duedate
+    INTO v_CurrentLoans
     FROM loans AS l
-    JOIN users AS u ON l.UserID= u.UserID
-    JOIN copies AS c ON l.CopyID = c.CopyID
-    JOIN items AS i ON c.ItemID = i.ItemID
-    WHERE l.ReturnDate IS NULL -- only active loans (not returned yet)
-    ORDER BY l.DueDate;
-END$$
+    WHERE l.UserID = NEW.UserID
+      AND l.ReturnDate IS NULL;
 
--- =========================================================
--- Procedure: Get all overdue loans (with user and item details)
--- =========================================================
-DROP PROCEDURE IF EXISTS GetOverdueLoans$$ -- IF ELSE for differing usertypes, Librarian sees all overdue, Faculty only sees their own, Student only sees their own
-CREATE PROCEDURE GetOverdueLoans()
-BEGIN
-    SELECT
-        l.LoanID,
-        l.UserID,
-        CONCAT(u.FirstName, ' ', u.LastName) AS UserName,
-        l.CopyID,
-        c.ItemID,
-        i.Title,
-        l.CheckoutDate,
-        l.Duedate
-    FROM loans AS l
-    JOIN users AS u ON l.UserID = u.UserID
-    JOIN copies AS c ON l.CopyID = c.CopyID
-    JOIN items AS i ON c.ItemID = i.ItemID
-    WHERE l.ReturnDate IS NULL
-      AND l.Duedate < CURDATE() -- only overdue loans
-    ORDER BY l.DueDate;
-END$$
+    -- User must be active
+    IF v_UserStatus <> 1 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'User is not active.';
+    END IF;
 
+    -- User must have no unpaid balance
+    IF v_UserBalance <> 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'User has an unpaid balance.';
+    END IF;
 
--- =========================================================
--- Procedure: Get all fines (with user details)
--- =========================================================
-DROP PROCEDURE IF EXISTS GetFines$$
-CREATE PROCEDURE GetFines()
-BEGIN
-    SELECT
-        f.FineID,
-        f.UserID,
-        CONCAT(u.FirstName, ' ', u.LastName) AS UserName,
-        f.Amount,
-        f.Reason,
-        f.CreatedAt
-    FROM fines AS f
-    JOIN users AS u ON f.UserID = u.UserID
-    ORDER BY f.CreatedAt DESC; -- newest fines first
+    -- User must be under borrowing limit
+    IF v_CurrentLoans >= v_MaxLoans THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Borrowing limit exceeded for this user.';
+    END IF;
 END$$
 
 DELIMITER ;
