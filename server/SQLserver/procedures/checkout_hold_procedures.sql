@@ -56,7 +56,7 @@ BEGIN
         UserID,
         CopyID,
         CreatedBy,
-        CheckoutDate,
+        CreatedAt,
         DueDate
     )
     VALUES (

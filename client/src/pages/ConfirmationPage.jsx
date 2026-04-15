@@ -30,7 +30,7 @@ export default function ConfirmationPage() {
 
         // If this page was opened without item data, return to dashboard
         if (!itemId || !confirmFlag) {
-          navigate("/itemDashboard");
+          navigate("/Catalog");
           return;
         }
       } catch (err) {
@@ -85,7 +85,7 @@ export default function ConfirmationPage() {
       }
 
       // Return to dashboard after successful action
-      navigate("/itemDashboard");
+      navigate("/Catalog");
     } catch (err) {
       console.error("Confirmation failed:", err);
       alert(err.message);
@@ -95,7 +95,7 @@ export default function ConfirmationPage() {
   }
 
   function handleCancel() {
-    navigate("/itemDashboard");
+    navigate("/Catalog");
   }
 
   if (loading) {
