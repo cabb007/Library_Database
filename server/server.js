@@ -193,25 +193,6 @@ const server = http.createServer(async (req,res) => {
             return;
         }
 
-        //DATA CALLS FROM DB (QUERIES)
-        if (method === "GET" && url === "/api/literature") {
-            const [data] = await db.execute("CALL GetLiterature()");
-            sendJson(res,200,data);
-            return;
-        }
-
-        if (method === "GET" && url === "/api/media") {
-            const [data] = await db.execute("CALL GetMedia()");
-            sendJson(res,200,data);
-            return;
-        }
-
-        if (method === "GET" && url === "/api/devices") {
-            const [data] = await db.execute("CALL GetDevices()");
-            sendJson(res,200,data);
-            return;
-        }
-
         //USER REGISTRATION FUNCTION
         if (method === "POST" && url === "/api/users") {
             const body = await getJsonBody(req);
@@ -231,6 +212,56 @@ const server = http.createServer(async (req,res) => {
                 message: "User registered successfully.",
                 id: result.insertId
             });
+            return;
+        }
+        
+        //CHECKOUT AND HOLD
+
+        if(method === "POST" && url === "/api/checkout") {
+            const cookies = parseCookies(req);
+            const sessionID = cookies.sessionID;
+
+            if (!sessionID || !sessions.has(sessionID)) {
+                sendJson(res, 401, {loggedIn : false});
+                return;
+            }
+
+            const session = sessions.get(sessionID);
+            const body = await getJsonBody(req);
+            const { itemId } = body;
+            const userID = session.UserID;
+            
+            if(!itemId) {
+                return res.status(400).json({
+                    error: "No item selected"
+                });
+            }
+
+            await db.execute("CALL CheckoutItem(?,?)",[userID, itemId]);
+
+            sendJson(res, 201, {
+                success: true,
+                message: "Item checked out"
+            });
+            return;
+        }
+
+        //DATA CALLS FROM DB (QUERIES)
+        if (method === "GET" && url === "/api/literature") {
+            const [data] = await db.execute("CALL GetLiterature()");
+            sendJson(res,200,data);
+            return;
+        }
+
+        if (method === "GET" && url === "/api/media") {
+            const [data] = await db.execute("CALL GetMedia()");
+            sendJson(res,200,data);
+            return;
+        }
+
+        if (method === "GET" && url === "/api/devices") {
+            const [data] = await db.execute("CALL GetDevices()");
+            sendJson(res,200,data);
             return;
         }
 

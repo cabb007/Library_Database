@@ -1,12 +1,4 @@
-DROP DATABASE IF EXISTS library_db;
-CREATE DATABASE library_db;
-USE library_db;
-
-SOURCE schema.sql;
-SOURCE procedures/queries.sql;
-SOURCE procedures/triggers.sql;
-SOURCE procedures/checkout_hold_procedures.sql;
-
+SET FOREIGN_KEY_CHECKS = 0;
 -- =========================================================
 -- USERS
 -- =========================================================
@@ -38,7 +30,7 @@ FIELDS TERMINATED BY ','
 ENCLOSED BY '"'
 LINES TERMINATED BY '\r\n'
 IGNORE 1 ROWS
-(ItemID, ItemCategory, Title, CreatedAt, @cb, UpdatedAt, @ub);
+(ItemID, ItemCategory, Title, CreatedAt, @cb, UpdatedAt, @ub)
 SET
     CreatedBy = NULLIF(TRIM(REPLACE(@cb, '\r', '')), ''),
     UpdatedBy = NULLIF(TRIM(REPLACE(@ub, '\r', '')), '');
@@ -117,7 +109,7 @@ FIELDS TERMINATED BY ','
 ENCLOSED BY '"'
 LINES TERMINATED BY '\r\n'
 IGNORE 1 ROWS
-(CopyID, ItemID, CopyStatus, CreatedAt, @cb, UpdatedAt, @ub)
+(ItemID, CopyStatus, CreatedAt, @cb, UpdatedAt, @ub)
 SET
     CreatedBy = NULLIF(TRIM(REPLACE(@cb, '\r', '')), ''),
     UpdatedBy = NULLIF(TRIM(REPLACE(@ub, '\r', '')), '');
@@ -129,5 +121,72 @@ SELECT COUNT(*) FROM literature;
 SELECT COUNT(*) FROM media;
 SELECT COUNT(*) FROM devices;
 SELECT COUNT(*) FROM copies;
+
+-- =========================================================
+-- HOLDS
+-- ========================================================
+LOAD DATA LOCAL INFILE 'data/holds.csv'
+INTO TABLE holds
+FIELDS TERMINATED BY ','
+ENCLOSED BY '"'
+LINES TERMINATED BY '\r\n'
+IGNORE 1 ROWS
+(UserID, ItemID, RequestDate, HoldStatus);
+SET
+    CreatedBy = NULLIF(TRIM(REPLACE(@cb, '\r', '')), ''),
+    UpdatedBy = NULLIF(TRIM(REPLACE(@ub, '\r', '')), '');
+
+SHOW WARNINGS LIMIT 50;
+SELECT COUNT(*) FROM users;
+SELECT COUNT(*) FROM items;
+SELECT COUNT(*) FROM literature;
+SELECT COUNT(*) FROM media;
+SELECT COUNT(*) FROM devices;
+SELECT COUNT(*) FROM copies;
+
+-- =========================================================
+-- LOANS
+-- ========================================================
+LOAD DATA LOCAL INFILE 'data/loans.csv'
+INTO TABLE loans
+FIELDS TERMINATED BY ','
+ENCLOSED BY '"'
+LINES TERMINATED BY '\r\n'
+IGNORE 1 ROWS
+(UserID, CopyID, CreatedBy, CheckoutDate, DueDate, ReturnDate);
+SET
+    CreatedBy = NULLIF(TRIM(REPLACE(@cb, '\r', '')), ''),
+    UpdatedBy = NULLIF(TRIM(REPLACE(@ub, '\r', '')), '');
+
+SHOW WARNINGS LIMIT 50;
+SELECT COUNT(*) FROM users;
+SELECT COUNT(*) FROM items;
+SELECT COUNT(*) FROM literature;
+SELECT COUNT(*) FROM media;
+SELECT COUNT(*) FROM devices;
+SELECT COUNT(*) FROM copies;
+
+-- =========================================================
+-- FINES
+-- ========================================================
+LOAD DATA LOCAL INFILE 'data/fines.csv'
+INTO TABLE fines
+FIELDS TERMINATED BY ','
+ENCLOSED BY '"'
+LINES TERMINATED BY '\r\n'
+IGNORE 1 ROWS
+(UserID, FineAmount, CreatedAt, @cb, UpdatedAt, @ub)
+SET
+    CreatedBy = NULLIF(TRIM(REPLACE(@cb, '\r', '')), ''),
+    UpdatedBy = NULLIF(TRIM(REPLACE(@ub, '\r', '')), '');
+
+SHOW WARNINGS LIMIT 50;
+SELECT COUNT(*) FROM users;
+SELECT COUNT(*) FROM items;
+SELECT COUNT(*) FROM literature;
+SELECT COUNT(*) FROM media;
+SELECT COUNT(*) FROM devices;
+SELECT COUNT(*) FROM copies;
+SELECT COUNT(*) FROM fines;
 
 SET FOREIGN_KEY_CHECKS = 1;
