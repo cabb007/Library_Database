@@ -14,11 +14,12 @@ function parseCookies(req) {
         return cookies;
     }
 
-    for (const i of header.split(";")) {
+    for (const part of header.split(";")) {
         const [rawKey, ...rawValue] = part.trim().split("=");
         const key = rawKey;
         const value = rawValue.join("=");
-        cookies["key"] = decodeURIComponent(value);
+        
+        cookies[key] = decodeURIComponent(value);
     }
 
     return cookies;
@@ -126,7 +127,7 @@ const server = http.createServer(async (req,res) => {
             );
 
             if (rows.length === 0 || rows[0].Password !== Password) {
-                sendJson(res,401,"Invalid Credentials");
+                sendJson(res,401,{error:"Invalid Credentials"});
                 return;
             }
 
@@ -187,7 +188,7 @@ const server = http.createServer(async (req,res) => {
             sendJson(res,200, {
                 success: true, message: "Logged out"
             }, {
-                "Set-Cookie": "sessionID=; Path=/; HttpOnly; SameSite=Lax Max-Age=0"
+                "Set-Cookie": "sessionID=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0"
             });
             return;
         }
