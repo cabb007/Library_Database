@@ -641,7 +641,7 @@ END$$
 -- =========================================================
 -- Procedure: Get all overdue loans (with user and item details)
 -- =========================================================
-DROP PROCEDURE IF EXISTS GetOverdueLoans$$
+DROP PROCEDURE IF EXISTS GetOverdueLoans$$ -- IF ELSE for differing usertypes, Librarian sees all overdue, Faculty only sees their own, Student only sees their own
 CREATE PROCEDURE GetOverdueLoans()
 BEGIN
     SELECT

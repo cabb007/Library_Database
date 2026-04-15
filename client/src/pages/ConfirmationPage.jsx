@@ -1,105 +1,100 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import API from "../api";
 
 export default function ConfirmationPage() {
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const [user, setUser] = useState(null);
-  const [confirmFlag, setConfirmFlag] = useState(null);
-  const [title, setTitle] = useState("");
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Data passed from ItemDashboard through React Router state
+  const { itemId, title = "Unknown Item", confirmFlag } = location.state || {};
 
   useEffect(() => {
-    async function fetchData() {
+    async function checkAuth() {
       try {
-        /* ================= AUTH CHECK ================= */
+        // ================= AUTH CHECK =================
         const meRes = await fetch(`${API}/api/me`, {
           credentials: "include",
         });
 
         const meData = await meRes.json();
 
+        // If not logged in, send user to login page
         if (!meRes.ok || !meData.user) {
           navigate("/login");
           return;
         }
 
-        setUser(meData.user);
-
-        /* ================= CONFIRM DATA ================= */
-        const res1 = await fetch(`${API}/api/confirmdata`, {
-          credentials: "include",
-        });
-
-        const data1 = await res1.json();
-        setConfirmFlag(Number(data1.ConfirmFlag));
-
-        /* ================= TITLE ================= */
-        const res2 = await fetch(`${API}/api/title`, {
-          credentials: "include",
-        });
-
-        const data2 = await res2.json();
-
-        let extractedTitle = "Unknown Item";
-
-        if (Array.isArray(data2)) {
-          if (Array.isArray(data2[0])) {
-            extractedTitle = data2[0][0]?.Title ?? "Unknown Item";
-          } else {
-            extractedTitle = data2[0]?.Title ?? "Unknown Item";
-          }
-        } else if (data2?.Title) {
-          extractedTitle = data2.Title;
+        // If this page was opened without item data, return to dashboard
+        if (!itemId || !confirmFlag) {
+          navigate("/itemDashboard");
+          return;
         }
-
-        setTitle(extractedTitle);
-
       } catch (err) {
-        console.error("Failed to fetch confirmation data:", err);
+        console.error("Failed to load confirmation page:", err);
         navigate("/login");
       } finally {
         setLoading(false);
       }
     }
 
-    fetchData();
-  }, [navigate]);
+    checkAuth();
+  }, [navigate, itemId, confirmFlag]);
 
   async function handleConfirm() {
     try {
+      setSubmitting(true);
+
+      // ================= CHECKOUT =================
       if (confirmFlag === 1) {
-        await fetch(`${API}/api/checkout`, {
+        const res = await fetch(`${API}/api/checkout`, {
           method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
           credentials: "include",
+          body: JSON.stringify({ itemId }),
         });
-      } else if (confirmFlag === 2) {
-        await fetch(`${API}/api/hold`, {
-          method: "POST",
-          credentials: "include",
-        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error || "Checkout failed");
+        }
       }
 
-      await fetch(`${API}/api/changeConfirmflag?value=0`, {
-        credentials: "include",
-      });
+      // ================= HOLD =================
+      else if (confirmFlag === 2) {
+        const res = await fetch(`${API}/api/hold`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({ itemId }),
+        });
 
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error || "Hold failed");
+        }
+      }
+
+      // Return to dashboard after successful action
       navigate("/itemDashboard");
     } catch (err) {
       console.error("Confirmation failed:", err);
+      alert(err.message);
+    } finally {
+      setSubmitting(false);
     }
   }
 
-  async function handleCancel() {
-    try {
-      await fetch(`${API}/api/changeConfirmflag?value=0`, {
-        credentials: "include",
-      });
-    } catch (err) {
-      console.error("Failed to reset flag:", err);
-    }
-
+  function handleCancel() {
     navigate("/itemDashboard");
   }
 
@@ -120,6 +115,7 @@ export default function ConfirmationPage() {
 
   return (
     <div className="min-h-screen bg-stone-950 text-amber-50 flex flex-col">
+      {/* NAVBAR */}
       <nav className="flex items-center justify-between px-10 py-5 border-b border-amber-900/40">
         <h1 className="text-2xl font-serif tracking-widest text-amber-400">
           Team 7 Library
@@ -133,12 +129,10 @@ export default function ConfirmationPage() {
         </button>
       </nav>
 
+      {/* MAIN CONTENT */}
       <div className="flex flex-1 items-center justify-center">
         <div className="bg-stone-900 border border-amber-900/40 p-10 rounded-lg text-center">
-
-          <h3 className="text-xl text-amber-300 mb-3">
-            {title}
-          </h3>
+          <h3 className="text-xl text-amber-300 mb-3">{title}</h3>
 
           <h2 className="text-3xl font-serif text-amber-400 mb-8">
             {message}
@@ -147,14 +141,16 @@ export default function ConfirmationPage() {
           <div className="flex gap-6 justify-center">
             <button
               onClick={handleConfirm}
-              className="px-6 py-2 bg-amber-700 hover:bg-amber-600 text-stone-950 rounded"
+              disabled={submitting}
+              className="px-6 py-2 bg-amber-700 hover:bg-amber-600 text-stone-950 rounded disabled:opacity-50"
             >
-              Yes
+              {submitting ? "Processing..." : "Yes"}
             </button>
 
             <button
               onClick={handleCancel}
-              className="px-6 py-2 border border-amber-700 text-amber-300 hover:bg-amber-900/30 rounded"
+              disabled={submitting}
+              className="px-6 py-2 border border-amber-700 text-amber-300 hover:bg-amber-900/30 rounded disabled:opacity-50"
             >
               No
             </button>
@@ -162,6 +158,7 @@ export default function ConfirmationPage() {
         </div>
       </div>
 
+      {/* FOOTER */}
       <div className="border-t border-amber-900/30 py-4 text-center text-stone-600 text-xs">
         Team 7 Library — READ MORE, LEARN MORE
       </div>
