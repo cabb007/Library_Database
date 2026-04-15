@@ -37,6 +37,7 @@ BEGIN
     LIMIT 1
     FOR UPDATE;
 
+    -- Stop if no copies are available
     IF v_CopyID IS NULL THEN
         ROLLBACK;
         SIGNAL SQLSTATE '45000'
@@ -79,9 +80,10 @@ CREATE PROCEDURE CreateHold (
     IN p_ItemID BIGINT
 )
 BEGIN
-    DECLARE v_UserStatus INT;
-    DECLARE v_UserBalance DECIMAL(7,2);
-    DECLARE v_AvailableCopies INT;
+    DECLARE v_UserStatus INT DEFAULT NULL;
+    DECLARE v_UserBalance DECIMAL(7,2) DEFAULT NULL;
+    DECLARE v_AvailableCopies INT DEFAULT 0;
+    DECLARE v_ExistingHold INT DEFAULT 0;
 
     -- Check if the user exists and has an active status
     SELECT Status, Balance
@@ -126,6 +128,19 @@ BEGIN
         SET MESSAGE_TEXT = 'Copies are currently available; no need to place a hold';
     END IF;
 
+    -- Prevent duplicate active hold for the same user and item
+    SELECT COUNT(*)
+    INTO v_ExistingHold
+    FROM holds
+    WHERE UserID = p_UserID
+      AND ItemID = p_ItemID
+      AND HoldStatus = 0; -- Active hold
+
+    IF v_ExistingHold > 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'User already has an active hold for this item';
+    END IF;
+
     -- Create the hold request
     INSERT INTO holds (
         UserID,
@@ -138,7 +153,7 @@ BEGIN
         p_ItemID,
         NOW(),
         0
-    )
+    );
 END$$
 
 
