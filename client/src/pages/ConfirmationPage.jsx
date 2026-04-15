@@ -9,7 +9,7 @@ export default function ConfirmationPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  // Data passed from catalog through React Router state
+  // Data passed from ItemDashboard through React Router state
   const { itemId, title = "Unknown Item", confirmFlag } = location.state || {};
 
   useEffect(() => {
@@ -30,7 +30,7 @@ export default function ConfirmationPage() {
 
         // If this page was opened without item data, return to dashboard
         if (!itemId || !confirmFlag) {
-          navigate("/catalog");
+          navigate("/Catalog");
           return;
         }
       } catch (err) {
@@ -85,7 +85,7 @@ export default function ConfirmationPage() {
       }
 
       // Return to dashboard after successful action
-      navigate("/catalog");
+      navigate("/Catalog");
     } catch (err) {
       console.error("Confirmation failed:", err);
       alert(err.message);
@@ -95,7 +95,7 @@ export default function ConfirmationPage() {
   }
 
   function handleCancel() {
-    navigate("/catalog");
+    navigate("/Catalog");
   }
 
   if (loading) {

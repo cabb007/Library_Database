@@ -13,7 +13,7 @@ DROP TABLE IF EXISTS literature;
 DROP TABLE IF EXISTS items;
 DROP TABLE IF EXISTS users;
 
--- 1) USERS  (UserType: 0=Student,1=Faculty,2=Librarian; Status: 0=Blocked,1=Active)
+-- 1) USERS  (UserType: 0=Student,1=Faculty,2=Librarian)
 
 CREATE TABLE users (
     UserID INT PRIMARY KEY AUTO_INCREMENT,
@@ -24,7 +24,7 @@ CREATE TABLE users (
     Balance DECIMAL(7,2) NOT NULL DEFAULT 0.00,
     UserType SMALLINT NOT NULL DEFAULT 0,
     LoanPeriodDays INT NOT NULL DEFAULT 14,
-    Status SMALLINT NOT NULL DEFAULT 1,
+    Status SMALLINT NOT NULL DEFAULT 1, -- 0=Blocked, 1=Active
     CreatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CreatedBy INT NULL,
     UpdatedAt DATETIME NULL,
@@ -135,10 +135,13 @@ CREATE TABLE loans (
     LoanID INT PRIMARY KEY AUTO_INCREMENT,
     UserID INT NOT NULL,
     CopyID INT NOT NULL,
-    CreatedBy INT NULL,
-    CheckoutDate DATE NOT NULL,
     DueDate DATE NOT NULL,
     ReturnDate DATE NULL,
+    CreatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CreatedBy INT NULL,
+    UpdatedAt DATETIME NULL,
+    UpdatedBy INT NULL,
+
 
     ActiveLoan TINYINT AS (ReturnDate IS NULL) STORED,
 
@@ -148,9 +151,12 @@ CREATE TABLE loans (
         ON DELETE CASCADE,
     CONSTRAINT fk_loans_createdby FOREIGN KEY (CreatedBy) REFERENCES users(UserID)
         ON DELETE SET NULL,
+    CONSTRAINT fk_loans_updatedby FOREIGN KEY (UpdatedBy) REFERENCES users(UserID)
+        ON DELETE SET NULL,
 
-    CHECK (DueDate >= CheckoutDate),
-    CHECK (ReturnDate IS NULL OR ReturnDate >= CheckoutDate)
+
+CHECK (DueDate >= DATE(CreatedAt)),
+CHECK (ReturnDate IS NULL OR ReturnDate >= DATE(CreatedAt))
 ) ENGINE=InnoDB;
 
 CREATE INDEX idx_loans_user_active ON loans(UserID, ReturnDate);
@@ -165,8 +171,11 @@ CREATE TABLE holds (
     HoldID INT PRIMARY KEY AUTO_INCREMENT,
     UserID INT NOT NULL,
     ItemID BIGINT NOT NULL,
-    RequestDate DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     HoldStatus SMALLINT NOT NULL DEFAULT 0,
+    CreatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CreatedBy INT NULL,
+    UpdatedAt DATETIME NULL,
+    UpdatedBy INT NULL,
 
     ActiveHold TINYINT AS (HoldStatus = 0) STORED,
 
@@ -175,11 +184,14 @@ CREATE TABLE holds (
     CONSTRAINT fk_holds_user FOREIGN KEY (UserID) REFERENCES users(UserID)
         ON DELETE CASCADE,
     CONSTRAINT fk_holds_item FOREIGN KEY (ItemID) REFERENCES items(ItemID)
-        ON DELETE CASCADE
+        ON DELETE CASCADE,
+    CONSTRAINT fk_holds_createdby FOREIGN KEY (CreatedBy) REFERENCES users(UserID)
+        ON DELETE SET NULL,
+    CONSTRAINT fk_holds_updatedby FOREIGN KEY (UpdatedBy) REFERENCES users(UserID)
+        ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
-CREATE INDEX idx_holds_item_fifo ON holds(ItemID, HoldStatus, RequestDate);
-
+CREATE INDEX idx_holds_item_fifo ON holds(ItemID, HoldStatus, CreatedAt);
 CREATE UNIQUE INDEX uq_holds_user_item_one_active ON holds(UserID, ItemID, ActiveHold);
 
 -- 9) FINES
@@ -192,6 +204,11 @@ CREATE TABLE fines (
     FineAmount DECIMAL(7,2) NOT NULL DEFAULT 0.00,
     PaidStatus SMALLINT NOT NULL DEFAULT 0,
     PaidAt DATETIME NULL,
+    CreatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CreatedBy INT NULL,
+    UpdatedAt DATETIME NULL,
+    UpdatedBy INT NULL,
+
 
     CHECK (FineAmount >= 0),
     CHECK (PaidStatus IN (0,1)),
@@ -199,7 +216,11 @@ CREATE TABLE fines (
     CONSTRAINT fk_fines_loan FOREIGN KEY (LoanID) REFERENCES loans(LoanID)
         ON DELETE CASCADE,
     CONSTRAINT fk_fines_user FOREIGN KEY (UserID) REFERENCES users(UserID)
-        ON DELETE RESTRICT
+        ON DELETE RESTRICT,
+    CONSTRAINT fk_fines_createdby FOREIGN KEY (CreatedBy) REFERENCES users(UserID)
+        ON DELETE SET NULL,
+    CONSTRAINT fk_fines_updatedby FOREIGN KEY (UpdatedBy) REFERENCES users(UserID)
+        ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
 CREATE INDEX idx_fines_user_paid ON fines(UserID, PaidStatus);
