@@ -560,6 +560,7 @@ export default function LibrarianDashboard() {
         <h1>Librarian Dashboard</h1>
         <div>
           <span style={{ marginRight: "1rem" }}>Welcome, {user.FirstName} {user.LastName}</span>
+          <button onClick={() => navigate("/")} style={{ marginRight: "0.5rem" }}>Student View</button>
           <button onClick={handleLogout}>Logout</button>
         </div>
       </div>

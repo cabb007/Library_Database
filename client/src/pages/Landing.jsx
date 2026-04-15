@@ -26,6 +26,7 @@ export default function Landing() {
   const navigate = useNavigate();
   const [counts, setCounts] = useState({ Literature: "—", Media: "—", Devices: "—" });
   const [loggedIn, setLoggedIn] = useState(false);
+  const [userType, setUserType] = useState(null);
 
   useEffect(() => {
     async function checkAuth() {
@@ -33,6 +34,7 @@ export default function Landing() {
         const res = await fetch(`${API}/api/me`, { credentials: "include" });
         const data = await res.json();
         setLoggedIn(data.loggedIn === true);
+        setUserType(data.user?.UserType ?? null);
       } catch {
         setLoggedIn(false);
       }
@@ -90,6 +92,13 @@ export default function Landing() {
                 Register
               </button>
             </>
+          )}
+          {userType === 2 && (
+            <button
+              onClick={() => navigate("/librarian")}
+              className="px-5 py-2 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold transition rounded text-sm tracking-wide">
+              Librarian Dashboard
+            </button>
           )}
           <button
             onClick={() => navigate("/useraccount")}
