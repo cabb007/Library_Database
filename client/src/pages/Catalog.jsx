@@ -22,9 +22,11 @@ export default function ItemDashboard() {
   useEffect(() => {
     async function getLiterature() {
       try {
-        const res = await fetch(`${API}/api/literature`);
+        const res = await fetch(`${API}/api/literature`, {
+          credentials: "include",
+        });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
+        if (!res.ok) throw new Error(data.error || "Failed to fetch literature");
 
         setLiterature(Array.isArray(data[0]) ? data[0] : data);
       } catch (err) {
@@ -33,30 +35,36 @@ export default function ItemDashboard() {
         setLoading(false);
       }
     }
+
     getLiterature();
   }, []);
 
   useEffect(() => {
     async function getMedia() {
       try {
-        const res = await fetch(`${API}/api/media`);
+        const res = await fetch(`${API}/api/media`, {
+          credentials: "include",
+        });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
+        if (!res.ok) throw new Error(data.error || "Failed to fetch media");
 
         setMedia(Array.isArray(data[0]) ? data[0] : data);
       } catch (err) {
         setError(err.message);
       }
     }
+
     getMedia();
   }, []);
 
   useEffect(() => {
     async function getDevices() {
       try {
-        const res = await fetch(`${API}/api/devices`);
+        const res = await fetch(`${API}/api/devices`, {
+          credentials: "include",
+        });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
+        if (!res.ok) throw new Error(data.error || "Failed to fetch devices");
 
         const clean = (Array.isArray(data[0]) ? data[0] : data).map((d) => ({
           ...d,
@@ -68,54 +76,33 @@ export default function ItemDashboard() {
         setError(err.message);
       }
     }
+
     getDevices();
   }, []);
-// =========================
-// ACTION HANDLERS (FIXED)
-// =========================
 
-async function handleCheckout(itemId) {
-  try {
-    await fetch(`${API}/api/changeConfirmflag?value=1`, {
-      method: "GET",
-      credentials: "include",
+  // =========================
+  // ACTION HANDLERS
+  // =========================
+
+  function handleCheckout(item) {
+    navigate("/confirmationpage", {
+      state: {
+        itemId: item.ItemID,
+        title: item.Title,
+        confirmFlag: 1,
+      },
     });
-
-    await fetch(`${API}/api/setSelectedItem?value=${itemId}`, {
-      method: "GET",
-      credentials: "include",
-    });
-
-    // small safety delay (prevents race condition)
-    setTimeout(() => {
-      navigate("/confirmationpage");
-    }, 50);
-
-  } catch (err) {
-    console.error("Checkout failed:", err);
   }
-}
 
-async function handleHold(itemId) {
-  try {
-    await fetch(`${API}/api/changeConfirmflag?value=2`, {
-      method: "GET",
-      credentials: "include",
+  function handleHold(item) {
+    navigate("/confirmationpage", {
+      state: {
+        itemId: item.ItemID,
+        title: item.Title,
+        confirmFlag: 2,
+      },
     });
-
-    await fetch(`${API}/api/setSelectedItem?value=${itemId}`, {
-      method: "GET",
-      credentials: "include",
-    });
-
-    setTimeout(() => {
-      navigate("/confirmationpage");
-    }, 50);
-
-  } catch (err) {
-    console.error("Hold failed:", err);
   }
-}
 
   // =========================
   // TABLE RENDER
@@ -136,9 +123,7 @@ async function handleHold(itemId) {
           <td className="p-3">
             <button
               onClick={() =>
-                isAvailable
-                  ? handleCheckout(item.ItemID)
-                  : handleHold(item.ItemID)
+                isAvailable ? handleCheckout(item) : handleHold(item)
               }
               className={`px-4 py-1 rounded text-stone-950 ${
                 isAvailable
@@ -153,17 +138,30 @@ async function handleHold(itemId) {
       );
     });
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-stone-950 text-amber-50 flex items-center justify-center">
+        Loading...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-stone-950 text-red-400 flex items-center justify-center">
+        {error}
+      </div>
+    );
+  }
+
   // =========================
   // UI
   // =========================
 
   return (
     <div className="min-h-screen bg-stone-950 text-amber-50 flex flex-col">
-      {/* NAVBAR */}
       <nav className="flex justify-between px-10 py-5 border-b border-amber-900/40">
-        <h1 className="text-2xl font-serif text-amber-400">
-          Team 7 Library
-        </h1>
+        <h1 className="text-2xl font-serif text-amber-400">Team 7 Library</h1>
         <button
           onClick={() => navigate("/")}
           className="px-5 py-2 border border-amber-700 text-amber-300 rounded"
@@ -172,7 +170,6 @@ async function handleHold(itemId) {
         </button>
       </nav>
 
-      {/* TABS */}
       <div className="flex justify-center gap-6 mt-8">
         {["browse", "checked", "holds"].map((tab) => (
           <button
@@ -193,7 +190,6 @@ async function handleHold(itemId) {
         ))}
       </div>
 
-      {/* SUBTABS */}
       {activeTab === "browse" && (
         <div className="flex justify-center gap-4 mt-4">
           {["books", "media", "devices"].map((sub) => (
@@ -212,10 +208,8 @@ async function handleHold(itemId) {
         </div>
       )}
 
-      {/* CONTENT */}
       <div className="p-10 max-w-5xl mx-auto w-full">
-        {/* BOOKS */}
-        {activeSubTab === "books" && (
+        {activeTab === "browse" && activeSubTab === "books" && (
           <table className="w-full border border-amber-900/30">
             <thead>
               <tr className="bg-stone-900">
@@ -241,8 +235,7 @@ async function handleHold(itemId) {
           </table>
         )}
 
-        {/* MEDIA */}
-        {activeSubTab === "media" && (
+        {activeTab === "browse" && activeSubTab === "media" && (
           <table className="w-full border border-amber-900/30">
             <thead>
               <tr className="bg-stone-900">
@@ -264,8 +257,7 @@ async function handleHold(itemId) {
           </table>
         )}
 
-        {/* DEVICES */}
-        {activeSubTab === "devices" && (
+        {activeTab === "browse" && activeSubTab === "devices" && (
           <table className="w-full border border-amber-900/30">
             <thead>
               <tr className="bg-stone-900">
@@ -288,7 +280,6 @@ async function handleHold(itemId) {
         )}
       </div>
 
-      {/* FOOTER */}
       <div className="border-t border-amber-900/30 py-4 text-center text-xs text-stone-600">
         Team 7 Library — READ MORE, LEARN MORE
       </div>
