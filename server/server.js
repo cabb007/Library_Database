@@ -246,6 +246,25 @@ const server = http.createServer(async (req,res) => {
             return;
         }
 
+        if(method === "POST" && url === "/api/hold"){
+          const cookies = parseCookies(req);
+          const sessionID = cookies.sessionID;
+
+          if (!sessionID || !sessions.has(sessionID)) {
+              sendJson(res, 401, {loggedIn : false});
+              return;
+          }
+
+          const session = sessions.get(sessionID);
+          const body = await getJsonBody(req);
+          const { itemId } = body;
+          const userID = session.UserID;
+
+          await db.execute("CALL CreateHold(?,?)", [userID, itemId]);
+
+          sendJson(res,200,{success: true, message: "Hold placed successfully"});
+        }
+
         //LIBRARIAN USERS
         if(method === "GET" && url === "/api/librarian/users") {
           const [rows] = await db.execute("CALL GetUsers()");
