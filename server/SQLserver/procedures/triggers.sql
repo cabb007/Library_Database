@@ -16,7 +16,7 @@ BEGIN
     DECLARE holdID INT;
     DECLARE holdUserID INT;
     DECLARE userStatus INT;
-    DECLARE userBalance DECIMAL(10, 2);
+    DECLARE userBalance DECIMAL(7, 2);
     DECLARE userType INT;
     DECLARE maxLoans INT;
     DECLARE currentLoans INT;

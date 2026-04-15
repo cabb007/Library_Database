@@ -6,13 +6,9 @@ ItemID,ItemType,Author,Publisher,PublicationYear
 9780679720201,1,J.D. Salinger,"Little, Brown and Company",1951
 9780060935467,1,Aldous Huxley,Chatto & Windus,1932
 9780062315007,1,J.R.R. Tolkien,George Allen & Unwin,1937
-9780525559474,1,J.K. Rowling,Scholastic,1997
-9781250301697,1,J.R.R. Tolkien,George Allen & Unwin,1954
 9780385737951,1,George Orwell,Secker & Warburg,1945
-9780812981605,1,Paulo Coelho,HarperCollins,1988
 9780385490313,1,John Steinbeck,Covici Friede,1937
 9780679745587,1,John Steinbeck,The Viking Press,1939
-9780679723165,1,Ray Bradbury,Ballantine Books,1953
 9780062409850,1,Charlotte Bronte,"Smith, Elder & Co.",1847
 9780553418025,1,Emily Bronte,Thomas Newby,1847
 9780062457714,1,Charles Dickens,Chapman & Hall,1861
@@ -26,7 +22,6 @@ ItemID,ItemType,Author,Publisher,PublicationYear
 9780316769181,1,Nathaniel Hawthorne,Ticknor Reed and Fields,1850
 9780679720218,1,Mark Twain,Chatto & Windus,1884
 9780060935474,1,Louisa May Alcott,Roberts Brothers,1868
-9780812981612,1,Bram Stoker,Archibald Constable and Company,1897
 9780385490320,1,Mary Shelley,Lackington Hughes Harding Mavor & Jones,1818
 9780679745594,1,Oscar Wilde,Ward Lock and Company,1890
 9780679723172,1,H.G. Wells,C. Arthur Pearson,1897
@@ -41,37 +36,24 @@ ItemID,ItemType,Author,Publisher,PublicationYear
 9780316769198,1,Joseph Heller,Simon & Schuster,1961
 9780679720225,1,Kurt Vonnegut,Delacorte,1969
 9780060935481,1,Gabriel Garcia Marquez,Harper & Row,1967
-9780812981629,1,Ernest Hemingway,Scribner,1926
 9780385490337,1,Ernest Hemingway,Scribner,1929
 9780679745600,1,Ernest Hemingway,Scribner,1940
 9780679723189,1,Ernest Hemingway,Scribner,1952
 9780062409881,1,William Faulkner,Jonathan Cape and Harrison Smith,1929
 9780553418049,1,Toni Morrison,Alfred A. Knopf,1987
 9780062457738,1,Toni Morrison,Alfred A. Knopf,1977
-9781250301727,1,Zora Neale Hurston,J.B. Lippincott,1937
 9780460482608,1,Ralph Ellison,Random House,1952
 9780234347027,1,Richard Wright,Harper & Brothers,1940
 9781141650408,1,Alice Walker,Harcourt Brace Jovanovich,1982
 9780404955274,1,James Baldwin,Alfred A. Knopf,1953
-9780951817285,1,Sylvia Plath,William Heinemann,1963
-9790688786136,1,Virginia Woolf,Hogarth Press,1925
-9790309267242,1,Virginia Woolf,Hogarth Press,1927
-9791464211699,1,Virginia Woolf,Hogarth Press,1931
 9781233961047,1,George Eliot,William Blackwood and Sons,1871
-9790570528776,1,Thomas Hardy,Harper & Brothers,1891
-9791156957577,1,Thomas Hardy,Smith Elder & Co.,1874
 9790596150906,1,Wilkie Collins,Sampson Low,1859
-9791856742060,1,Robert Louis Stevenson,Cassell and Company,1883
-9780966732436,1,Joseph Conrad,Blackwood's Magazine,1899
 9790405128973,1,D.H. Lawrence,Duckworth,1913
 9781464344749,1,D.H. Lawrence,Thomas Seltzer,1920
 9790585203736,1,E.M. Forster,Edward Arnold,1908
-9781995936734,1,E.M. Forster,Edward Arnold,1910
 9780800107567,1,E.M. Forster,Edward Arnold,1924
 9780705893985,1,Henry James,Macmillan Publishers,1881
-9790997333427,1,Henry James,Archibald Constable & Co.,1902
 9780142078341,1,Edith Wharton,D. Appleton & Company,1920
-9791450930771,1,Edith Wharton,Scribner,1905
 9781378696811,1,Sinclair Lewis,Harcourt Brace and Howe,1920
 9791942594795,1,Philip Roth,Houghton Mifflin,1997
 9781283012621,1,Saul Bellow,Viking Press,1975
@@ -197,88 +179,29 @@ ItemID,ItemType,Author,Publisher,PublicationYear
 9791644960737,1,Ernest Hemingway,Scribner,1964
 9781610499361,1,Ernest Hemingway,Scribner,1936
 9781725180161,1,Thomas Pynchon,J.B. Lippincott,1963
-9791611168838,1,Saul Bellow,Viking Press,1975
-9790739932345,1,William Faulkner,Jonathan Cape,1930
-9791736540397,1,John Steinbeck,Viking Press,1939
 9791976707055,1,John Updike,Alfred A. Knopf,1968
 9790712619515,1,Roddy Doyle,Secker & Warburg,1993
 9780616456163,1,Roddy Doyle,King Farouk,1987
 9780942464481,1,Sebastian Faulks,Hutchinson,1993
 9781338190618,1,Sebastian Faulks,Hutchinson,1998
-9791529062266,1,Harper Lee,J.B. Lippincott & Co.,1960
-9791542367898,1,George Orwell,Secker & Warburg,1949
-9791652552689,1,F. Scott Fitzgerald,Charles Scribner's Sons,1925
-9781125407776,1,Jane Austen,T. Egerton,1813
-9781393896753,1,J.D. Salinger,"Little, Brown and Company",1951
-9780140679823,1,Aldous Huxley,Chatto & Windus,1932
-9780126716467,1,J.R.R. Tolkien,George Allen & Unwin,1937
 9780265444948,1,J.K. Rowling,Scholastic,1997
 9780709527268,1,J.R.R. Tolkien,George Allen & Unwin,1954
-9791319926303,1,George Orwell,Secker & Warburg,1945
 9780507681209,1,Paulo Coelho,HarperCollins,1988
-9781854707031,1,John Steinbeck,Covici Friede,1937
-9791359950870,1,John Steinbeck,The Viking Press,1939
 9780495298809,1,Ray Bradbury,Ballantine Books,1953
-9780555085554,1,Charlotte Bronte,"Smith, Elder & Co.",1847
-9791190385282,1,Emily Bronte,Thomas Newby,1847
-9790650578523,1,Charles Dickens,Chapman & Hall,1861
-9790668229936,1,Charles Dickens,Chapman & Hall,1859
-9791300524556,1,Fyodor Dostoevsky,The Russian Messenger,1866
-9781907288371,1,Leo Tolstoy,The Russian Messenger,1869
-9791670918559,1,Fyodor Dostoevsky,The Russian Messenger,1880
-9791421778609,1,Miguel de Cervantes,Francisco de Robles,1605
-9781690872597,1,James Joyce,Sylvia Beach,1922
-9791540920392,1,Herman Melville,Harper & Brothers,1851
-9791338345093,1,Nathaniel Hawthorne,Ticknor Reed and Fields,1850
-9781438623580,1,Mark Twain,Chatto & Windus,1884
-9791828480204,1,Louisa May Alcott,Roberts Brothers,1868
 9780416357479,1,Bram Stoker,Archibald Constable and Company,1897
-9791827687864,1,Mary Shelley,Lackington Hughes Harding Mavor & Jones,1818
-9781946597380,1,Oscar Wilde,Ward Lock and Company,1890
-9791122601053,1,H.G. Wells,C. Arthur Pearson,1897
-9790630057185,1,H.G. Wells,William Heinemann,1895
-9781970266054,1,Jules Verne,Pierre-Jules Hetzel,1872
-9791825445534,1,Jules Verne,Pierre-Jules Hetzel,1870
-9791821403484,1,Alexandre Dumas,Journal des Debats,1844
-9791455093235,1,Victor Hugo,A. Lacroix,1862
-9790258147480,1,Alexandre Dumas,Baudry,1844
-9781256707707,1,Leo Tolstoy,The Russian Messenger,1878
-9780383617668,1,Vladimir Nabokov,Olympia Press,1955
-9791872787885,1,Joseph Heller,Simon & Schuster,1961
-9790354433135,1,Kurt Vonnegut,Delacorte,1969
-9781335193193,1,Gabriel Garcia Marquez,Harper & Row,1967
 9780459540562,1,Ernest Hemingway,Scribner,1926
-9781265516635,1,Ernest Hemingway,Scribner,1929
-9790116075979,1,Ernest Hemingway,Scribner,1940
-9791727464619,1,Ernest Hemingway,Scribner,1952
-9790167342686,1,William Faulkner,Jonathan Cape and Harrison Smith,1929
-9790185644205,1,Toni Morrison,Alfred A. Knopf,1987
-9790856316547,1,Toni Morrison,Alfred A. Knopf,1977
 9780295558400,1,Zora Neale Hurston,J.B. Lippincott,1937
-9790425301318,1,Ralph Ellison,Random House,1952
-9790784943990,1,Richard Wright,Harper & Brothers,1940
-9791489748903,1,Alice Walker,Harcourt Brace Jovanovich,1982
-9791845316456,1,James Baldwin,Alfred A. Knopf,1953
 9780372356509,1,Sylvia Plath,William Heinemann,1963
 9781965630938,1,Virginia Woolf,Hogarth Press,1925
 9780327825753,1,Virginia Woolf,Hogarth Press,1927
 9780103504285,1,Virginia Woolf,Hogarth Press,1931
-9791481750430,1,George Eliot,William Blackwood and Sons,1871
 9781470567293,1,Thomas Hardy,Harper & Brothers,1891
 9790405959560,1,Thomas Hardy,Smith Elder & Co.,1874
-9790657231278,1,Wilkie Collins,Sampson Low,1859
 9780448168562,1,Robert Louis Stevenson,Cassell and Company,1883
 9780178161796,1,Joseph Conrad,Blackwood's Magazine,1899
-9791675601371,1,D.H. Lawrence,Duckworth,1913
-9791627579758,1,D.H. Lawrence,Thomas Seltzer,1920
-9791673770925,1,E.M. Forster,Edward Arnold,1908
 9781522476283,1,E.M. Forster,Edward Arnold,1910
-9790219702444,1,E.M. Forster,Edward Arnold,1924
-9781855290518,1,Henry James,Macmillan Publishers,1881
 9781780216775,1,Henry James,Archibald Constable & Co.,1902
-9791337886092,1,Edith Wharton,D. Appleton & Company,1920
 9791219594916,1,Edith Wharton,Scribner,1905
-9791536873381,1,Sinclair Lewis,Harcourt Brace and Howe,1920
 9780532284314,2,Harper Lee,J.B. Lippincott & Co.,1960
 9791968469770,2,George Orwell,Secker & Warburg,1949
 9790696141002,2,F. Scott Fitzgerald,Charles Scribner's Sons,1925

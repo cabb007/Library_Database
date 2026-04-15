@@ -71,6 +71,60 @@ BEGIN
     END IF;
 END$$
 
+-- =========================================================
+-- Procedure: Add a single copy (blocks if copy exists or item ID does not exist)
+-- =========================================================
+DROP PROCEDURE IF EXISTS AddCopy$$
+CREATE PROCEDURE AddCopy(
+    IN p_ItemID BIGINT,
+    IN p_CopyStatus SMALLINT, -- CopyStatus: 0=Available, 1=OnLoan
+    IN p_LibrarianID INT -- Use LibrarianID for CreatedBy and UpdatedBy
+) 
+BEGIN
+    DECLARE Flag INT DEFAULT 0;
+
+    -- Check if the item ID exists
+    IF NOT EXISTS (
+        SELECT 1
+        FROM items
+        WHERE ItemID = p_ItemID
+    ) THEN
+        SET Flag = 1;
+    END IF;
+
+    -- Check that the copy ID does not already exist
+    IF EXISTS (
+        SELECT 1
+        FROM copies
+        WHERE CopyID = p_CopyID
+    ) THEN
+        SET Flag = 1;
+    END IF;
+
+    -- Check that the copy status is valid
+    IF p_CopyStatus NOT IN (0,1) THEN
+        SET Flag = 1;
+    END IF;
+
+    -- Only insert if no error conditions were found
+    IF Flag = 0 THEN
+        INSERT INTO copies (
+            ItemID,
+            CopyStatus,
+            CreatedBy,
+            UpdatedBy
+        ) VALUES (
+            p_ItemID,
+            p_CopyStatus,
+            p_LibrarianID,
+            p_LibrarianID
+        );
+    ELSE
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Unable to add copy. Check ItemID or CopyStatus.';
+    END IF;
+END$$
+
 -- =================================================================================================================
 --                                               MEDIA QUERIES
 -- =================================================================================================================
@@ -154,7 +208,6 @@ CREATE PROCEDURE AddMedia(
 )
 BEGIN
     DECLARE Flag INT DEFAULT 0;
-    DECLARE v_NextCopyID INT;
     DECLARE i INT DEFAULT 0;
 
     -- Check if the item ID already exists
@@ -183,21 +236,48 @@ BEGIN
 
     -- Only insert if no error conditions were found
     IF Flag = 0 THEN
-        INSERT INTO items (ItemID, ItemCategory, Title, CreatedBy, UpdatedBy)
-        VALUES (p_ItemID, 2, p_Title, p_LibrarianID, p_LibrarianID);
+        INSERT INTO items (
+            ItemID, 
+            ItemCategory, 
+            Title, 
+            CreatedBy, 
+            UpdatedBy
+        ) VALUES (
+            p_ItemID, 
+            2, 
+            p_Title, 
+            p_LibrarianID, 
+            p_LibrarianID
+        );
 
-        INSERT INTO media (ItemID, ItemType, Producer, DurationMinutes)
-        VALUES (p_ItemID, p_ItemType, p_Producer, p_DurationMinutes);
+        INSERT INTO media (
+            ItemID, 
+            ItemType, 
+            Producer, 
+            DurationMinutes
+        ) VALUES (
+            p_ItemID, 
+            p_ItemType, 
+            p_Producer, 
+            p_DurationMinutes
+        );
 
-        -- Generate CopyIDs sequentially and insert each copy
-        SELECT COALESCE(MAX(CopyID), 0) INTO v_NextCopyID FROM copies;
+    -- Insert each copy; CopyID is generated automatically
+    WHILE i < p_Copies DO
+        INSERT INTO copies (
+            ItemID,
+            CopyStatus,
+            CreatedBy,
+            UpdatedBy
+        ) VALUES (
+            p_ItemID,
+            0,
+            p_LibrarianID,
+            p_LibrarianID
+        );
 
-        WHILE i < p_Copies DO
-            SET v_NextCopyID = v_NextCopyID + 1;
-            INSERT INTO copies (CopyID, ItemID, CopyStatus, CreatedBy, UpdatedBy)
-            VALUES (v_NextCopyID, p_ItemID, 0, p_LibrarianID, p_LibrarianID);
-            SET i = i + 1;
-        END WHILE;
+        SET i = i + 1;
+    END WHILE;
 
     ELSE
         SIGNAL SQLSTATE '45000'
@@ -243,7 +323,6 @@ CREATE PROCEDURE AddDevice(
 )
 BEGIN
     DECLARE Flag INT DEFAULT 0;
-    DECLARE v_NextCopyID INT;
     DECLARE i INT DEFAULT 0;
 
     -- Check if the item ID already exists
@@ -273,15 +352,22 @@ BEGIN
         INSERT INTO devices (ItemID, ItemType, Manufacturer, Model)
         VALUES (p_ItemID, p_ItemType, p_Manufacturer, p_Model);
 
-        -- Generate CopyIDs sequentially and insert each copy
-        SELECT COALESCE(MAX(CopyID), 0) INTO v_NextCopyID FROM copies;
+    -- Insert each copy; CopyID is generated automatically
+    WHILE i < p_Copies DO
+        INSERT INTO copies (
+            ItemID,
+            CopyStatus,
+            CreatedBy,
+            UpdatedBy
+        ) VALUES (
+            p_ItemID,
+            0,
+            p_LibrarianID,
+            p_LibrarianID
+        );
 
-        WHILE i < p_Copies DO
-            SET v_NextCopyID = v_NextCopyID + 1;
-            INSERT INTO copies (CopyID, ItemID, CopyStatus, CreatedBy, UpdatedBy)
-            VALUES (v_NextCopyID, p_ItemID, 0, p_LibrarianID, p_LibrarianID);
-            SET i = i + 1;
-        END WHILE;
+        SET i = i + 1;
+    END WHILE;
 
     ELSE
         SIGNAL SQLSTATE '45000'
@@ -376,7 +462,6 @@ CREATE PROCEDURE AddLiterature(
 )
 BEGIN
     DECLARE Flag INT DEFAULT 0;
-    DECLARE v_NextCopyID INT;
     DECLARE i INT DEFAULT 0;
 
     -- Check if the item ID already exists
@@ -435,15 +520,22 @@ BEGIN
             p_PublicationYear
         );
 
-        -- Generate CopyIDs sequentially and insert each copy
-        SELECT COALESCE(MAX(CopyID), 0) INTO v_NextCopyID FROM copies;
+    -- Insert each copy; CopyID is generated automatically
+    WHILE i < p_Copies DO
+        INSERT INTO copies (
+            ItemID,
+            CopyStatus,
+            CreatedBy,
+            UpdatedBy
+        ) VALUES (
+            p_ItemID,
+            0,
+            p_LibrarianID,
+            p_LibrarianID
+        );
 
-        WHILE i < p_Copies DO
-            SET v_NextCopyID = v_NextCopyID + 1;
-            INSERT INTO copies (CopyID, ItemID, CopyStatus, CreatedBy, UpdatedBy)
-            VALUES (v_NextCopyID, p_ItemID, 0, p_LibrarianID, p_LibrarianID);
-            SET i = i + 1;
-        END WHILE;
+        SET i = i + 1;
+    END WHILE;
 
     ELSE
         SIGNAL SQLSTATE '45000'

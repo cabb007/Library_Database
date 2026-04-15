@@ -109,7 +109,7 @@ FIELDS TERMINATED BY ','
 ENCLOSED BY '"'
 LINES TERMINATED BY '\r\n'
 IGNORE 1 ROWS
-(CopyID, ItemID, CopyStatus, CreatedAt, @cb, UpdatedAt, @ub)
+(ItemID, CopyStatus, CreatedAt, @cb, UpdatedAt, @ub)
 SET
     CreatedBy = NULLIF(TRIM(REPLACE(@cb, '\r', '')), ''),
     UpdatedBy = NULLIF(TRIM(REPLACE(@ub, '\r', '')), '');
