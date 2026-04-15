@@ -141,19 +141,27 @@ BEGIN
         SET MESSAGE_TEXT = 'User already has an active hold for this item';
     END IF;
 
-    -- Create the hold request
+    -- Create the hold request UserID,ItemID,HoldStatus,CreatedAt,CreatedBy,UpdatedAt,UpdatedBy
+
     INSERT INTO holds (
         UserID,
         ItemID,
-        RequestDate,
-        HoldStatus
+        HoldStatus,
+        CreatedAt,
+        CreatedBy,
+        UpdatedAt,
+        UpdatedBy
     )
     VALUES ( -- This needs some work to set the CreatedBy/UpdatedBy fields, but we can discuss how to do that since holds don't have those columns (Mikkel)
         p_UserID,
         p_ItemID,
+        0, -- Active hold
         NOW(),
-        0
+        p_UserID,
+        NOW(),
+        p_UserID
     );
+
 END$$
 
 
