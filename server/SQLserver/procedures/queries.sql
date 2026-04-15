@@ -135,9 +135,10 @@ END$$
 DROP PROCEDURE IF EXISTS GetMedia$$
 CREATE PROCEDURE GetMedia()
 BEGIN
-    SELECT 
+    SELECT
         i.ItemID,
         i.Title,
+        m.ItemType,
         m.Producer,
         m.DurationMinutes,
         GetAvailableCopies(i.ItemID) AS AvailableCopies
@@ -296,9 +297,10 @@ END$$
 DROP PROCEDURE IF EXISTS GetDevices$$
 CREATE PROCEDURE GetDevices()
 BEGIN
-    SELECT 
+    SELECT
         i.ItemID,
         i.Title,
+        d.ItemType,
         d.Manufacturer,
         d.Model,
         GetAvailableCopies(i.ItemID) AS AvailableCopies
@@ -434,9 +436,10 @@ END$$
 DROP PROCEDURE IF EXISTS GetLiterature$$
 CREATE PROCEDURE GetLiterature()
 BEGIN
-    SELECT 
+    SELECT
         i.ItemID,
         i.Title,
+        l.ItemType,
         l.Author,
         l.Publisher,
         l.PublicationYear,

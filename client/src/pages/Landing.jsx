@@ -1,71 +1,105 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../api";
 
-async function numLiterature() {
-  try {
-    const response = await fetch(`${API}/api/literature`);
-    const data = await response.json();
-    return data;
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-const CATEGORIES = [
-  {
-    label: "Literature",
-    count: "3000+",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-8 h-8">
-        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    ),
-  },
-  {
-    label: "Media",
-    count: "850+",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-8 h-8">
-        <circle cx="12" cy="12" r="10" />
-        <polygon points="10,8 16,12 10,16" fill="currentColor" stroke="none" />
-      </svg>
-    ),
-  },
-  {
-    label: "Devices",
-    count: "120+",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-8 h-8">
-        <rect x="2" y="3" width="20" height="14" rx="2" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M8 21h8M12 17v4" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    ),
-  },
-];
+const CATEGORY_ICONS = {
+  Literature: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-8 h-8">
+      <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  Media: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-8 h-8">
+      <circle cx="12" cy="12" r="10" />
+      <polygon points="10,8 16,12 10,16" fill="currentColor" stroke="none" />
+    </svg>
+  ),
+  Devices: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-8 h-8">
+      <rect x="2" y="3" width="20" height="14" rx="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M8 21h8M12 17v4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+};
 
 export default function Landing() {
   const navigate = useNavigate();
+  const [counts, setCounts] = useState({ Literature: "—", Media: "—", Devices: "—" });
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [userType, setUserType] = useState(null);
+
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        const res = await fetch(`${API}/api/me`, { credentials: "include" });
+        const data = await res.json();
+        setLoggedIn(data.loggedIn === true);
+        setUserType(data.user?.UserType ?? null);
+      } catch {
+        setLoggedIn(false);
+      }
+    }
+    checkAuth();
+
+    async function fetchCounts() {
+      try {
+        const [litRes, mediaRes, devRes] = await Promise.all([
+          fetch(`${API}/api/literature`),
+          fetch(`${API}/api/media`),
+          fetch(`${API}/api/devices`),
+        ]);
+        const [lit, media, dev] = await Promise.all([
+          litRes.json(), mediaRes.json(), devRes.json()
+        ]);
+        setCounts({
+          Literature: Array.isArray(lit) ? lit.length : lit[0]?.length ?? "—",
+          Media: Array.isArray(media) ? media.length : media[0]?.length ?? "—",
+          Devices: Array.isArray(dev) ? dev.length : dev[0]?.length ?? "—",
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    fetchCounts();
+  }, []);
+
+  const CATEGORIES = [
+    { label: "Literature", count: counts.Literature, icon: CATEGORY_ICONS.Literature },
+    { label: "Media",      count: counts.Media,      icon: CATEGORY_ICONS.Media      },
+    { label: "Devices",    count: counts.Devices,    icon: CATEGORY_ICONS.Devices    },
+  ];
 
   return (
     <div className="min-h-screen bg-stone-950 text-amber-50 flex flex-col">
       {/* Navbar */}
       <nav className="flex items-center justify-between px-10 py-5 border-b border-amber-900/40">
         <h1 className="text-2xl font-serif tracking-widest text-amber-400">
-          Team 7 Library
+          Cougar Commons
         </h1>
         <div className="flex gap-4">
-          <button
-            onClick={() => navigate("/login")}
-            className="px-5 py-2 border border-amber-700 text-amber-300 hover:bg-amber-900/30 transition rounded text-sm tracking-wide"
-          >
-            Login
-          </button>
-          <button
-            onClick={() => navigate("/register")}
-            className="px-5 py-2 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold transition rounded text-sm tracking-wide"
-          >
-            Register
-          </button>
+          {!loggedIn && (
+            <>
+              <button
+                onClick={() => navigate("/login")}
+                className="px-5 py-2 border border-amber-700 text-amber-300 hover:bg-amber-900/30 transition rounded text-sm tracking-wide"
+              >
+                Login
+              </button>
+              <button
+                onClick={() => navigate("/register")}
+                className="px-5 py-2 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold transition rounded text-sm tracking-wide"
+              >
+                Register
+              </button>
+            </>
+          )}
+          {userType === 2 && (
+            <button
+              onClick={() => navigate("/librarian")}
+              className="px-5 py-2 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold transition rounded text-sm tracking-wide">
+              Librarian Dashboard
+            </button>
+          )}
           <button
             onClick={() => navigate("/useraccount")}
             className="px-5 py-2 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold transition rounded text-sm tracking-wide">
@@ -96,13 +130,13 @@ export default function Landing() {
               Get Started
             </button>
             <button
-              onClick={() => navigate("/litcatalogue")} 
+              onClick={() => navigate("catalog")} 
               className="px-7 py-3 border border-stone-600 text-stone-300 hover:border-amber-700 hover:text-amber-300 rounded transition tracking-wide">
               Browse Catalog
             </button>
 
             <button
-            onClick={() => navigate("/itemDashboard")}
+            onClick={() => navigate("/litcatalogue")}
             className="px-7 py-3 border border-stone-600 text-stone-300 hover:border-amber-700 hover:text-amber-300 rounded transition tracking-wide"
             >
               Dashboard
@@ -151,7 +185,7 @@ export default function Landing() {
 
       {/* Footer strip */}
       <div className="border-t border-amber-900/30 py-4 text-center text-stone-600 text-xs tracking-widest">
-        Team 7 Library &mdash; READ MORE, LEARN MORE
+        Cougar Commons &mdash; READ MORE, LEARN MORE
       </div>
     </div>
   );
