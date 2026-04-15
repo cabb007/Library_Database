@@ -25,9 +25,14 @@ if there are no issues with connecting to the server and website, in the termina
 you can now type 'o' and press enter to open the web application. In the same terminal, you can stop the hosting of the web application by typing 'q' and pressing enter. To stop the express server, go in the other terminal and press
 CTRL + 'C' at the same time on your keyboard.
 
+# copy paste these into the terminal
+cd server
+cd SQLserver
+mysql --local-infile=1 -u root -p
 
 # copy paste these as one line into the mySQL terminal
 
+SET GLOBAL local_infile=1;
 DROP DATABASE IF EXISTS library_db;
 CREATE DATABASE library_db;
 USE library_db;

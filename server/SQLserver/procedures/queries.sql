@@ -71,6 +71,7 @@ BEGIN
     END IF;
 END$$
 
+
 -- =================================================================================================================
 --                                               MEDIA QUERIES
 -- =================================================================================================================
@@ -132,8 +133,9 @@ BEGIN
 
     -- Only delete if safe
     IF Flag = 0 THEN
-        DELETE FROM media
-        WHERE ItemID = p_MediaID;
+        DELETE FROM copies WHERE ItemID = p_MediaID;
+        DELETE FROM media WHERE ItemID = p_MediaID;
+        DELETE FROM items WHERE ItemID = p_MediaID;
     ELSE
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Cannot delete media with active loans or holds.';
@@ -155,7 +157,6 @@ CREATE PROCEDURE AddMedia(
 )
 BEGIN
     DECLARE Flag INT DEFAULT 0;
-    DECLARE v_NextCopyID INT;
     DECLARE i INT DEFAULT 0;
 
     -- Check if the item ID already exists
@@ -184,21 +185,48 @@ BEGIN
 
     -- Only insert if no error conditions were found
     IF Flag = 0 THEN
-        INSERT INTO items (ItemID, ItemCategory, Title, CreatedBy, UpdatedBy)
-        VALUES (p_ItemID, 2, p_Title, p_LibrarianID, p_LibrarianID);
+        INSERT INTO items (
+            ItemID, 
+            ItemCategory, 
+            Title, 
+            CreatedBy, 
+            UpdatedBy
+        ) VALUES (
+            p_ItemID, 
+            2, 
+            p_Title, 
+            p_LibrarianID, 
+            p_LibrarianID
+        );
 
-        INSERT INTO media (ItemID, ItemType, Producer, DurationMinutes)
-        VALUES (p_ItemID, p_ItemType, p_Producer, p_DurationMinutes);
+        INSERT INTO media (
+            ItemID, 
+            ItemType, 
+            Producer, 
+            DurationMinutes
+        ) VALUES (
+            p_ItemID, 
+            p_ItemType, 
+            p_Producer, 
+            p_DurationMinutes
+        );
 
-        -- Generate CopyIDs sequentially and insert each copy
-        SELECT COALESCE(MAX(CopyID), 0) INTO v_NextCopyID FROM copies;
+    -- Insert each copy; CopyID is generated automatically
+    WHILE i < p_Copies DO
+        INSERT INTO copies (
+            ItemID,
+            CopyStatus,
+            CreatedBy,
+            UpdatedBy
+        ) VALUES (
+            p_ItemID,
+            0,
+            p_LibrarianID,
+            p_LibrarianID
+        );
 
-        WHILE i < p_Copies DO
-            SET v_NextCopyID = v_NextCopyID + 1;
-            INSERT INTO copies (CopyID, ItemID, CopyStatus, CreatedBy, UpdatedBy)
-            VALUES (v_NextCopyID, p_ItemID, 0, p_LibrarianID, p_LibrarianID);
-            SET i = i + 1;
-        END WHILE;
+        SET i = i + 1;
+    END WHILE;
 
     ELSE
         SIGNAL SQLSTATE '45000'
@@ -245,7 +273,6 @@ CREATE PROCEDURE AddDevice(
 )
 BEGIN
     DECLARE Flag INT DEFAULT 0;
-    DECLARE v_NextCopyID INT;
     DECLARE i INT DEFAULT 0;
 
     -- Check if the item ID already exists
@@ -275,15 +302,22 @@ BEGIN
         INSERT INTO devices (ItemID, ItemType, Manufacturer, Model)
         VALUES (p_ItemID, p_ItemType, p_Manufacturer, p_Model);
 
-        -- Generate CopyIDs sequentially and insert each copy
-        SELECT COALESCE(MAX(CopyID), 0) INTO v_NextCopyID FROM copies;
+    -- Insert each copy; CopyID is generated automatically
+    WHILE i < p_Copies DO
+        INSERT INTO copies (
+            ItemID,
+            CopyStatus,
+            CreatedBy,
+            UpdatedBy
+        ) VALUES (
+            p_ItemID,
+            0,
+            p_LibrarianID,
+            p_LibrarianID
+        );
 
-        WHILE i < p_Copies DO
-            SET v_NextCopyID = v_NextCopyID + 1;
-            INSERT INTO copies (CopyID, ItemID, CopyStatus, CreatedBy, UpdatedBy)
-            VALUES (v_NextCopyID, p_ItemID, 0, p_LibrarianID, p_LibrarianID);
-            SET i = i + 1;
-        END WHILE;
+        SET i = i + 1;
+    END WHILE;
 
     ELSE
         SIGNAL SQLSTATE '45000'
@@ -363,6 +397,7 @@ BEGIN
     WHERE i.ItemCategory = 1
     ORDER BY i.Title;
 END$$
+
 -- =========================================================
 -- Procedure: Add a literature item
 -- =========================================================
@@ -379,7 +414,6 @@ CREATE PROCEDURE AddLiterature(
 )
 BEGIN
     DECLARE Flag INT DEFAULT 0;
-    DECLARE v_NextCopyID INT;
     DECLARE i INT DEFAULT 0;
 
     -- Check if the item ID already exists
@@ -438,15 +472,22 @@ BEGIN
             p_PublicationYear
         );
 
-        -- Generate CopyIDs sequentially and insert each copy
-        SELECT COALESCE(MAX(CopyID), 0) INTO v_NextCopyID FROM copies;
+    -- Insert each copy; CopyID is generated automatically
+    WHILE i < p_Copies DO
+        INSERT INTO copies (
+            ItemID,
+            CopyStatus,
+            CreatedBy,
+            UpdatedBy
+        ) VALUES (
+            p_ItemID,
+            0,
+            p_LibrarianID,
+            p_LibrarianID
+        );
 
-        WHILE i < p_Copies DO
-            SET v_NextCopyID = v_NextCopyID + 1;
-            INSERT INTO copies (CopyID, ItemID, CopyStatus, CreatedBy, UpdatedBy)
-            VALUES (v_NextCopyID, p_ItemID, 0, p_LibrarianID, p_LibrarianID);
-            SET i = i + 1;
-        END WHILE;
+        SET i = i + 1;
+    END WHILE;
 
     ELSE
         SIGNAL SQLSTATE '45000'
@@ -539,8 +580,8 @@ BEGIN
         l.CopyID,
         c.ItemID,
         i.Title,
-        l.CheckoutDate,
-        l.Duedate
+        l.CreatedAt,
+        l.DueDate
     FROM loans AS l
     JOIN users AS u ON l.UserID= u.UserID
     JOIN copies AS c ON l.CopyID = c.CopyID
@@ -552,7 +593,7 @@ END$$
 -- =========================================================
 -- Procedure: Get all overdue loans (with user and item details)
 -- =========================================================
-DROP PROCEDURE IF EXISTS GetOverdueLoans$$
+DROP PROCEDURE IF EXISTS GetOverdueLoans$$ -- IF ELSE for differing usertypes, Librarian sees all overdue, Faculty only sees their own, Student only sees their own
 CREATE PROCEDURE GetOverdueLoans()
 BEGIN
     SELECT
@@ -562,14 +603,14 @@ BEGIN
         l.CopyID,
         c.ItemID,
         i.Title,
-        l.CheckoutDate,
-        l.Duedate
+        l.CreatedAt,
+        l.DueDate
     FROM loans AS l
     JOIN users AS u ON l.UserID = u.UserID
     JOIN copies AS c ON l.CopyID = c.CopyID
     JOIN items AS i ON c.ItemID = i.ItemID
     WHERE l.ReturnDate IS NULL
-      AND l.Duedate < CURDATE() -- only overdue loans
+      AND l.DueDate < CURDATE() -- only overdue loans
     ORDER BY l.DueDate;
 END$$
 
@@ -583,11 +624,12 @@ BEGIN
     SELECT
         f.FineID,
         f.UserID,
+        l.loanID,
         CONCAT(u.FirstName, ' ', u.LastName) AS UserName,
-        f.Amount,
-        f.Reason,
+        f.FineAmount,
         f.CreatedAt
     FROM fines AS f
+    JOIN loans AS l ON f.LoanID = l.LoanID
     JOIN users AS u ON f.UserID = u.UserID
     ORDER BY f.CreatedAt DESC; -- newest fines first
 END$$

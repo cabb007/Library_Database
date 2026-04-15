@@ -1,6 +1,6 @@
 SET FOREIGN_KEY_CHECKS = 0;
 -- =========================================================
--- USERS
+--                          USERS
 -- =========================================================
 LOAD DATA LOCAL INFILE 'data/users.csv'
 INTO TABLE users
@@ -22,7 +22,7 @@ SELECT COUNT(*) FROM devices;
 SELECT COUNT(*) FROM copies;
 
 -- =========================================================
--- ITEMS (supertype)
+--                          ITEMS (supertype)
 -- =========================================================
 LOAD DATA LOCAL INFILE 'data/items.csv'
 INTO TABLE items
@@ -44,13 +44,13 @@ SELECT COUNT(*) FROM devices;
 SELECT COUNT(*) FROM copies;
 
 -- =========================================================
--- LITERATURE
+--                          LITERATURE
 -- =========================================================
 LOAD DATA LOCAL INFILE 'data/literature.csv'
 INTO TABLE literature
 FIELDS TERMINATED BY ','
 ENCLOSED BY '"'
-LINES TERMINATED BY '\n'
+LINES TERMINATED BY '\r\n'
 IGNORE 1 ROWS
 (ItemID, ItemType, Author, Publisher, PublicationYear);
 
@@ -63,13 +63,13 @@ SELECT COUNT(*) FROM devices;
 SELECT COUNT(*) FROM copies;
 
 -- =========================================================
--- MEDIA
+--                          MEDIA
 -- =========================================================
 LOAD DATA LOCAL INFILE 'data/media.csv'
 INTO TABLE media
 FIELDS TERMINATED BY ','
 ENCLOSED BY '"'
-LINES TERMINATED BY '\n'
+LINES TERMINATED BY '\r\n'
 IGNORE 1 ROWS
 (ItemID, ItemType, Producer, DurationMinutes);
 
@@ -82,13 +82,13 @@ SELECT COUNT(*) FROM devices;
 SELECT COUNT(*) FROM copies;
 
 -- =========================================================
--- DEVICES
+--                          DEVICES
 -- =========================================================
 LOAD DATA LOCAL INFILE 'data/devices.csv'
 INTO TABLE devices
 FIELDS TERMINATED BY ','
 ENCLOSED BY '"'
-LINES TERMINATED BY '\n'
+LINES TERMINATED BY '\r\n'
 IGNORE 1 ROWS
 (ItemID, ItemType, Manufacturer, Model);
 
@@ -101,7 +101,7 @@ SELECT COUNT(*) FROM devices;
 SELECT COUNT(*) FROM copies;
 
 -- =========================================================
--- COPIES
+--                          COPIES
 -- ========================================================
 LOAD DATA LOCAL INFILE 'data/copies.csv'
 INTO TABLE copies
@@ -109,7 +109,7 @@ FIELDS TERMINATED BY ','
 ENCLOSED BY '"'
 LINES TERMINATED BY '\r\n'
 IGNORE 1 ROWS
-(CopyID, ItemID, CopyStatus, CreatedAt, @cb, UpdatedAt, @ub)
+(ItemID, CopyStatus, CreatedAt, @cb, UpdatedAt, @ub)
 SET
     CreatedBy = NULLIF(TRIM(REPLACE(@cb, '\r', '')), ''),
     UpdatedBy = NULLIF(TRIM(REPLACE(@ub, '\r', '')), '');
@@ -121,5 +121,72 @@ SELECT COUNT(*) FROM literature;
 SELECT COUNT(*) FROM media;
 SELECT COUNT(*) FROM devices;
 SELECT COUNT(*) FROM copies;
+
+-- =========================================================
+--                          HOLDS
+-- ========================================================
+LOAD DATA LOCAL INFILE 'data/holds.csv'
+INTO TABLE holds
+FIELDS TERMINATED BY ','
+ENCLOSED BY '"'
+LINES TERMINATED BY '\r\n'
+IGNORE 1 ROWS
+(UserID, ItemID, HoldStatus, CreatedAt, @cb, UpdatedAt, @ub)
+SET
+    CreatedBy = NULLIF(TRIM(REPLACE(@cb, '\r', '')), ''),
+    UpdatedBy = NULLIF(TRIM(REPLACE(@ub, '\r', '')), '');
+
+SHOW WARNINGS LIMIT 50;
+SELECT COUNT(*) FROM users;
+SELECT COUNT(*) FROM items;
+SELECT COUNT(*) FROM literature;
+SELECT COUNT(*) FROM media;
+SELECT COUNT(*) FROM devices;
+SELECT COUNT(*) FROM copies;
+
+-- =========================================================
+--                          LOANS
+-- ========================================================
+LOAD DATA LOCAL INFILE 'data/loans.csv'
+INTO TABLE loans
+FIELDS TERMINATED BY ','
+ENCLOSED BY '"'
+LINES TERMINATED BY '\r\n'
+IGNORE 1 ROWS
+(UserID, CopyID, DueDate, ReturnDate, CreatedAt, @cb, UpdatedAt, @ub)
+SET
+    CreatedBy = NULLIF(TRIM(REPLACE(@cb, '\r', '')), ''),
+    UpdatedBy = NULLIF(TRIM(REPLACE(@ub, '\r', '')), '');
+
+SHOW WARNINGS LIMIT 50;
+SELECT COUNT(*) FROM users;
+SELECT COUNT(*) FROM items;
+SELECT COUNT(*) FROM literature;
+SELECT COUNT(*) FROM media;
+SELECT COUNT(*) FROM devices;
+SELECT COUNT(*) FROM copies;
+
+-- =========================================================
+--                          FINES
+-- ========================================================
+LOAD DATA LOCAL INFILE 'data/fines.csv'
+INTO TABLE fines
+FIELDS TERMINATED BY ','
+ENCLOSED BY '"'
+LINES TERMINATED BY '\r\n'
+IGNORE 1 ROWS
+(LoanID, UserID, FineAmount, PaidStatus, PaidAt, CreatedAt, @cb, UpdatedAt, @ub)
+SET
+    CreatedBy = NULLIF(TRIM(REPLACE(@cb, '\r', '')), ''),
+    UpdatedBy = NULLIF(TRIM(REPLACE(@ub, '\r', '')), '');
+
+SHOW WARNINGS LIMIT 50;
+SELECT COUNT(*) FROM users;
+SELECT COUNT(*) FROM items;
+SELECT COUNT(*) FROM literature;
+SELECT COUNT(*) FROM media;
+SELECT COUNT(*) FROM devices;
+SELECT COUNT(*) FROM copies;
+SELECT COUNT(*) FROM fines;
 
 SET FOREIGN_KEY_CHECKS = 1;

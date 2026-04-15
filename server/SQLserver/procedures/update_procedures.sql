@@ -23,7 +23,7 @@ CREATE PROCEDURE UpdateUser(
 )
 BEGIN
     DECLARE v_existingType SMALLINT DEFAULT 0;
-    DECLARE v_LoanPeriodDays INT DEFAULT 7;
+    DECLARE v_LoanPeriodDays INT DEFAULT 14;
 
     SELECT UserType INTO v_existingType FROM users WHERE UserID = p_UserID;
 
@@ -44,11 +44,33 @@ BEGIN
         SET MESSAGE_TEXT = 'Balance cannot be negative.';
     END IF;
 
+    -- Validate user type
+    IF p_UserType NOT IN (0,1,2) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Invalid user type.';
+    END IF;
+
+    IF p_Status NOT IN (0,1) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Invalid status.';
+    END IF;
+
+    -- Check for duplicate email if it's being changed
+    IF EXISTS (
+        SELECT 1
+        FROM users
+        WHERE Email = p_Email
+          AND UserID <> p_UserID
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'A user with that email already exists.';
+    END IF;
+
     -- Auto-set loan period based on user type (mirrors AddUser logic)
     IF p_UserType = 0 THEN
-        SET v_LoanPeriodDays = 7;   -- Student
+        SET v_LoanPeriodDays = 14;   -- Student
     ELSEIF p_UserType = 1 THEN
-        SET v_LoanPeriodDays = 14;  -- Faculty
+        SET v_LoanPeriodDays = 30;  -- Faculty
     ELSE
         -- Librarian: keep existing value since type cannot change
         SELECT LoanPeriodDays INTO v_LoanPeriodDays FROM users WHERE UserID = p_UserID;
@@ -74,25 +96,56 @@ BEGIN
 END$$
 
 -- =========================================================
--- Procedure: Add a single copy to an existing item
+-- Procedure: Add a single copy (blocks if copy exists or item ID does not exist)
 -- =========================================================
 DROP PROCEDURE IF EXISTS AddCopy$$
 CREATE PROCEDURE AddCopy(
     IN p_ItemID BIGINT,
-    IN p_LibrarianID INT
-)
+    IN p_CopyStatus SMALLINT, -- CopyStatus: 0=Available, 1=OnLoan
+    IN p_LibrarianID INT, -- Use LibrarianID for CreatedBy and UpdatedBy
+    -- IN p_CopyID INT -- Optional: if provided, will attempt to use this CopyID instead of auto-generating
+) 
 BEGIN
-    DECLARE v_NextCopyID INT;
+    DECLARE Flag INT DEFAULT 0;
 
-    IF NOT EXISTS (SELECT 1 FROM items WHERE ItemID = p_ItemID) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Item not found.';
+    -- Check if the item ID exists
+    IF NOT EXISTS (
+        SELECT 1
+        FROM items
+        WHERE ItemID = p_ItemID
+    ) THEN
+        SET Flag = 1;
     END IF;
 
-    SELECT COALESCE(MAX(CopyID), 0) INTO v_NextCopyID FROM copies;
+    -- Check that the copy status is valid
+    IF p_CopyStatus NOT IN (0,1) THEN
+        SET Flag = 1;
+    END IF;
 
-    INSERT INTO copies (CopyID, ItemID, CopyStatus, CreatedBy, UpdatedBy)
-    VALUES (v_NextCopyID + 1, p_ItemID, 0, p_LibrarianID, p_LibrarianID);
+     -- Validate librarian exists
+    IF NOT EXISTS (
+        SELECT 1 FROM users WHERE UserID = p_LibrarianID
+    ) THEN
+        SET Flag = 1;
+    END IF;
+
+    -- Only insert if no error conditions were found
+    IF Flag = 0 THEN
+        INSERT INTO copies (
+            ItemID,
+            CopyStatus,
+            CreatedBy,
+            UpdatedBy
+        ) VALUES (
+            p_ItemID,
+            p_CopyStatus,
+            p_LibrarianID,
+            p_LibrarianID
+        );
+    ELSE
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Unable to add copy. Check ItemID or CopyStatus.';
+    END IF;
 END$$
 
 
