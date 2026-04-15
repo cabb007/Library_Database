@@ -42,7 +42,7 @@ function sendJson(res, statusCode, data, extraHeaders = {}) {
         "Content-Type": "application/json",
         "Access-Control-Allow-Origin": "http://localhost:5173",
         "Access-Control-Allow-Credentials" : "true",
-        "Access-Control-Allow-Methods" : "GET, POST, OPTIONS",
+        "Access-Control-Allow-Methods" : "GET, POST, OPTIONS, PUT, DELETE",
         "Access-Control-Allow-Headers" : "Content-Type",
         ...extraHeaders
     });
@@ -55,7 +55,7 @@ function sendText(res, statusCode, text) {
         "Content-Type": "text/plain",
         "Access-Control-Allow-Origin": "http://localhost:5173",
         "Access-Control-Allow-Credentials" : "true",
-        "Access-Control-Allow-Methods" : "GET, POST, OPTIONS",
+        "Access-Control-Allow-Methods" : "GET, POST, OPTIONS, PUT, DELETE",
         "Access-Control-Allow-Headers" : "Content-Type"
     });
 
@@ -97,7 +97,7 @@ const server = http.createServer(async (req,res) => {
         res.writeHead(204, {
             "Access-Control-Allow-Origin": "http://localhost:5173",
             "Access-Control-Allow-Credentials" : "true",
-            "Access-Control-Allow-Methods" : "GET, POST, OPTIONS",
+            "Access-Control-Allow-Methods" : "GET, POST, OPTIONS, PUT, DELETE",
             "Access-Control-Allow-Headers" : "Content-Type"
         });
         res.end();
@@ -295,7 +295,7 @@ const server = http.createServer(async (req,res) => {
 
         if(method === "DELETE" && url === "/api/librarian/users/:id") {
           const urlParts = req.url.split("/");
-          const userId = Number(urlParts[3]);
+          const userId = Number(urlParts[4]);
           const cookies = parseCookies(req);
           const sessionID = cookies.sessionID;
           const session = sessions.get(sessionID);
@@ -315,7 +315,7 @@ const server = http.createServer(async (req,res) => {
 
         if(method === "DELETE" && "/api/librarian/catalog/literature/:id") {
           const urlParts = req.url.split("/");
-          await db.execute("CALL DeleteLiterature(?)", Number(urlParts[3]));
+          await db.execute("CALL DeleteLiterature(?)", Number(urlParts[5]));
           sendJson(res,200,{message: "Literature Delete Success"});
           return;
         }

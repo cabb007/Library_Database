@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import API from "../api";
 
 export default function LibrarianDashboard() {
   const navigate = useNavigate();
@@ -48,7 +49,7 @@ export default function LibrarianDashboard() {
 
   useEffect(() => {
     async function checkAccess() {
-      const res = await fetch("http://localhost:3000/api/me", { credentials: "include" });
+      const res = await fetch(`${API}/api/me`, { credentials: "include" });
       const data = await res.json();
       if (!res.ok || data.user?.UserType !== 2) {
         navigate("/login");
@@ -62,7 +63,7 @@ export default function LibrarianDashboard() {
   async function fetchUsers() {
     setError("");
     try {
-      const res = await fetch("http://localhost:3000/api/librarian/users", { credentials: "include" });
+      const res = await fetch(`${API}/api/librarian/users`, { credentials: "include" });
       const data = await res.json();
       if (res.ok) {
         setUsers(data);
@@ -79,7 +80,7 @@ export default function LibrarianDashboard() {
     e.preventDefault();
     setError("");
     try {
-      const res = await fetch("http://localhost:3000/api/librarian/users", {
+      const res = await fetch(`${API}/api/librarian/users`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -119,7 +120,7 @@ export default function LibrarianDashboard() {
     e.preventDefault();
     setError("");
     try {
-      const res = await fetch(`http://localhost:3000/api/librarian/users/${editingUser.UserID}`, {
+      const res = await fetch(`${API}/api/librarian/users/${editingUser.UserID}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -145,7 +146,7 @@ export default function LibrarianDashboard() {
     if (!confirm("Are you sure you want to delete this user?")) return;
     setError("");
     try {
-      const res = await fetch(`http://localhost:3000/api/librarian/users/${userId}`, {
+      const res = await fetch(`${API}/api/librarian/users/${userId}`, {
         method: "DELETE",
         credentials: "include"
       });
@@ -184,7 +185,7 @@ export default function LibrarianDashboard() {
     e.preventDefault();
     setError("");
     try {
-      const res = await fetch(`http://localhost:3000/api/librarian/catalog/literature/${editingLit.ItemID}`, {
+      const res = await fetch(`${API}/api/librarian/catalog/literature/${editingLit.ItemID}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -209,7 +210,7 @@ export default function LibrarianDashboard() {
     e.preventDefault();
     setError("");
     try {
-      const res = await fetch("http://localhost:3000/api/librarian/catalog/literature", {
+      const res = await fetch(`${API}/api/librarian/catalog/literature`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -235,15 +236,15 @@ export default function LibrarianDashboard() {
   async function refreshCatalogData() {
     try {
       if (catalogTab === "books") {
-        const res = await fetch("http://localhost:3000/api/literature");
+        const res = await fetch(`${API}/api/literature`);
         const data = await res.json();
         setLiterature(Array.isArray(data[0]) ? data[0] : data);
       } else if (catalogTab === "media") {
-        const res = await fetch("http://localhost:3000/api/media");
+        const res = await fetch(`${API}/api/media`);
         const data = await res.json();
         setMedia(Array.isArray(data[0]) ? data[0] : data);
       } else if (catalogTab === "devices") {
-        const res = await fetch("http://localhost:3000/api/devices");
+        const res = await fetch(`${API}/api/devices`);
         const data = await res.json();
         setDevices(Array.isArray(data[0]) ? data[0] : data);
       }
@@ -254,7 +255,7 @@ export default function LibrarianDashboard() {
 
   async function loadCopies(item) {
     try {
-      const res = await fetch(`http://localhost:3000/api/librarian/catalog/${item.ItemID}/copies`, {
+      const res = await fetch(`${API}/api/librarian/catalog/${item.ItemID}/copies`, {
         credentials: "include"
       });
       const data = await res.json();
@@ -270,7 +271,7 @@ export default function LibrarianDashboard() {
   async function handleAddCopy(itemId) {
     setError("");
     try {
-      const res = await fetch("http://localhost:3000/api/librarian/catalog/copies", {
+      const res = await fetch(`${API}/api/librarian/catalog/copies`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -289,7 +290,7 @@ export default function LibrarianDashboard() {
     if (!confirm("Are you sure you want to delete this copy?")) return;
     setError("");
     try {
-      const res = await fetch(`http://localhost:3000/api/librarian/catalog/copies/${copyId}`, {
+      const res = await fetch(`${API}/api/librarian/catalog/copies/${copyId}`, {
         method: "DELETE",
         credentials: "include"
       });
@@ -306,7 +307,7 @@ export default function LibrarianDashboard() {
     e.preventDefault();
     setError("");
     try {
-      const res = await fetch("http://localhost:3000/api/librarian/catalog/devices", {
+      const res = await fetch(`${API}/api/librarian/catalog/devices`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -330,7 +331,7 @@ export default function LibrarianDashboard() {
     if (!confirm("Are you sure you want to delete this item?")) return;
     setError("");
     try {
-      const res = await fetch(`http://localhost:3000/api/librarian/catalog/devices/${itemId}`, {
+      const res = await fetch(`${API}/api/librarian/catalog/devices/${itemId}`, {
         method: "DELETE",
         credentials: "include"
       });
@@ -365,7 +366,7 @@ export default function LibrarianDashboard() {
     e.preventDefault();
     setError("");
     try {
-      const res = await fetch(`http://localhost:3000/api/librarian/catalog/media/${editingMedia.ItemID}`, {
+      const res = await fetch(`${API}/api/librarian/catalog/media/${editingMedia.ItemID}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -408,7 +409,7 @@ export default function LibrarianDashboard() {
     e.preventDefault();
     setError("");
     try {
-      const res = await fetch(`http://localhost:3000/api/librarian/catalog/devices/${editingDevice.ItemID}`, {
+      const res = await fetch(`${API}/api/librarian/catalog/devices/${editingDevice.ItemID}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -432,7 +433,7 @@ export default function LibrarianDashboard() {
     e.preventDefault();
     setError("");
     try {
-      const res = await fetch("http://localhost:3000/api/librarian/catalog/media", {
+      const res = await fetch(`${API}/api/librarian/catalog/media`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -457,7 +458,7 @@ export default function LibrarianDashboard() {
     if (!confirm("Are you sure you want to delete this item?")) return;
     setError("");
     try {
-      const res = await fetch(`http://localhost:3000/api/librarian/catalog/media/${itemId}`, {
+      const res = await fetch(`${API}/api/librarian/catalog/media/${itemId}`, {
         method: "DELETE",
         credentials: "include"
       });
@@ -473,7 +474,7 @@ export default function LibrarianDashboard() {
     if (!confirm("Are you sure you want to delete this item?")) return;
     setError("");
     try {
-      const res = await fetch(`http://localhost:3000/api/librarian/catalog/literature/${itemId}`, {
+      const res = await fetch(`${API}/api/librarian/catalog/literature/${itemId}`, {
         method: "DELETE",
         credentials: "include"
       });
@@ -487,7 +488,7 @@ export default function LibrarianDashboard() {
 
     async function fetchCatalog() {
     try {
-      const res = await fetch("http://localhost:3000/api/literature");
+      const res = await fetch(`${API}/api/literature`);
       const data = await res.json();
       setLiterature(Array.isArray(data[0]) ? data[0] : data);
     } catch {
@@ -501,7 +502,7 @@ export default function LibrarianDashboard() {
 
    async function fetchMedia() {
     try {
-      const res = await fetch("http://localhost:3000/api/media");
+      const res = await fetch(`${API}/api/media`);
       const data = await res.json();
       setMedia(Array.isArray(data[0]) ? data[0] : data);
     } catch {
@@ -517,7 +518,7 @@ export default function LibrarianDashboard() {
 
   async function fetchDevices() {
     try {
-      const res = await fetch("http://localhost:3000/api/devices");
+      const res = await fetch(`${API}/api/devices`);
       const data = await res.json();
       setDevices(Array.isArray(data[0]) ? data[0] : data);
     } catch {
@@ -534,7 +535,7 @@ export default function LibrarianDashboard() {
 
   async function handleLogout() {
     try {
-      await fetch("http://localhost:3000/api/logout", {
+      await fetch(`${API}/api/logout`, {
         method: "POST",
         credentials: "include"
       });
