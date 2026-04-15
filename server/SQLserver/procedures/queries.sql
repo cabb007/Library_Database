@@ -71,59 +71,6 @@ BEGIN
     END IF;
 END$$
 
--- =========================================================
--- Procedure: Add a single copy (blocks if copy exists or item ID does not exist)
--- =========================================================
-DROP PROCEDURE IF EXISTS AddCopy$$
-CREATE PROCEDURE AddCopy(
-    IN p_ItemID BIGINT,
-    IN p_CopyStatus SMALLINT, -- CopyStatus: 0=Available, 1=OnLoan
-    IN p_LibrarianID INT -- Use LibrarianID for CreatedBy and UpdatedBy
-) 
-BEGIN
-    DECLARE Flag INT DEFAULT 0;
-
-    -- Check if the item ID exists
-    IF NOT EXISTS (
-        SELECT 1
-        FROM items
-        WHERE ItemID = p_ItemID
-    ) THEN
-        SET Flag = 1;
-    END IF;
-
-    -- Check that the copy ID does not already exist
-    IF EXISTS (
-        SELECT 1
-        FROM copies
-        WHERE CopyID = p_CopyID
-    ) THEN
-        SET Flag = 1;
-    END IF;
-
-    -- Check that the copy status is valid
-    IF p_CopyStatus NOT IN (0,1) THEN
-        SET Flag = 1;
-    END IF;
-
-    -- Only insert if no error conditions were found
-    IF Flag = 0 THEN
-        INSERT INTO copies (
-            ItemID,
-            CopyStatus,
-            CreatedBy,
-            UpdatedBy
-        ) VALUES (
-            p_ItemID,
-            p_CopyStatus,
-            p_LibrarianID,
-            p_LibrarianID
-        );
-    ELSE
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Unable to add copy. Check ItemID or CopyStatus.';
-    END IF;
-END$$
 
 -- =================================================================================================================
 --                                               MEDIA QUERIES
@@ -138,6 +85,7 @@ BEGIN
     SELECT 
         i.ItemID,
         i.Title,
+        m.ItemType,
         m.Producer,
         m.DurationMinutes,
         GetAvailableCopies(i.ItemID) AS AvailableCopies
@@ -185,8 +133,9 @@ BEGIN
 
     -- Only delete if safe
     IF Flag = 0 THEN
-        DELETE FROM media
-        WHERE ItemID = p_MediaID;
+        DELETE FROM copies WHERE ItemID = p_MediaID;
+        DELETE FROM media WHERE ItemID = p_MediaID;
+        DELETE FROM items WHERE ItemID = p_MediaID;
     ELSE
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Cannot delete media with active loans or holds.';
@@ -299,6 +248,7 @@ BEGIN
     SELECT 
         i.ItemID,
         i.Title,
+        d.ItemType,
         d.Manufacturer,
         d.Model,
         GetAvailableCopies(i.ItemID) AS AvailableCopies
@@ -437,6 +387,7 @@ BEGIN
     SELECT 
         i.ItemID,
         i.Title,
+        l.ItemType,
         l.Author,
         l.Publisher,
         l.PublicationYear,
@@ -446,6 +397,7 @@ BEGIN
     WHERE i.ItemCategory = 1
     ORDER BY i.Title;
 END$$
+
 -- =========================================================
 -- Procedure: Add a literature item
 -- =========================================================
@@ -628,8 +580,8 @@ BEGIN
         l.CopyID,
         c.ItemID,
         i.Title,
-        l.CheckoutDate,
-        l.Duedate
+        l.CreatedAt,
+        l.DueDate
     FROM loans AS l
     JOIN users AS u ON l.UserID= u.UserID
     JOIN copies AS c ON l.CopyID = c.CopyID
@@ -651,14 +603,14 @@ BEGIN
         l.CopyID,
         c.ItemID,
         i.Title,
-        l.CheckoutDate,
-        l.Duedate
+        l.CreatedAt,
+        l.DueDate
     FROM loans AS l
     JOIN users AS u ON l.UserID = u.UserID
     JOIN copies AS c ON l.CopyID = c.CopyID
     JOIN items AS i ON c.ItemID = i.ItemID
     WHERE l.ReturnDate IS NULL
-      AND l.Duedate < CURDATE() -- only overdue loans
+      AND l.DueDate < CURDATE() -- only overdue loans
     ORDER BY l.DueDate;
 END$$
 
@@ -672,11 +624,12 @@ BEGIN
     SELECT
         f.FineID,
         f.UserID,
+        l.loanID,
         CONCAT(u.FirstName, ' ', u.LastName) AS UserName,
-        f.Amount,
-        f.Reason,
+        f.FineAmount,
         f.CreatedAt
     FROM fines AS f
+    JOIN loans AS l ON f.LoanID = l.LoanID
     JOIN users AS u ON f.UserID = u.UserID
     ORDER BY f.CreatedAt DESC; -- newest fines first
 END$$

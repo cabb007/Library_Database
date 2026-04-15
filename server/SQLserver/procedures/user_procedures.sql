@@ -53,7 +53,8 @@ BEGIN
     SELECT COUNT(*) INTO v_unpaidFines
     FROM fines
     WHERE UserID = p_UserID
-        AND FineAmount > 0; -- Unpaid fines
+        AND PaidStatus = 0
+        AND FineAmount > 0;
 
     IF v_unpaidFines > 0 THEN
         SIGNAL SQLSTATE '45000'
@@ -99,13 +100,23 @@ BEGIN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Password must be at least 6 characters long.';
     END IF;
+
+    -- Checking for duplicate email before INSERT based on the UNIQUE constraint from users table
+    IF EXISTS (
+        SELECT 1
+        FROM users
+        WHERE Email = p_Email
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'A user with that email already exists.';
+    END IF;
     -- ================================
 
     -- Set default loan period based on user type
     IF p_UserType = 0 THEN
-        SET v_LoanPeriodDays = 7; -- Students get 7 days
+        SET v_LoanPeriodDays = 14; -- Students get 14 days
     ELSE
-        SET v_LoanPeriodDays = 14; -- Faculty get 14 days
+        SET v_LoanPeriodDays = 30; -- Faculty get 30 days
     END IF;
 
     INSERT INTO users (
@@ -166,7 +177,7 @@ BEGIN
 
     -- ================================
 
-    -- Create the user with default values for UserType (Student) and LoanPeriodDays (7)
+    -- Create the user with default values for UserType (Student) and LoanPeriodDays (14)
     INSERT INTO users (
         Password,
         FirstName,
@@ -185,7 +196,7 @@ BEGIN
         p_Email,
         0.00, -- Default balance
         0, -- Default to Student user type for self-registration
-        7, -- Default loan period for students
+        14, -- Default loan period for students
         1, -- Active status
         NULL,
         NULL
@@ -196,7 +207,8 @@ BEGIN
 
 -- Update CreatedBy
     UPDATE users
-    SET CreatedBy = v_NewUserID
+    SET CreatedBy = v_NewUserID,
+        UpdatedBy = v_NewUserID
     WHERE UserID = v_NewUserID;
 END$$
 
