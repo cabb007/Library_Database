@@ -335,6 +335,37 @@ app.post("/api/librarian/users", requireLibrarian, async (req, res) => {
   }
 });
 
+// Update a user via UpdateUser
+app.put("/api/librarian/users/:id", requireLibrarian, async (req, res) => {
+    try {
+        const userId = Number(req.params.id);
+
+        if (userId === req.session.user.UserID) {
+            return res.status(400).json({ error: "Cannot edit your own account" });
+        }
+
+        const { FirstName, LastName, Email, UserType, Status, Balance } = req.body;
+
+        if (!FirstName?.trim() || !LastName?.trim() || !Email?.trim()) {
+            return res.status(400).json({ error: "First name, last name, and email are required." });
+        }
+
+        await db.execute("CALL UpdateUser(?, ?, ?, ?, ?, ?, ?, ?)", [
+            userId, FirstName, LastName, Email,
+            Number(UserType), Number(Status),
+            Number(Balance), req.session.user.UserID
+        ]);
+
+        res.json({ message: "User updated" });
+    } catch (err) {
+        console.error(err);
+        if (err.code === "ER_DUP_ENTRY") return res.status(409).json({ error: "A user with that email already exists" });
+        if (err.sqlState === "45000") return res.status(400).json({ error: err.sqlMessage });
+        res.status(500).json({ error: "Failed to update user" });
+    }
+});
+
+// Delete a user via DeleteUser (prevents deletion if there are fines, loans, or holds active)
 app.delete("/api/librarian/users/:id", requireLibrarian, async (req, res) => {
   try {
     const userId = Number(req.params.id);
@@ -395,12 +426,43 @@ app.get("/api/devices", async (req, res) => {
   }
 });
 
-/* ================= LIBRARIAN: CATALOG ================= */
+app.get("/api/title", async (req, res) => {
+    if (!req.session.user) {
+        return res.status(401).json({ error: "Not logged in" });
+    }
 
-app.delete(
-  "/api/librarian/catalog/literature/:id",
-  requireLibrarian,
-  async (req, res) => {
+    const selectedItem = req.session.user.SelectedItem;
+
+    if (!selectedItem) {
+        return res.status(400).json({ error: "No item selected" });
+    }
+
+    const [data] = await db.execute("CALL getTitle(?)", [selectedItem]);
+
+    res.json(data);
+});
+
+// Update a literature item via UpdateLiterature
+app.put("/api/librarian/catalog/literature/:id", requireLibrarian, async (req, res) => {
+    const { id } = req.params;
+    const { Title, ItemType, Author, Publisher, PublicationYear } = req.body;
+    try {
+        await db.execute("CALL UpdateLiterature(?, ?, ?, ?, ?, ?, ?)", [
+            id, Title, Number(ItemType), Author, Publisher,
+            PublicationYear ? Number(PublicationYear) : null,
+            req.session.user.UserID
+        ]);
+        res.json({ message: "Literature updated" });
+    } catch (err) {
+        console.error(err);
+        if (err.sqlState === "45000") return res.status(400).json({ error: err.sqlMessage });
+        res.status(500).json({ error: "Failed to update literature" });
+    }
+});
+
+// Delete a literature item via DeleteLiterature
+app.delete("/api/librarian/catalog/literature/:id", requireLibrarian, async (req, res) => {
+    const { id } = req.params;
     try {
       await db.execute("CALL DeleteLiterature(?)", [req.params.id]);
       res.json({ message: "Literature deleted" });
@@ -425,8 +487,20 @@ app.get(
       console.error(err);
       res.status(500).json({ error: "Failed to fetch copies" });
     }
-  }
-);
+});
+
+// Add a single copy to an existing item via AddCopy
+app.post("/api/librarian/catalog/copies", requireLibrarian, async (req, res) => {
+    const { ItemID } = req.body;
+    try {
+        await db.execute("CALL AddCopy(?, ?)", [ItemID, req.session.user.UserID]);
+        res.status(201).json({ message: "Copy added" });
+    } catch (err) {
+        console.error(err);
+        if (err.sqlState === "45000") return res.status(400).json({ error: err.sqlMessage });
+        res.status(500).json({ error: "Failed to add copy" });
+    }
+});
 
 app.delete(
   "/api/librarian/catalog/copies/:copyId",
@@ -442,8 +516,24 @@ app.delete(
       }
       res.status(500).json({ error: "Failed to delete copy" });
     }
-  }
-);
+});
+
+// Update a device item via UpdateDevice
+app.put("/api/librarian/catalog/devices/:id", requireLibrarian, async (req, res) => {
+    const { id } = req.params;
+    const { Title, ItemType, Manufacturer, Model } = req.body;
+    try {
+        await db.execute("CALL UpdateDevice(?, ?, ?, ?, ?, ?)", [
+            id, Title, Number(ItemType), Manufacturer, Model || null,
+            req.session.user.UserID
+        ]);
+        res.json({ message: "Device updated" });
+    } catch (err) {
+        console.error(err);
+        if (err.sqlState === "45000") return res.status(400).json({ error: err.sqlMessage });
+        res.status(500).json({ error: "Failed to update device" });
+    }
+});
 
 app.delete(
   "/api/librarian/catalog/devices/:id",
@@ -491,8 +581,25 @@ app.post(
       }
       res.status(500).json({ error: "Failed to add device" });
     }
-  }
-);
+});
+
+// Update a media item via UpdateMedia
+app.put("/api/librarian/catalog/media/:id", requireLibrarian, async (req, res) => {
+    const { id } = req.params;
+    const { Title, ItemType, Producer, DurationMinutes } = req.body;
+    try {
+        await db.execute("CALL UpdateMedia(?, ?, ?, ?, ?, ?)", [
+            id, Title, Number(ItemType), Producer,
+            DurationMinutes ? Number(DurationMinutes) : null,
+            req.session.user.UserID
+        ]);
+        res.json({ message: "Media updated" });
+    } catch (err) {
+        console.error(err);
+        if (err.sqlState === "45000") return res.status(400).json({ error: err.sqlMessage });
+        res.status(500).json({ error: "Failed to update media" });
+    }
+});
 
 app.delete(
   "/api/librarian/catalog/media/:id",

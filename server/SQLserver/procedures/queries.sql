@@ -82,7 +82,7 @@ END$$
 DROP PROCEDURE IF EXISTS GetMedia$$
 CREATE PROCEDURE GetMedia()
 BEGIN
-    SELECT 
+    SELECT
         i.ItemID,
         i.Title,
         m.ItemType,
@@ -245,7 +245,7 @@ END$$
 DROP PROCEDURE IF EXISTS GetDevices$$
 CREATE PROCEDURE GetDevices()
 BEGIN
-    SELECT 
+    SELECT
         i.ItemID,
         i.Title,
         d.ItemType,
@@ -384,7 +384,7 @@ END$$
 DROP PROCEDURE IF EXISTS GetLiterature$$
 CREATE PROCEDURE GetLiterature()
 BEGIN
-    SELECT 
+    SELECT
         i.ItemID,
         i.Title,
         l.ItemType,
