@@ -493,7 +493,7 @@ app.get(
 app.post("/api/librarian/catalog/copies", requireLibrarian, async (req, res) => {
     const { ItemID } = req.body;
     try {
-        await db.execute("CALL AddCopy(?, ?)", [ItemID, req.session.user.UserID]);
+        await db.execute("CALL AddCopy(?, ?, ?)", [ItemID, 0, req.session.user.UserID]);
         res.status(201).json({ message: "Copy added" });
     } catch (err) {
         console.error(err);
