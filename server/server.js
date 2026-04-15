@@ -246,6 +246,155 @@ const server = http.createServer(async (req,res) => {
             return;
         }
 
+        //LIBRARIAN USERS
+        if(method === "GET" && url === "/api/librarian/users") {
+          const [rows] = await db.execute("CALL GetUsers()");
+          sendJson(res,200,rows[0]);
+          return;
+        }
+
+        if(method === "POST" && url === "/api/librarian/users") {
+          const cookies = parseCookies(req);
+          const sessionID = cookies.sessionID;
+          const session = sessions.get(sessionID);
+
+          const body = await getJsonBody(req);
+          const { FirstName, LastName, Email, Password, UserType } = body;
+
+          const userType = Number(UserType) || 0;
+          const librarianID = session.UserID;
+
+          await db.execute("CALL AddUser(?, ?, ?, ?, ?, ?)", [
+            Password,
+            FirstName,
+            LastName,
+            Email,
+            userType,
+            librarianID,
+          ]);
+
+          const [rows] = await db.execute("SELECT UserID FROM users WHERE Email = ?", [Email]);
+
+          sendJson(res,201, {message: "User added", id: rows[0].UserID});
+        }
+
+        if(method === "DELETE" && url === "/api/librarian/users/:id") {
+          const urlParts = req.url.split("/");
+          const userId = Number(urlParts[3]);
+          const cookies = parseCookies(req);
+          const sessionID = cookies.sessionID;
+          const session = sessions.get(sessionID);
+
+          if (userId === session.UserID) {
+            sendJson(res,400,{error: "Cannot delete your own account"});
+            return;
+          }
+
+          await db.execute("CALL DeleteUser(?)", [userId]);
+
+          sendJson(res,200,{message: "User Deleted Successfully"});
+          return;
+        }
+
+        //LIBRARIAN CATALOGUE
+
+        if(method === "DELETE" && "/api/librarian/catalog/literature/:id") {
+          const urlParts = req.url.split("/");
+          await db.execute("CALL DeleteLiterature(?)", Number(urlParts[3]));
+          sendJson(res,200,{message: "Literature Delete Success"});
+          return;
+        }
+
+        if (method === "GET" && url.startsWith("/api/librarian/catalog/") && url.endsWith("/copies")) {
+          const urlParts = req.url.split("/");
+          const itemId = Number(urlParts[4]);
+
+          if (Number.isNaN(itemId)) {
+            sendJson(res, 400, { error: "Invalid item ID" });
+            return;
+          }
+
+          const [rows] = await db.execute("CALL GetItemCopies(?)", [itemId]);
+          sendJson(res, 200, rows[0]);
+          return;
+        }
+
+        if(method === "DELETE" && url === "/api/librarian/catalog/copies/:copyId"){
+          const urlParts = req.url.split("/");
+          await db.execute("CALL DeleteCopy(?)", Number(urlParts[4]));
+          sendJson(res,200,{message:"Copy Delete Success"});
+          return;
+        }
+
+        if(method === "DELETE" && url === "/api/librarian/catalog/devices/:id") {
+          const urlParts = req.url.split("/");
+          await db.execute("CALL DeleteDevice(?)", Number(urlParts[4]));
+          sendJson(res,200,{message:"Device Delete Success"});
+          return;
+        }
+
+        if(method === "POST" && url === "/api/librarian/catalog/devices") {
+          const body = await getJsonBody(req);
+          const { Title, ItemType, Manufacturer, Model, Copies } = body;
+
+          const [[{nextID}]] = await db.execute("SELECT COALESCE(MAX(ItemID), 0) + 1 AS nextID FROM items");
+
+          sendJson(res,201, {message: "Device Added Successfully"});
+          return;
+        }
+
+        if(method === "DELETE" && url === "/api/librarian/catalog/media/:id"){
+          const urlParts = req.url.split("/");
+          await db.execute("CALL DeleteMedia(?)", Number(urlParts[4]));
+          sendJson(res,200,{message:"Media Deleted Success"});
+          return;
+        }
+
+        if(method === "POST" && url === "/api/librarian/catalog/media") {
+          const cookies = parseCookies(req);
+          const sessionID = cookies.sessionID;
+          const session = sessions.get(sessionID);
+          const body = await getJsonBody(req);
+          const { Title, ItemType, Producer, DurationMinutes, Copies } = body;
+
+          const [[{nextID}]] = await db.execute("SELECT COALESCE(MAX(ItemID), 0) + 1 AS nextID FROM items");
+
+          await db.execute("CALL AddMedia(?,?,?,?,?,?,?)",
+            [
+              nextID,
+              Title,
+              ItemType,
+              Producer,
+              DurationMinutes || null,
+              Copies,
+              session.UserID
+            ]
+          );
+
+          sendJson(res,201,{message: "media added"});
+        }
+
+        if(method === "POST" && url === "/api/librarian/catalog/literature") {
+          const cookies = parseCookies(req);
+          const sessionID = cookies.sessionID;
+          const session = sessions.get(sessionID);
+          const body = await getJsonBody(req);
+          const { ItemID, Title, ItemType, Author, Publisher, PublicationYear, Copies} = body;
+
+          await db.execute("CALL AddLiterature(?, ?, ?, ?, ?, ?, ?, ?)", [
+            ItemID,
+            Title,
+            ItemType,
+            Author,
+            Publisher,
+            PublicationYear || null,
+            Copies,
+            session.UserID
+          ]);
+
+          sendJson(res,201,{message: "Literature Added Successfully"});
+        }
+
         //DATA CALLS FROM DB (QUERIES)
         if (method === "GET" && url === "/api/literature") {
             const [data] = await db.execute("CALL GetLiterature()");
