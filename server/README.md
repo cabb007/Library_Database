@@ -41,4 +41,5 @@ SOURCE procedures/queries.sql;
 SOURCE procedures/user_procedures.sql;
 SOURCE procedures/triggers.sql;
 SOURCE procedures/checkout_hold_procedures.sql;
+SOURCE procedures/update_procedures.sql;
 SOURCE load_all.sql;
