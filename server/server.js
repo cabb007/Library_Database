@@ -145,11 +145,12 @@ const server = http.createServer(async (req,res) => {
                 FirstName: user.FirstName,
                 LastName: user.LastName,
                 Balance: user.Balance,
+                UserType: user.UserType,
                 ConfirmFlag: 0,
                 SelectedItem: null
             });
 
-            sendJson(res,200, {success:true},
+            sendJson(res,200,{success:true,user:sessions[sessionID]},
                 {
                     "Set-Cookie" : `sessionID=${encodeURIComponent(sessionID)}; Path=/; HttpOnly; SameSite=Lax`
                 }
@@ -247,22 +248,17 @@ const server = http.createServer(async (req,res) => {
         }
 
         if(method === "POST" && url === "/api/hold"){
-          const cookies = parseCookies(req);
-          const sessionID = cookies.sessionID;
+            const cookies = parseCookies(req);
+            const sessionID = cookies.sessionID;
+            const session = sessions.get(sessionID);
+            const userID = session.UserID;
+            const body = await getJsonBody(req);
+            const { itemId } = body;
 
-          if (!sessionID || !sessions.has(sessionID)) {
-              sendJson(res, 401, {loggedIn : false});
-              return;
-          }
 
-          const session = sessions.get(sessionID);
-          const body = await getJsonBody(req);
-          const { itemId } = body;
-          const userID = session.UserID;
+            await db.execute("CALL CreateHold(?,?)", [userID, itemId]);
 
-          await db.execute("CALL CreateHold(?,?)", [userID, itemId]);
-
-          sendJson(res,200,{success: true, message: "Hold placed successfully"});
+            sendJson(res,200,{success: true, message: "Hold placed successfully"});
         }
 
         //LIBRARIAN USERS
