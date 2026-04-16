@@ -36,6 +36,7 @@ SET GLOBAL local_infile=1;
 DROP DATABASE IF EXISTS library_db;
 CREATE DATABASE library_db;
 USE library_db;
+SOURCE scheduling.sql;
 SOURCE schema.sql;
 SOURCE procedures/queries.sql;
 SOURCE procedures/user_procedures.sql;
