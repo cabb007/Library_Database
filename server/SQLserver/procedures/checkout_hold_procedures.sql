@@ -164,5 +164,73 @@ BEGIN
 
 END$$
 
+--finepayment procedure does 
+DROP PROCEDURE IF EXISTS PayFine$$
+
+CREATE PROCEDURE PayFine (
+    IN p_FineID INT,
+    IN p_UserID INT
+)
+BEGIN
+    DECLARE v_FineAmount DECIMAL(7,2) DEFAULT NULL;
+    DECLARE v_LoanID INT DEFAULT NULL;
+    DECLARE v_LoanActive INT DEFAULT 1;
+    DECLARE v_PaidStatus INT DEFAULT NULL;
+
+    START TRANSACTION;
+
+    -- Lock fine row
+    SELECT FineAmount, LoanID, PaidStatus
+    INTO v_FineAmount, v_LoanID, v_PaidStatus
+    FROM fines
+    WHERE FineID = p_FineID
+      AND UserID = p_UserID
+    FOR UPDATE;
+
+    -- Validate fine exists
+    IF v_FineAmount IS NULL THEN
+        ROLLBACK;
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Invalid fine';
+    END IF;
+
+    -- Prevent double payment
+    IF v_PaidStatus = 1 THEN
+        ROLLBACK;
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Fine already paid';
+    END IF;
+
+    -- Check loan status (must be inactive)
+    SELECT IF(ReturnDate IS NULL, 1, 0)
+    INTO v_LoanActive
+    FROM loans
+    WHERE LoanID = v_LoanID;
+
+    IF v_LoanActive = 1 THEN
+        ROLLBACK;
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Cannot pay fine for active loan';
+    END IF;
+
+    -- Deduct balance from user commented out because we don't need it
+    --UPDATE users
+    --SET Balance = Balance - v_FineAmount,
+        --UpdatedAt = CURRENT_TIMESTAMP,
+        --UpdatedBy = p_UserID
+    --WHERE UserID = p_UserID;
+
+    -- Mark fine as paid
+    UPDATE fines
+    SET PaidStatus = 1,
+        PaidAt = CURRENT_TIMESTAMP,
+        UpdatedAt = CURRENT_TIMESTAMP,
+        UpdatedBy = p_UserID
+    WHERE FineID = p_FineID;
+
+    COMMIT;
+
+END$$
+
 
 DELIMITER ;
