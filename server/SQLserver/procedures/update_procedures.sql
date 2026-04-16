@@ -103,8 +103,7 @@ CREATE PROCEDURE AddCopy(
     IN p_ItemID BIGINT,
     IN p_CopyStatus SMALLINT, -- CopyStatus: 0=Available, 1=OnLoan
     IN p_LibrarianID INT -- Use LibrarianID for CreatedBy and UpdatedBy
-    -- IN p_CopyID INT -- Optional: if provided, will attempt to use this CopyID instead of auto-generating
-) 
+)
 BEGIN
     DECLARE Flag INT DEFAULT 0;
 

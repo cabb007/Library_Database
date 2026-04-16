@@ -57,6 +57,7 @@ BEGIN
         CopyID,
         CreatedBy,
         CreatedAt,
+        CreatedAt,
         DueDate
     )
     VALUES (
@@ -143,9 +144,16 @@ BEGIN
 
     -- Create the hold request UserID,ItemID,HoldStatus,CreatedAt,CreatedBy,UpdatedAt,UpdatedBy
 
+    -- Create the hold request UserID,ItemID,HoldStatus,CreatedAt,CreatedBy,UpdatedAt,UpdatedBy
+
     INSERT INTO holds (
         UserID,
         ItemID,
+        HoldStatus,
+        CreatedAt,
+        CreatedBy,
+        UpdatedAt,
+        UpdatedBy
         HoldStatus,
         CreatedAt,
         CreatedBy,
@@ -161,6 +169,7 @@ BEGIN
         CURRENT_TIMESTAMP(),
         p_UserID
     );
+
 
 END$$
 
