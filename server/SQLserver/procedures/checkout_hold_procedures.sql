@@ -47,7 +47,7 @@ BEGIN
     -- Mark the copy as checked out; note CopyStatus: 0=Available,1=OnLoan
     UPDATE copies AS c
     SET c.CopyStatus = 1,
-        c.UpdatedAt = NOW(),
+        c.UpdatedAt = CURRENT_TIMESTAMP(),
         c.UpdatedBy = p_UserID
     WHERE c.CopyID = v_CopyID;
 
@@ -156,9 +156,9 @@ BEGIN
         p_UserID,
         p_ItemID,
         0, -- Active hold
-        NOW(),
+        CURRENT_TIMESTAMP(),
         p_UserID,
-        NOW(),
+        CURRENT_TIMESTAMP(),
         p_UserID
     );
 

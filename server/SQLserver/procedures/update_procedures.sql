@@ -85,7 +85,7 @@ BEGIN
         Status = p_Status,
         LoanPeriodDays = v_LoanPeriodDays,
         Balance = p_Balance,
-        UpdatedAt = NOW(),
+        UpdatedAt = CURRENT_TIMESTAMP(),
         UpdatedBy = p_UpdatedBy
     WHERE UserID = p_UserID;
 
@@ -176,7 +176,7 @@ BEGIN
     UPDATE items
     SET
         Title = p_Title,
-        UpdatedAt = NOW(),
+        UpdatedAt = CURRENT_TIMESTAMP(),
         UpdatedBy = p_UpdatedBy
     WHERE ItemID = p_ItemID AND ItemCategory = 1;
 
@@ -220,7 +220,7 @@ BEGIN
     UPDATE items
     SET
         Title = p_Title,
-        UpdatedAt = NOW(),
+        UpdatedAt = CURRENT_TIMESTAMP(),
         UpdatedBy = p_UpdatedBy
     WHERE ItemID = p_ItemID AND ItemCategory = 2;
 
@@ -259,7 +259,7 @@ BEGIN
     UPDATE items
     SET
         Title = p_Title,
-        UpdatedAt = NOW(),
+        UpdatedAt = CURRENT_TIMESTAMP(),
         UpdatedBy = p_UpdatedBy
     WHERE ItemID = p_ItemID AND ItemCategory = 3;
 
