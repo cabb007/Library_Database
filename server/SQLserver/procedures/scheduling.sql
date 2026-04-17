@@ -2,26 +2,56 @@ SET GLOBAL event_scheduler = ON;
 
 DELIMITER $$
 
-CREATE PROCEDURE midnight_task()
+-- =========================================================
+-- Procedure: Daily midnight task, creates missing fines for newly overdue loans, then updates all unpaid overdue fine amounts
+-- =========================================================
+DROP PROCEDURE IF EXISTS midnightTask$$
+CREATE PROCEDURE midnightTask()
 BEGIN
-    -- Charge users for overdue loans (based purely on dates)
-    UPDATE users u
-    JOIN (
-        SELECT UserID, COUNT(*) AS overdue_count
-        FROM loans
-        WHERE DueDate < CURDATE()
-          AND ReturnDate IS NULL
-        GROUP BY UserID
-    ) l ON u.UserID = l.UserID
-    SET u.Balance = u.Balance + (l.overdue_count * 2.00),
-        u.UpdatedAt = CURRENT_TIMESTAMP,
-        u.UpdatedBy = NULL;
-END $$
+    -- Create missing fine rows for newly overdue loans
+    INSERT INTO fines (
+        UserID,
+        LoanID,
+        FineAmount,
+        PaidStatus,
+        PaidAt,
+        CreatedAt,
+        CreatedBy,
+        UpdatedAt,
+        UpdatedBy
+    )
+    SELECT
+        l.UserID,
+        l.LoanID,
+        GREATEST(DATEDIFF(COALESCE(l.ReturnDate, CURDATE()), l.DueDate), 0) * 2.00,
+        0,
+        NULL,
+        CURRENT_TIMESTAMP,
+        1, -- SysAdmin UserID = 1
+        CURRENT_TIMESTAMP,
+        1 -- SysAdmin UserID = 1
+    FROM loans l
+    LEFT JOIN fines f ON f.LoanID = l.LoanID
+    WHERE f.FineID IS NULL
+      AND l.DueDate < CURDATE();
 
-DELIMITER ;
+    -- Update all existing unpaid fines
+    UPDATE fines f
+    JOIN loans l ON f.LoanID = l.LoanID
+    SET f.FineAmount = GREATEST(DATEDIFF(COALESCE(l.ReturnDate, CURDATE()), l.DueDate), 0) * 2.00,
+        f.UpdatedAt = CURRENT_TIMESTAMP,
+        f.UpdatedBy = 1 -- SysAdmin UserID = 1
+    WHERE f.PaidStatus = 0
+      AND l.DueDate < CURDATE();
+END$$
 
-CREATE EVENT run_midnight_task
+-- =========================================================
+-- Event: Run midnight task every day
+-- =========================================================
+DROP EVENT IF EXISTS run_midnightTask$$
+CREATE EVENT run_midnightTask
 ON SCHEDULE EVERY 1 DAY
 STARTS CURRENT_DATE + INTERVAL 1 DAY
 DO
-CALL midnight_task();
+CALL midnightTask()$$
+DELIMITER ;

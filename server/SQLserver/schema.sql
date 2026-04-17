@@ -21,18 +21,17 @@ CREATE TABLE users (
     FirstName VARCHAR(30) NOT NULL,
     LastName VARCHAR(30) NOT NULL,
     Email VARCHAR(50) NOT NULL UNIQUE,
-    Balance DECIMAL(7,2) NOT NULL DEFAULT 0.00,
     UserType SMALLINT NOT NULL DEFAULT 0,
     LoanPeriodDays INT NOT NULL DEFAULT 14,
-    Status SMALLINT NOT NULL DEFAULT 1, -- 0=Blocked, 1=Active
-    CreatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    Status SMALLINT NOT NULL DEFAULT 1, -- 0=Blocked, 1=Active, 2=Removed
+    CreatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP(),
     CreatedBy INT NULL,
     UpdatedAt DATETIME NULL,
     UpdatedBy INT NULL,
 
     CHECK (UserType IN (0,1,2)),
     CHECK (LoanPeriodDays > 0),
-    CHECK (Status IN (0,1)),
+    CHECK (Status IN (0,1,2)),
 
     CONSTRAINT fk_users_createdby FOREIGN KEY (CreatedBy) REFERENCES users(UserID)
         ON DELETE SET NULL,
@@ -46,7 +45,7 @@ CREATE TABLE items (
     ItemID BIGINT PRIMARY KEY,
     ItemCategory SMALLINT NOT NULL,
     Title VARCHAR(100) NOT NULL,
-    CreatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CreatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP(),
     CreatedBy INT NULL,
     UpdatedAt DATETIME NULL,
     UpdatedBy INT NULL,
@@ -104,18 +103,18 @@ CREATE TABLE devices (
         ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- 6) COPIES (CopyStatus: 0=Available,1=OnLoan)
+-- 6) COPIES
 
 CREATE TABLE copies (
     CopyID INT PRIMARY KEY AUTO_INCREMENT,
     ItemID BIGINT NOT NULL,
-    CopyStatus SMALLINT NOT NULL DEFAULT 0,
-    CreatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CopyStatus SMALLINT NOT NULL DEFAULT 0, -- 0=Available,1=OnLoan, 2=Removed
+    CreatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP(),
     CreatedBy INT NULL,
     UpdatedAt DATETIME NULL,
     UpdatedBy INT NULL,
 
-    CHECK (CopyStatus IN (0,1)),
+    CHECK (CopyStatus IN (0,1,2)),
 
     CONSTRAINT fk_copies_item FOREIGN KEY (ItemID) REFERENCES items(ItemID)
         ON DELETE CASCADE,
@@ -137,7 +136,7 @@ CREATE TABLE loans (
     CopyID INT NOT NULL,
     DueDate DATE NOT NULL,
     ReturnDate DATE NULL,
-    CreatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CreatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP(),
     CreatedBy INT NULL,
     UpdatedAt DATETIME NULL,
     UpdatedBy INT NULL,
@@ -172,7 +171,7 @@ CREATE TABLE holds (
     UserID INT NOT NULL,
     ItemID BIGINT NOT NULL,
     HoldStatus SMALLINT NOT NULL DEFAULT 0,
-    CreatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CreatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP(),
     CreatedBy INT NULL,
     UpdatedAt DATETIME NULL,
     UpdatedBy INT NULL,
@@ -204,9 +203,9 @@ CREATE TABLE fines (
     FineAmount DECIMAL(7,2) NOT NULL DEFAULT 0.00,
     PaidStatus SMALLINT NOT NULL DEFAULT 0,
     PaidAt DATETIME NULL,
-    CreatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CreatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP(),
     CreatedBy INT NULL,
-    UpdatedAt DATETIME NULL,
+    UpdatedAt DATETIME NULL, -- The exact day the overdue status first began, aka “the timestamp when the system recorded or refreshed the fine.”
     UpdatedBy INT NULL,
 
 

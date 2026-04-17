@@ -1,10 +1,9 @@
 DELIMITER $$
 
 
--- =========================================================
--- Library Database User Procedures - GetUsers, CreateUser, DeleteUser
--- =========================================================
-
+-- =================================================================================================================
+--                                               INSERT / REMOVAL QUERIES
+-- =================================================================================================================
 
 -- =========================================================
 -- Procedure: Get all users
@@ -124,7 +123,6 @@ BEGIN
         FirstName,
         LastName,
         Email,
-        Balance,
         UserType,
         LoanPeriodDays,
         Status,
@@ -135,7 +133,6 @@ BEGIN
         p_FirstName,
         p_LastName,
         p_Email,
-        0.00, -- Default balance
         p_UserType,
         v_LoanPeriodDays,
         1, -- Active status
@@ -183,7 +180,6 @@ BEGIN
         FirstName,
         LastName,
         Email,
-        Balance,
         UserType,
         LoanPeriodDays,
         Status,
@@ -194,7 +190,6 @@ BEGIN
         p_FirstName,
         p_LastName,
         p_Email,
-        0.00, -- Default balance
         0, -- Default to Student user type for self-registration
         14, -- Default loan period for students
         1, -- Active status
@@ -211,5 +206,41 @@ BEGIN
         UpdatedBy = v_NewUserID
     WHERE UserID = v_NewUserID;
 END$$
+
+-- =================================================================================================================
+--                                               BALANCE QUERIES
+-- =================================================================================================================
+
+-- =========================================================
+-- Function: Get balance value for a specific user, to be used in other procedures
+-- =========================================================
+DROP FUNCTION IF EXISTS GetUserBalanceValue$$
+CREATE FUNCTION GetUserBalanceValue(p_UserID INT)
+RETURNS DECIMAL(7,2)
+DETERMINISTIC
+READS SQL DATA
+BEGIN
+    DECLARE v_Balance DECIMAL(7,2);
+
+    SELECT COALESCE(SUM(FineAmount), 0.00)
+    INTO v_Balance
+    FROM fines
+    WHERE UserID = p_UserID
+      AND PaidStatus = 0;
+
+    RETURN v_Balance;
+END$$
+
+-- =========================================================
+-- Procedure: Get balance for a specific user
+-- =========================================================
+DROP PROCEDURE IF EXISTS GetUserBalance$$
+CREATE PROCEDURE GetUserBalance (
+    IN p_UserID INT
+)
+BEGIN
+    SELECT GetUserBalanceValue(p_UserID) AS Balance;
+END$$
+
 
 DELIMITER ;

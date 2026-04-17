@@ -40,7 +40,7 @@ SOURCE schema.sql;
 SOURCE procedures/queries.sql;
 SOURCE procedures/user_procedures.sql;
 SOURCE procedures/triggers.sql;
-SOURCE procedures/checkout_hold_procedures.sql;
+SOURCE procedures/transactions.sql;
 SOURCE procedures/update_procedures.sql;
 SOURCE procedures/scheduling.sql;
 SOURCE load_all.sql;

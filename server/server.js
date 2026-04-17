@@ -169,7 +169,6 @@ app.post("/api/login", async (req, res) => {
       FirstName: user.FirstName,
       LastName: user.LastName,
       UserType: user.UserType,
-      Balance: user.Balance,
     };
 
     req.session.save((err) => {
@@ -344,16 +343,15 @@ app.put("/api/librarian/users/:id", requireLibrarian, async (req, res) => {
             return res.status(400).json({ error: "Cannot edit your own account" });
         }
 
-        const { FirstName, LastName, Email, UserType, Status, Balance } = req.body;
+        const { FirstName, LastName, Email, UserType, Status } = req.body;
 
         if (!FirstName?.trim() || !LastName?.trim() || !Email?.trim()) {
             return res.status(400).json({ error: "First name, last name, and email are required." });
         }
 
-        await db.execute("CALL UpdateUser(?, ?, ?, ?, ?, ?, ?, ?)", [
+        await db.execute("CALL UpdateUser(?, ?, ?, ?, ?, ?, ?)", [
             userId, FirstName, LastName, Email,
-            Number(UserType), Number(Status),
-            Number(Balance), req.session.user.UserID
+            Number(UserType), Number(Status), req.session.user.UserID
         ]);
 
         res.json({ message: "User updated" });
@@ -686,6 +684,39 @@ app.post(
     }
   }
 );
+
+
+// ================ USER TRANSACTIONS =================
+app.get("/api/user/balance", requireLogin, async (req, res) => {
+  try {
+    const userId = req.session.user.UserID;
+
+    const [rows] = await db.execute("CALL GetUserBalance(?)", [userId]);
+
+    // rows[0][0] because MySQL returns nested arrays for procedures
+    const balance = rows[0][0]?.Balance ?? 0;
+
+    res.json({ Balance: Number(balance) });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch balance" });
+  }
+});
+
+app.put("/api/finepayment", requireLogin, async (req, res) => {
+  try {
+    const userId = req.session.user.UserID;
+
+    await db.execute("CALL PayFine(?)", [userId]);
+
+    res.json({
+      success: true,
+      message: "All unpaid fines paid successfully"
+    });
+  } catch (err) {
+    handleSqlError(res, err, err.sqlMessage || "Payment failed");
+  }
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
