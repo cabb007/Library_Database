@@ -1,20 +1,65 @@
-import express from 'express';
-import mysql from 'mysql2/promise';
-import cors from 'cors';
-import session from 'express-session';
-import 'dotenv/config';
+import express from "express";
+import fs from "fs";
+import mysql from "mysql2/promise";
+import cors from "cors";
+import path from "path";
+import session from "express-session";
+import "dotenv/config";
+import { fileURLToPath } from "url";
 
 const app = express();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const imageRoot = path.join(__dirname, "SQLserver", "data", "images");
+const FEATURED_LIMIT = 6;
+const ITEM_TYPE_LABELS = {
+  literature: {
+    1: "Book",
+    2: "Textbook",
+    3: "Magazine",
+    4: "Audiobook",
+  },
+  media: {
+    1: "DVD / CD",
+    2: "Blu-ray",
+    3: "Vinyl",
+  },
+  devices: {
+    1: "Laptop",
+    2: "Tablet",
+    3: "Equipment",
+  },
+};
 
 app.set("trust proxy", 1);
 
-app.use(cors({
-    origin: [ "http://localhost:3000",
-        "http://localhost:5173",
-        "http://localhost:4280",
-        "https://brave-field-0e8fa9510.1.azurestaticapps.net"],
-        credentials: true
-}));
+app.use(
+  cors({
+    origin: [
+      "http://localhost:3000",
+      "http://localhost:5173",
+      "http://localhost:4280",
+      "https://brave-field-0e8fa9510.1.azurestaticapps.net",
+    ],
+    credentials: true,
+  })
+);
+
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "secret_key",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      maxAge: 1000 * 60 * 60 * 24,
+    },
+  })
+);
+
+app.use("/library-images", express.static(imageRoot));
 
 app.get("/", (req, res) => {
     res.send("Backend is running");
@@ -35,22 +80,102 @@ app.get("/health", (req, res) => {
   }});
 
 console.log("db loaded");
-app.use(express.json());
-app.use(session({
-    secret: "secret_key", //need to implement a better secret key later for logged in session security
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-        httpOnly: true,
-        secure: false,
-        sameSite: "lax",
-        maxAge: 1000 * 60 * 60 * 24 //session lasts 1 day
-    }
-}))
 
+/* ================= HELPERS ================= */
 
-/* ================== REGISTER ================= */
-// When a user self-registers via CreateUser (default UserType 0 = student)
+function buildImageIndex(folderName) {
+  const directory = path.join(imageRoot, folderName);
+
+  if (!fs.existsSync(directory)) {
+    return new Map();
+  }
+
+  return new Map(
+    fs
+      .readdirSync(directory)
+      .filter((fileName) => /\.(jpe?g|png|webp)$/i.test(fileName))
+      .map((fileName) => [path.parse(fileName).name, fileName])
+  );
+}
+
+const FEATURED_IMAGE_INDEXES = {
+  items: buildImageIndex("items"),
+  devices: buildImageIndex("devices"),
+};
+
+function normalizeAvailableCopies(value) {
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? numericValue : 0;
+}
+
+function buildAssetUrl(req, folderName, fileName) {
+  const encodedPath = fileName
+    .split("/")
+    .map((segment) => encodeURIComponent(segment))
+    .join("/");
+
+  return `${req.protocol}://${req.get("host")}/library-images/${folderName}/${encodedPath}`;
+}
+
+function pickFeaturedRecords(records, imageIndex, getImageKey) {
+  return records
+    .map((record) => {
+      const fileName = imageIndex.get(getImageKey(record));
+
+      if (!fileName) {
+        return null;
+      }
+
+      return {
+        ...record,
+        availableCopies: normalizeAvailableCopies(record.availableCopies),
+        fileName,
+      };
+    })
+    .filter(Boolean)
+    .sort(
+      (left, right) =>
+        right.availableCopies - left.availableCopies ||
+        left.title.localeCompare(right.title)
+    )
+    .slice(0, FEATURED_LIMIT);
+}
+
+function handleSqlError(res, err, fallbackMessage = "Request failed") {
+  console.error(err);
+
+  if (err.code === "ER_DUP_ENTRY") {
+    return res.status(409).json({ error: "Duplicate entry" });
+  }
+
+  if (err.sqlState === "45000") {
+    return res.status(400).json({ error: err.sqlMessage });
+  }
+
+  return res.status(500).json({ error: fallbackMessage });
+}
+
+function requireLogin(req, res, next) {
+  if (!req.session.user) {
+    return res.status(401).json({ error: "Not logged in" });
+  }
+  next();
+}
+
+function requireLibrarian(req, res, next) {
+  if (!req.session.user) {
+    return res.status(401).json({ error: "Not logged in" });
+  }
+
+  if (req.session.user.UserType !== 2) {
+    return res.status(403).json({ error: "Access denied" });
+  }
+
+  next();
+}
+
+/* ================= REGISTER ================= */
+
 app.post("/api/users", async (req, res) => {
     try {
         const { Password, FirstName, LastName, Email } = req.body;
@@ -421,13 +546,92 @@ app.get("/api/media", async (req, res) => {
 });
 
 app.get("/api/devices", async (req, res) => {
-    try {
-        const [data] = await db.execute("CALL GetDevices()");
-        res.json(data[0]);
-    } catch (err) {
-        console.error("Failed to fetch devices: ", err);
-        res.status(500).json({ error: "Failed to fetch devices" });
-    }
+  try {
+    const [data] = await db.execute("CALL GetDevices()");
+    res.json(data[0]);
+  } catch (err) {
+    console.error("Failed to fetch devices:", err);
+    res.status(500).json({ error: "Failed to fetch devices" });
+  }
+});
+
+app.get("/api/landing/featured", async (req, res) => {
+  try {
+    const [literatureResult, mediaResult, devicesResult] = await Promise.all([
+      db.execute("CALL GetLiterature()"),
+      db.execute("CALL GetMedia()"),
+      db.execute("CALL GetDevices()"),
+    ]);
+
+    const literature = Array.isArray(literatureResult[0]?.[0])
+      ? literatureResult[0][0]
+      : [];
+    const media = Array.isArray(mediaResult[0]?.[0]) ? mediaResult[0][0] : [];
+    const devices = Array.isArray(devicesResult[0]?.[0])
+      ? devicesResult[0][0]
+      : [];
+
+    const featuredItems = pickFeaturedRecords(
+      [
+        ...literature.map((item) => ({
+          id: item.ItemID,
+          title: item.Title,
+          category: "Literature",
+          badge: ITEM_TYPE_LABELS.literature[item.ItemType] || "Literature",
+          detail: item.Author || item.Publisher || "Library favorite",
+          availableCopies: item.AvailableCopies,
+        })),
+        ...media.map((item) => ({
+          id: item.ItemID,
+          title: item.Title,
+          category: "Media",
+          badge: ITEM_TYPE_LABELS.media[item.ItemType] || "Media",
+          detail: item.Producer || "Screening room pick",
+          availableCopies: item.AvailableCopies,
+        })),
+      ],
+      FEATURED_IMAGE_INDEXES.items,
+      (record) => record.title
+    ).map((record) => ({
+      id: record.id,
+      title: record.title,
+      category: record.category,
+      badge: record.badge,
+      detail: record.detail,
+      availableCopies: record.availableCopies,
+      imageUrl: buildAssetUrl(req, "items", record.fileName),
+    }));
+
+    const featuredDevices = pickFeaturedRecords(
+      devices.map((item) => ({
+        id: item.ItemID,
+        title: item.Title,
+        category: "Devices",
+        badge: ITEM_TYPE_LABELS.devices[item.ItemType] || "Device",
+        detail: [item.Manufacturer, item.Model].filter(Boolean).join(" • "),
+        availableCopies: item.AvailableCopies,
+        imageKey: [item.Manufacturer, item.Model].filter(Boolean).join(","),
+      })),
+      FEATURED_IMAGE_INDEXES.devices,
+      (record) => record.imageKey
+    ).map((record) => ({
+      id: record.id,
+      title: record.title,
+      category: record.category,
+      badge: record.badge,
+      detail: record.detail || "Campus device",
+      availableCopies: record.availableCopies,
+      imageUrl: buildAssetUrl(req, "devices", record.fileName),
+    }));
+
+    res.json({
+      items: featuredItems,
+      devices: featuredDevices,
+    });
+  } catch (err) {
+    console.error("Failed to fetch landing dashboard content:", err);
+    res.status(500).json({ error: "Failed to fetch landing dashboard content" });
+  }
 });
 
 app.get("/api/title", async (req, res) => {
