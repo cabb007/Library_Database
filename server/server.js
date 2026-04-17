@@ -687,6 +687,44 @@ app.post(
   }
 );
 
+/* ================= ANALYTICS ================= */
+
+app.get("/api/librarian/overview/stats", requireLibrarian, async (_req, res) => {
+  try {
+    const [data] = await db.execute("CALL GetOverviewStats()");
+    res.json(data[0][0]);
+  } catch (err) {
+    console.error("Failed to fetch overview stats:", err);
+    res.status(500).json({ error: "Failed to fetch overview stats" });
+  }
+});
+
+app.get("/api/librarian/analytics/summary", requireLibrarian, async (_req, res) => {
+  try {
+    const [data] = await db.execute("CALL GetAnalyticsSummary()");
+    res.json(data[0][0]);
+  } catch (err) {
+    console.error("Failed to fetch analytics summary:", err);
+    res.status(500).json({ error: "Failed to fetch analytics summary" });
+  }
+});
+
+app.get("/api/librarian/analytics/most-checked-out", requireLibrarian, async (req, res) => {
+  const { startDate, endDate, category, itemType } = req.query;
+  try {
+    const [data] = await db.execute("CALL GetMostCheckedOut(?, ?, ?, ?)", [
+      startDate || null,
+      endDate   || null,
+      category  ? Number(category)  : null,
+      itemType  ? Number(itemType)  : null,
+    ]);
+    res.json(data[0]);
+  } catch (err) {
+    console.error("Failed to fetch analytics:", err);
+    res.status(500).json({ error: "Failed to fetch analytics" });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

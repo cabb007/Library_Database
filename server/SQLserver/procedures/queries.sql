@@ -634,4 +634,134 @@ BEGIN
     ORDER BY f.CreatedAt DESC; -- newest fines first
 END$$
 
+-- =================================================================================================================
+--                                               ANALYTICS QUERIES
+-- =================================================================================================================
+
+-- =========================================================
+-- Procedure: Get most checked out items with filters
+--   p_start_date  DATE      - earliest checkout date (NULL = no lower bound)
+--   p_end_date    DATE      - latest checkout date   (NULL = no upper bound)
+--   p_category    SMALLINT  - 1=Literature, 2=Media, 3=Device (NULL = all)
+--   p_item_type   SMALLINT  - type within category (NULL = all types)
+-- =========================================================
+-- =========================================================
+-- Procedure: Overview dashboard stats
+-- =========================================================
+DROP PROCEDURE IF EXISTS GetOverviewStats$$
+CREATE PROCEDURE GetOverviewStats()
+BEGIN
+    SELECT
+        (SELECT COUNT(*) FROM users) AS TotalUsers,
+        (SELECT COUNT(*) FROM loans WHERE ReturnDate IS NULL) AS ActiveLoans,
+        (SELECT COUNT(*) FROM loans WHERE ReturnDate IS NULL AND DueDate < CURDATE()) AS OverdueLoans,
+        (SELECT COALESCE(SUM(FineAmount), 0) FROM fines WHERE PaidStatus = 0) AS TotalFinesOwed;
+END$$
+
+-- =========================================================
+-- Procedure: Overall analytics summary (all-time, filter-independent)
+-- =========================================================
+DROP PROCEDURE IF EXISTS GetAnalyticsSummary$$
+CREATE PROCEDURE GetAnalyticsSummary()
+BEGIN
+    SELECT
+        (SELECT COUNT(*) FROM loans) AS TotalCheckouts,
+
+        (SELECT COUNT(DISTINCT c.ItemID)
+         FROM loans lo
+         JOIN copies c ON lo.CopyID = c.CopyID) AS UniqueItemsCheckedOut,
+
+        (SELECT CASE i.ItemCategory
+             WHEN 1 THEN 'Literature'
+             WHEN 2 THEN 'Media'
+             WHEN 3 THEN 'Devices'
+         END
+         FROM loans lo
+         JOIN copies c ON lo.CopyID = c.CopyID
+         JOIN items  i ON c.ItemID  = i.ItemID
+         GROUP BY i.ItemCategory
+         ORDER BY COUNT(*) DESC
+         LIMIT 1) AS TopCategory,
+
+        (SELECT i.Title
+         FROM loans lo
+         JOIN copies c ON lo.CopyID = c.CopyID
+         JOIN items  i ON c.ItemID  = i.ItemID
+         GROUP BY i.ItemID, i.Title
+         ORDER BY COUNT(*) DESC
+         LIMIT 1) AS TopItemTitle,
+
+        (SELECT COUNT(*) FROM loans WHERE ReturnDate IS NULL) AS CurrentlyCheckedOut,
+
+        (SELECT COUNT(*) FROM loans WHERE ReturnDate IS NULL AND DueDate < CURDATE()) AS OverdueItems,
+
+        (SELECT ROUND(AVG(DATEDIFF(ReturnDate, CreatedAt)), 1)
+         FROM loans
+         WHERE ReturnDate IS NOT NULL) AS AvgLoanDays;
+END$$
+
+DROP PROCEDURE IF EXISTS GetMostCheckedOut$$
+CREATE PROCEDURE GetMostCheckedOut(
+    IN p_start_date DATE,
+    IN p_end_date   DATE,
+    IN p_category   SMALLINT,
+    IN p_item_type  SMALLINT
+)
+BEGIN
+    SELECT
+        i.ItemID,
+        i.Title,
+        i.ItemCategory,
+        CASE i.ItemCategory
+            WHEN 1 THEN 'Literature'
+            WHEN 2 THEN 'Media'
+            WHEN 3 THEN 'Device'
+            ELSE 'Unknown'
+        END AS CategoryLabel,
+        COALESCE(l.ItemType, m.ItemType, d.ItemType) AS ItemType,
+        CASE i.ItemCategory
+            WHEN 1 THEN CASE l.ItemType
+                WHEN 1 THEN 'Book'
+                WHEN 2 THEN 'Textbook'
+                WHEN 3 THEN 'Magazine'
+                WHEN 4 THEN 'Audiobook'
+                ELSE '—'
+            END
+            WHEN 2 THEN CASE m.ItemType
+                WHEN 1 THEN 'DVD/CD'
+                WHEN 2 THEN 'Blu-ray'
+                WHEN 3 THEN 'Vinyl'
+                ELSE '—'
+            END
+            WHEN 3 THEN CASE d.ItemType
+                WHEN 1 THEN 'Laptop'
+                WHEN 2 THEN 'Tablet'
+                WHEN 3 THEN 'Calculator'
+                ELSE '—'
+            END
+            ELSE '—'
+        END AS TypeLabel,
+        COUNT(lo.LoanID) AS CheckoutCount
+    FROM items AS i
+    LEFT JOIN literature AS l ON i.ItemID = l.ItemID AND i.ItemCategory = 1
+    LEFT JOIN media      AS m ON i.ItemID = m.ItemID AND i.ItemCategory = 2
+    LEFT JOIN devices    AS d ON i.ItemID = d.ItemID AND i.ItemCategory = 3
+    JOIN copies AS c ON i.ItemID = c.ItemID
+    JOIN loans  AS lo ON c.CopyID = lo.CopyID
+    WHERE
+        (p_start_date IS NULL OR DATE(lo.CreatedAt) >= p_start_date)
+        AND (p_end_date IS NULL OR DATE(lo.CreatedAt) <= p_end_date)
+        AND (p_category IS NULL OR i.ItemCategory = p_category)
+        AND (
+            p_item_type IS NULL
+            OR (i.ItemCategory = 1 AND l.ItemType = p_item_type)
+            OR (i.ItemCategory = 2 AND m.ItemType = p_item_type)
+            OR (i.ItemCategory = 3 AND d.ItemType = p_item_type)
+        )
+    GROUP BY
+        i.ItemID, i.Title, i.ItemCategory,
+        l.ItemType, m.ItemType, d.ItemType
+    ORDER BY CheckoutCount DESC;
+END$$
+
 DELIMITER ;

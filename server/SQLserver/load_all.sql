@@ -153,10 +153,11 @@ FIELDS TERMINATED BY ','
 ENCLOSED BY '"'
 LINES TERMINATED BY '\r\n'
 IGNORE 1 ROWS
-(UserID, CopyID, DueDate, ReturnDate, CreatedAt, @cb, UpdatedAt, @ub)
+(UserID, CopyID, @cb, @checkout_date, DueDate, @ret_date, CreatedAt, UpdatedAt, @ub)
 SET
-    CreatedBy = NULLIF(TRIM(REPLACE(@cb, '\r', '')), ''),
-    UpdatedBy = NULLIF(TRIM(REPLACE(@ub, '\r', '')), '');
+    CreatedBy  = NULLIF(TRIM(REPLACE(@cb,       '\r', '')), ''),
+    ReturnDate = NULLIF(TRIM(REPLACE(@ret_date, '\r', '')), ''),
+    UpdatedBy  = NULLIF(TRIM(REPLACE(@ub,       '\r', '')), '');
 
 SHOW WARNINGS LIMIT 50;
 SELECT COUNT(*) FROM users;
