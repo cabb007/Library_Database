@@ -108,6 +108,7 @@ END$$
 -- =========================================================
 -- Procedure: Checkout an item for a specific user
 -- =========================================================
+-- =========================================================
 DROP PROCEDURE IF EXISTS CheckoutItem$$
 CREATE PROCEDURE CheckoutItem (
     IN p_UserID INT,
@@ -211,15 +212,17 @@ BEGIN
         CreatedBy,
         CreatedAt,
         UpdatedAt,
+        UpdatedBy,
         DueDate
     )
     VALUES (
         p_UserID,
         v_CopyID,
-        p_UserID, -- Super User
-        CURDATE(),
-        CURDATE(),
-        DATE_ADD(CURDATE(), INTERVAL v_DueDays DAY)
+        p_UserID,
+        CURRENT_TIMESTAMP(),
+        CURRENT_TIMESTAMP(),
+        p_UserID,
+        DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL v_DueDays DAY)
     );
 
     COMMIT;
@@ -357,5 +360,81 @@ BEGIN
 
 END$$
 
+-- =================================================================================================================
+--                                               ITEM RETURN QUERIES
+-- =================================================================================================================
+
+-- =========================================================
+-- Procedure: Return a specific copy currently on loan
+-- =========================================================
+DROP PROCEDURE IF EXISTS ReturnLoan$$
+CREATE PROCEDURE ReturnLoan(
+    IN p_LoanID INT,
+    IN p_UserID INT
+)
+BEGIN
+    DECLARE v_CopyID INT DEFAULT NULL;
+    DECLARE v_LoanUserID INT DEFAULT NULL;
+    DECLARE v_ReturnDate DATETIME DEFAULT NULL;
+    DECLARE v_ReturnUserType INT DEFAULT NULL;
+    DECLARE v_AuditUserID INT DEFAULT 1;
+
+    START TRANSACTION;
+
+    SELECT CopyID, UserID, ReturnDate
+    INTO v_CopyID, v_LoanUserID, v_ReturnDate
+    FROM loans
+    WHERE LoanID = p_LoanID
+    FOR UPDATE;
+
+    IF v_CopyID IS NULL THEN
+        ROLLBACK;
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Invalid loan';
+    END IF;
+
+    IF v_LoanUserID <> p_UserID THEN
+        ROLLBACK;
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'User cannot return this loan';
+    END IF;
+
+    IF v_ReturnDate IS NOT NULL THEN
+        ROLLBACK;
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Loan already returned';
+    END IF;
+
+    SELECT UserType
+    INTO v_ReturnUserType
+    FROM users
+    WHERE UserID = p_UserID;
+
+    IF v_ReturnUserType IS NULL THEN
+        ROLLBACK;
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Invalid returning user';
+    END IF;
+
+    IF v_ReturnUserType = 2 THEN
+        SET v_AuditUserID = p_UserID;
+    ELSE
+        SET v_AuditUserID = 1;
+    END IF;
+
+    UPDATE loans
+    SET ReturnDate = CURRENT_TIMESTAMP(),
+        UpdatedAt = CURRENT_TIMESTAMP(),
+        UpdatedBy = v_AuditUserID
+    WHERE LoanID = p_LoanID;
+
+    UPDATE copies
+    SET CopyStatus = 0,
+        UpdatedAt = CURRENT_TIMESTAMP(),
+        UpdatedBy = v_AuditUserID
+    WHERE CopyID = v_CopyID;
+
+    COMMIT;
+END$$
 
 DELIMITER ;
