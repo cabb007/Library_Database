@@ -632,7 +632,8 @@ BEGIN
     JOIN users AS u ON l.UserID= u.UserID
     JOIN copies AS c ON l.CopyID = c.CopyID
     JOIN items AS i ON c.ItemID = i.ItemID
-    WHERE l.ReturnDate IS NULL -- only active loans (not returned yet)
+    WHERE l.ReturnDate IS NULL
+        AND l.DueDate > CURDATE() -- only non-overdue loans
     ORDER BY l.DueDate;
 END$$
 

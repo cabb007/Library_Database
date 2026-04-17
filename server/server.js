@@ -756,7 +756,7 @@ app.get("/api/librarian/fines/unpaid", requireLibrarian, async (req, res) => {
   }
 });
 
-// ================ USER TRANSACTIONS =================
+/* ================ USER TRANSACTIONS ================= */
 app.get("/api/user/balance", requireLogin, async (req, res) => {
   try {
     const userId = req.session.user.UserID;
