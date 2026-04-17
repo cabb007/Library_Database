@@ -151,7 +151,7 @@ LOAD DATA LOCAL INFILE 'data/loans.csv'
 INTO TABLE loans
 FIELDS TERMINATED BY ','
 ENCLOSED BY '"'
-LINES TERMINATED BY '\r\n'
+LINES TERMINATED BY '\n'
 IGNORE 1 ROWS
 (UserID, CopyID, @cb, @checkout_date, DueDate, @ret_date, CreatedAt, UpdatedAt, @ub)
 SET
@@ -160,12 +160,7 @@ SET
     UpdatedBy  = NULLIF(TRIM(REPLACE(@ub,       '\r', '')), '');
 
 SHOW WARNINGS LIMIT 50;
-SELECT COUNT(*) FROM users;
-SELECT COUNT(*) FROM items;
-SELECT COUNT(*) FROM literature;
-SELECT COUNT(*) FROM media;
-SELECT COUNT(*) FROM devices;
-SELECT COUNT(*) FROM copies;
+SELECT COUNT(*) FROM loans;
 
 -- =========================================================
 --                          FINES
