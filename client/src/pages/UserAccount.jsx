@@ -6,6 +6,7 @@ export default function UserAccount() {
     const [user, setUser] = useState(null);
     const [balance, setBalance] = useState(0);
     const [loans, setLoans] = useState([]);
+    const [holds, setHolds] = useState([]);
     const [error, setError] = useState("");
     const [returnError, setReturnError] = useState("");
 
@@ -18,7 +19,7 @@ export default function UserAccount() {
                 const data = await response.json();
                 if (response.ok) {
                     setUser(data.user);
-                    await Promise.all([fetchBalance(), fetchLoans()]);
+                    await Promise.all([fetchBalance(), fetchLoans(), fetchHolds()]);
                 } else {
                     setUser(null);
                     setBalance(0);
@@ -46,6 +47,16 @@ export default function UserAccount() {
             const response = await fetch(`${API}/api/user/loans`, { credentials: "include" });
             const data = await response.json();
             setLoans(response.ok ? data : []);
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    async function fetchHolds() {
+        try {
+            const response = await fetch(`${API}/api/user/holds`, { credentials: "include" });
+            const data = await response.json();
+            setHolds(response.ok ? data : []);
         } catch (err) {
             console.error(err);
         }
@@ -209,6 +220,36 @@ export default function UserAccount() {
                                             >
                                                 Return
                                             </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Active Holds */}
+                        <div className="mb-6">
+                            <h2 className="text-lg font-semibold tracking-widest uppercase text-amber-500 mb-3">
+                                Holds ({holds.filter(h => h.HoldStatus === 0).length})
+                            </h2>
+                            {holds.filter(h => h.HoldStatus === 0).length === 0 ? (
+                                <p className="text-stone-500 text-sm">No active holds.</p>
+                            ) : (
+                                <div className="flex flex-col gap-3">
+                                    {holds.filter(h => h.HoldStatus === 0).map(hold => (
+                                        <div
+                                            key={hold.HoldID}
+                                            className="bg-stone-900 border border-stone-700 rounded-xl px-5 py-4 flex items-center justify-between gap-4"
+                                        >
+                                            <div className="flex flex-col gap-0.5 min-w-0">
+                                                <span className="font-medium truncate">{hold.Title}</span>
+                                                <span className="text-stone-400 text-xs">{hold.ItemTypeName}</span>
+                                                <span className="text-stone-400 text-xs mt-1">
+                                                    Placed: {formatDate(hold.CreatedAt)}
+                                                </span>
+                                            </div>
+                                            <span className="shrink-0 text-xs text-amber-500 font-semibold tracking-wide uppercase">
+                                                Queued
+                                            </span>
                                         </div>
                                     ))}
                                 </div>

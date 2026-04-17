@@ -116,12 +116,18 @@ CREATE PROCEDURE CheckoutItem (
 BEGIN
     DECLARE v_CopyID INT DEFAULT NULL;
     DECLARE v_DueDays INT DEFAULT NULL;
+    DECLARE v_UserStatus INT DEFAULT NULL;
+    DECLARE v_UserType INT DEFAULT NULL;
+    DECLARE v_UnpaidBalance DECIMAL(7,2) DEFAULT 0.00;
+    DECLARE v_MaxLoans INT DEFAULT 0;
+    DECLARE v_CurrentLoans INT DEFAULT 0;
+    DECLARE v_ExistingItemLoan INT DEFAULT 0;
 
     START TRANSACTION;
 
-    -- Get the user's loan period and lock the row during checkout
-    SELECT u.LoanPeriodDays
-    INTO v_DueDays
+    -- Get the user's loan period, status, and type; lock the row during checkout
+    SELECT u.LoanPeriodDays, u.Status, u.UserType
+    INTO v_DueDays, v_UserStatus, v_UserType
     FROM users AS u
     WHERE u.UserID = p_UserID
     FOR UPDATE;
@@ -130,6 +136,48 @@ BEGIN
         ROLLBACK;
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Invalid user';
+    END IF;
+
+    IF v_UserStatus <> 1 THEN
+        ROLLBACK;
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'User is not active.';
+    END IF;
+
+    SET v_UnpaidBalance = GetUserBalanceValue(p_UserID);
+    IF v_UnpaidBalance <> 0 THEN
+        ROLLBACK;
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'User has an unpaid balance.';
+    END IF;
+
+    IF v_UserType = 0 THEN
+        SET v_MaxLoans = 3;
+    ELSE
+        SET v_MaxLoans = 5;
+    END IF;
+
+    SELECT COUNT(*) INTO v_CurrentLoans
+    FROM loans WHERE UserID = p_UserID AND ReturnDate IS NULL;
+
+    IF v_CurrentLoans >= v_MaxLoans THEN
+        ROLLBACK;
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Borrowing limit exceeded for this user.';
+    END IF;
+
+    SELECT COUNT(*)
+    INTO v_ExistingItemLoan
+    FROM loans AS l
+    JOIN copies AS c ON l.CopyID = c.CopyID
+    WHERE l.UserID = p_UserID
+      AND l.ReturnDate IS NULL
+      AND c.ItemID = p_ItemID;
+
+    IF v_ExistingItemLoan > 0 THEN
+        ROLLBACK;
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'User already has an active loan for this item.';
     END IF;
 
     -- Find the first available copy for the selected item
@@ -188,13 +236,17 @@ CREATE PROCEDURE CreateHold (
 )
 BEGIN
     DECLARE v_UserStatus INT DEFAULT NULL;
+    DECLARE v_UserType INT DEFAULT NULL;
     DECLARE v_UserBalance DECIMAL(7,2) DEFAULT 0.00;
     DECLARE v_AvailableCopies INT DEFAULT 0;
     DECLARE v_ExistingHold INT DEFAULT 0;
+    DECLARE v_MaxHolds INT DEFAULT 0;
+    DECLARE v_CurrentHolds INT DEFAULT 0;
+    DECLARE v_ExistingItemLoan INT DEFAULT 0;
 
     -- Check if the user exists and has an active status
-    SELECT Status
-    INTO v_UserStatus
+    SELECT Status, UserType
+    INTO v_UserStatus, v_UserType
     FROM users
     WHERE UserID = p_UserID;
 
@@ -206,6 +258,25 @@ BEGIN
     IF v_UserStatus <> 1 THEN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'User is not active';
+    END IF;
+
+    -- Determine max allowed holds
+    IF v_UserType = 0 THEN
+        SET v_MaxHolds = 3; -- Student
+    ELSE
+        SET v_MaxHolds = 5; -- Librarian and Faculty
+    END IF;
+
+    -- Count user's current active holds
+    SELECT COUNT(*)
+    INTO v_CurrentHolds
+    FROM holds
+    WHERE UserID = p_UserID
+      AND HoldStatus = 0;
+
+    IF v_CurrentHolds >= v_MaxHolds THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Hold limit exceeded for this user';
     END IF;
 
     -- Check for unpaid balances
@@ -223,6 +294,20 @@ BEGIN
     ) THEN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Invalid item';
+    END IF;
+
+    -- Prevent user from placing a hold if they already have an active loan for this item
+    SELECT COUNT(*)
+    INTO v_ExistingItemLoan
+    FROM loans AS l
+    JOIN copies AS c ON l.CopyID = c.CopyID
+    WHERE l.UserID = p_UserID
+      AND l.ReturnDate IS NULL
+      AND c.ItemID = p_ItemID;
+
+    IF v_ExistingItemLoan > 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'User already has an active loan for this item';
     END IF;
 
     -- Only allow holds when no copies are currently available

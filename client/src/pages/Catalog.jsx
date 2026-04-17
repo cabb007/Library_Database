@@ -8,13 +8,11 @@ export default function ItemDashboard() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [activeTab, setActiveTab] = useState("browse");
   const [activeSubTab, setActiveSubTab] = useState(location.state?.subTab ?? "books");
 
   const [literature, setLiterature] = useState([]);
   const [media, setMedia] = useState([]);
   const [devices, setDevices] = useState([]);
-  const [checkedOut, setCheckedOut] = useState([]);
 
   // =========================
   // FETCH DATA
@@ -171,28 +169,7 @@ export default function ItemDashboard() {
         </button>
       </nav>
 
-      <div className="flex justify-center gap-6 mt-8">
-        {["browse", "checked", "holds"].map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`px-6 py-2 rounded ${
-              activeTab === tab
-                ? "bg-amber-700 text-stone-950"
-                : "border border-amber-700 text-amber-300"
-            }`}
-          >
-            {tab === "browse"
-              ? "Browse & Checkout"
-              : tab === "checked"
-              ? "Checked Out"
-              : "Holds"}
-          </button>
-        ))}
-      </div>
-
-      {activeTab === "browse" && (
-        <div className="flex justify-center gap-4 mt-4">
+      <div className="flex justify-center gap-4 mt-8">
           {["books", "media", "devices"].map((sub) => (
             <button
               key={sub}
@@ -207,10 +184,9 @@ export default function ItemDashboard() {
             </button>
           ))}
         </div>
-      )}
 
       <div className="p-10 max-w-5xl mx-auto w-full">
-        {activeTab === "browse" && activeSubTab === "books" && (
+        {activeSubTab === "books" && (
           <table className="w-full border border-amber-900/30">
             <thead>
               <tr className="bg-stone-900">
@@ -236,7 +212,7 @@ export default function ItemDashboard() {
           </table>
         )}
 
-        {activeTab === "browse" && activeSubTab === "media" && (
+        {activeSubTab === "media" && (
           <table className="w-full border border-amber-900/30">
             <thead>
               <tr className="bg-stone-900">
@@ -258,7 +234,7 @@ export default function ItemDashboard() {
           </table>
         )}
 
-        {activeTab === "browse" && activeSubTab === "devices" && (
+        {activeSubTab === "devices" && (
           <table className="w-full border border-amber-900/30">
             <thead>
               <tr className="bg-stone-900">
