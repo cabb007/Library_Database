@@ -108,6 +108,7 @@ END$$
 -- =========================================================
 -- Procedure: Checkout an item for a specific user
 -- =========================================================
+-- =========================================================
 DROP PROCEDURE IF EXISTS CheckoutItem$$
 CREATE PROCEDURE CheckoutItem (
     IN p_UserID INT,
@@ -116,6 +117,10 @@ CREATE PROCEDURE CheckoutItem (
 BEGIN
     DECLARE v_CopyID INT DEFAULT NULL;
     DECLARE v_DueDays INT DEFAULT NULL;
+    DECLARE v_UserType INT DEFAULT NULL;
+    DECLARE v_MaxLoans INT DEFAULT 0;
+    DECLARE v_CurrentLoans INT DEFAULT 0;
+    DECLARE v_ExistingItemLoan INT DEFAULT 0;
 
     START TRANSACTION;
 
@@ -130,6 +135,47 @@ BEGIN
         ROLLBACK;
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Invalid user';
+    END IF;
+
+    -- Determine max allowed loans
+    SELECT u.UserType
+    INTO v_UserType
+    FROM users AS u
+    WHERE u.UserID = p_UserID;
+
+    IF v_UserType = 0 THEN
+        SET v_MaxLoans = 3; -- Student
+    ELSE
+        SET v_MaxLoans = 5; -- Librarian and Faculty
+    END IF;
+
+    -- Count current active loans
+    SELECT COUNT(*)
+    INTO v_CurrentLoans
+    FROM loans AS l
+    WHERE l.UserID = p_UserID
+      AND l.ReturnDate IS NULL;
+
+    -- Stop if user is already at borrowing limit
+    IF v_CurrentLoans >= v_MaxLoans THEN
+        ROLLBACK;
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Borrowing limit exceeded for this user.';
+    END IF;
+
+    -- Prevent user from checking out more than one copy of the same item
+    SELECT COUNT(*)
+    INTO v_ExistingItemLoan
+    FROM loans AS l
+    JOIN copies AS c ON l.CopyID = c.CopyID
+    WHERE l.UserID = p_UserID
+      AND l.ReturnDate IS NULL
+      AND c.ItemID = p_ItemID;
+
+    IF v_ExistingItemLoan > 0 THEN
+        ROLLBACK;
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'User already has an active loan for this item.';
     END IF;
 
     -- Find the first available copy for the selected item
@@ -163,15 +209,17 @@ BEGIN
         CreatedBy,
         CreatedAt,
         UpdatedAt,
+        UpdatedBy,
         DueDate
     )
     VALUES (
         p_UserID,
         v_CopyID,
-        p_UserID, -- Super User
-        CURDATE(),
-        CURDATE(),
-        DATE_ADD(CURDATE(), INTERVAL v_DueDays DAY)
+        p_UserID,
+        CURRENT_TIMESTAMP(),
+        CURRENT_TIMESTAMP(),
+        p_UserID,
+        DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL v_DueDays DAY)
     );
 
     COMMIT;
@@ -188,13 +236,17 @@ CREATE PROCEDURE CreateHold (
 )
 BEGIN
     DECLARE v_UserStatus INT DEFAULT NULL;
+    DECLARE v_UserType INT DEFAULT NULL;
     DECLARE v_UserBalance DECIMAL(7,2) DEFAULT 0.00;
     DECLARE v_AvailableCopies INT DEFAULT 0;
     DECLARE v_ExistingHold INT DEFAULT 0;
+    DECLARE v_MaxHolds INT DEFAULT 0;
+    DECLARE v_CurrentHolds INT DEFAULT 0;
+    DECLARE v_ExistingItemLoan INT DEFAULT 0;
 
     -- Check if the user exists and has an active status
-    SELECT Status
-    INTO v_UserStatus
+    SELECT Status, UserType
+    INTO v_UserStatus, v_UserType
     FROM users
     WHERE UserID = p_UserID;
 
@@ -206,6 +258,25 @@ BEGIN
     IF v_UserStatus <> 1 THEN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'User is not active';
+    END IF;
+
+    -- Determine max allowed holds
+    IF v_UserType = 0 THEN
+        SET v_MaxHolds = 3; -- Student
+    ELSE
+        SET v_MaxHolds = 5; -- Librarian and Faculty
+    END IF;
+
+    -- Count user's current active holds
+    SELECT COUNT(*)
+    INTO v_CurrentHolds
+    FROM holds
+    WHERE UserID = p_UserID
+      AND HoldStatus = 0;
+
+    IF v_CurrentHolds >= v_MaxHolds THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Hold limit exceeded for this user';
     END IF;
 
     -- Check for unpaid balances
@@ -223,6 +294,20 @@ BEGIN
     ) THEN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Invalid item';
+    END IF;
+
+    -- Prevent user from placing a hold if they already have an active loan for this item
+    SELECT COUNT(*)
+    INTO v_ExistingItemLoan
+    FROM loans AS l
+    JOIN copies AS c ON l.CopyID = c.CopyID
+    WHERE l.UserID = p_UserID
+      AND l.ReturnDate IS NULL
+      AND c.ItemID = p_ItemID;
+
+    IF v_ExistingItemLoan > 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'User already has an active loan for this item';
     END IF;
 
     -- Only allow holds when no copies are currently available
@@ -272,5 +357,81 @@ BEGIN
 
 END$$
 
+-- =================================================================================================================
+--                                               ITEM RETURN QUERIES
+-- =================================================================================================================
+
+-- =========================================================
+-- Procedure: Return a specific copy currently on loan
+-- =========================================================
+DROP PROCEDURE IF EXISTS ReturnLoan$$
+CREATE PROCEDURE ReturnLoan(
+    IN p_LoanID INT,
+    IN p_UserID INT
+)
+BEGIN
+    DECLARE v_CopyID INT DEFAULT NULL;
+    DECLARE v_LoanUserID INT DEFAULT NULL;
+    DECLARE v_ReturnDate DATETIME DEFAULT NULL;
+    DECLARE v_ReturnUserType INT DEFAULT NULL;
+    DECLARE v_AuditUserID INT DEFAULT 1;
+
+    START TRANSACTION;
+
+    SELECT CopyID, UserID, ReturnDate
+    INTO v_CopyID, v_LoanUserID, v_ReturnDate
+    FROM loans
+    WHERE LoanID = p_LoanID
+    FOR UPDATE;
+
+    IF v_CopyID IS NULL THEN
+        ROLLBACK;
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Invalid loan';
+    END IF;
+
+    IF v_LoanUserID <> p_UserID THEN
+        ROLLBACK;
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'User cannot return this loan';
+    END IF;
+
+    IF v_ReturnDate IS NOT NULL THEN
+        ROLLBACK;
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Loan already returned';
+    END IF;
+
+    SELECT UserType
+    INTO v_ReturnUserType
+    FROM users
+    WHERE UserID = p_UserID;
+
+    IF v_ReturnUserType IS NULL THEN
+        ROLLBACK;
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Invalid returning user';
+    END IF;
+
+    IF v_ReturnUserType = 2 THEN
+        SET v_AuditUserID = p_UserID;
+    ELSE
+        SET v_AuditUserID = 1;
+    END IF;
+
+    UPDATE loans
+    SET ReturnDate = CURRENT_TIMESTAMP(),
+        UpdatedAt = CURRENT_TIMESTAMP(),
+        UpdatedBy = v_AuditUserID
+    WHERE LoanID = p_LoanID;
+
+    UPDATE copies
+    SET CopyStatus = 0,
+        UpdatedAt = CURRENT_TIMESTAMP(),
+        UpdatedBy = v_AuditUserID
+    WHERE CopyID = v_CopyID;
+
+    COMMIT;
+END$$
 
 DELIMITER ;

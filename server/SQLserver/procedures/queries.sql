@@ -89,10 +89,10 @@ BEGIN
         m.Producer,
         m.DurationMinutes,
         GetAvailableCopies(i.ItemID) AS AvailableCopies,
-        m.CreatedAt,
-        m.CreatedBy,
-        m.UpdatedAt,
-        m.UpdatedBy
+        i.CreatedAt,
+        i.CreatedBy,
+        i.UpdatedAt,
+        i.UpdatedBy
     FROM items i
     JOIN media m ON i.ItemID = m.ItemID
     WHERE i.ItemCategory = 2
@@ -256,10 +256,10 @@ BEGIN
         d.Manufacturer,
         d.Model,
         GetAvailableCopies(i.ItemID) AS AvailableCopies,
-        d.CreatedAt,
-        d.CreatedBy,
-        d.UpdatedAt,
-        d.UpdatedBy
+        i.CreatedAt,
+        i.CreatedBy,
+        i.UpdatedAt,
+        i.UpdatedBy
     FROM items i
     JOIN devices d ON i.ItemID = d.ItemID
     WHERE i.ItemCategory = 3
@@ -400,10 +400,10 @@ BEGIN
         l.Publisher,
         l.PublicationYear,
         GetAvailableCopies(i.ItemID) AS AvailableCopies,
-        l.CreatedAt,
-        l.CreatedBy,
-        l.UpdatedAt,
-        l.UpdatedBy
+        i.CreatedAt,
+        i.CreatedBy,
+        i.UpdatedAt,
+        i.UpdatedBy
     FROM items i
     JOIN literature l ON i.ItemID = l.ItemID
     WHERE i.ItemCategory = 1
@@ -674,7 +674,7 @@ BEGIN
     SELECT
         f.FineID,
         f.UserID,
-        l.loanID,
+        l.LoanID,
         CONCAT(u.FirstName, ' ', u.LastName) AS UserName,
         f.FineAmount,
         f.CreatedAt,
@@ -696,7 +696,7 @@ BEGIN
     SELECT
         f.FineID,
         f.UserID,
-        l.loanID,
+        l.LoanID,
         CONCAT(u.FirstName, ' ', u.LastName) AS UserName,
         f.FineAmount,
         f.CreatedAt,
@@ -719,7 +719,7 @@ BEGIN
     SELECT
         f.FineID,
         f.UserID,
-        l.loanID,
+        l.LoanID,
         CONCAT(u.FirstName, ' ', u.LastName) AS UserName,
         f.FineAmount,
         f.CreatedAt,

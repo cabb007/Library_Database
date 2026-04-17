@@ -724,7 +724,7 @@ app.get("/api/librarian/analytics/most-checked-out", requireLibrarian, async (re
 });
 
 
-// ================ USER TRANSACTIONS =================
+/* ================ USER TRANSACTIONS ================= */
 app.get("/api/user/balance", requireLogin, async (req, res) => {
   try {
     const userId = req.session.user.UserID;
@@ -753,6 +753,22 @@ app.put("/api/finepayment", requireLogin, async (req, res) => {
     });
   } catch (err) {
     handleSqlError(res, err, err.sqlMessage || "Payment failed");
+  }
+});
+
+app.put("/api/user/loans/:loanId/return", requireLogin, async (req, res) => {
+  try {
+    const userId = req.session.user.UserID;
+    const loanId = Number(req.params.loanId);
+
+    await db.execute("CALL ReturnLoan(?, ?)", [loanId, userId]);
+
+    res.json({
+      success: true,
+      message: "Item returned successfully"
+    });
+  } catch (err) {
+    handleSqlError(res, err, err.sqlMessage || "Return failed");
   }
 });
 
