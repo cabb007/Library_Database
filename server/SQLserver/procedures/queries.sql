@@ -88,7 +88,11 @@ BEGIN
         m.ItemType,
         m.Producer,
         m.DurationMinutes,
-        GetAvailableCopies(i.ItemID) AS AvailableCopies
+        GetAvailableCopies(i.ItemID) AS AvailableCopies,
+        m.CreatedAt,
+        m.CreatedBy,
+        m.UpdatedAt,
+        m.UpdatedBy
     FROM items i
     JOIN media m ON i.ItemID = m.ItemID
     WHERE i.ItemCategory = 2
@@ -251,7 +255,11 @@ BEGIN
         d.ItemType,
         d.Manufacturer,
         d.Model,
-        GetAvailableCopies(i.ItemID) AS AvailableCopies
+        GetAvailableCopies(i.ItemID) AS AvailableCopies,
+        d.CreatedAt,
+        d.CreatedBy,
+        d.UpdatedAt,
+        d.UpdatedBy
     FROM items i
     JOIN devices d ON i.ItemID = d.ItemID
     WHERE i.ItemCategory = 3
@@ -391,7 +399,11 @@ BEGIN
         l.Author,
         l.Publisher,
         l.PublicationYear,
-        GetAvailableCopies(i.ItemID) AS AvailableCopies
+        GetAvailableCopies(i.ItemID) AS AvailableCopies,
+        l.CreatedAt,
+        l.CreatedBy,
+        l.UpdatedAt,
+        l.UpdatedBy
     FROM items i
     JOIN literature l ON i.ItemID = l.ItemID
     WHERE i.ItemCategory = 1
@@ -555,7 +567,11 @@ BEGIN
         i.ItemCategory,
         i.Title,
         COUNT(c.CopyID) AS TotalCopies,
-        SUM(CASE WHEN c.CopyStatus = 0 THEN 1 ELSE 0 END) AS AvailableCopies
+        SUM(CASE WHEN c.CopyStatus = 0 THEN 1 ELSE 0 END) AS AvailableCopies,
+        i.CreatedAt,
+        i.CreatedBy,
+        i.UpdatedAt,
+        i.UpdatedBy
     FROM items as i
     LEFT JOIN copies AS c ON i.ItemID = c.ItemID -- keeps items even if they have no copies currently
     GROUP BY i.ItemID, i.ItemCategory, i.Title
@@ -566,6 +582,32 @@ END$$
 -- =================================================================================================================
 --                                               LOANS AND FINES QUERIES
 -- =================================================================================================================
+
+-- =========================================================
+-- Procedure: Get all loans (with user and item details)
+-- =========================================================
+DROP PROCEDURE IF EXISTS GetLoans$$
+CREATE PROCEDURE GetLoans()
+BEGIN
+    SELECT
+        l.LoanID,
+        l.UserID,
+        CONCAT(u.FirstName, ' ', u.LastName) AS UserName, -- combining names for legibility
+        l.CopyID,
+        c.ItemID,
+        i.Title,
+        l.DueDate,
+        l.ReturnDate,
+        l.CreatedAt,
+        l.CreatedBy,
+        l.UpdatedAt,
+        l.UpdatedBy
+    FROM loans AS l
+    JOIN users AS u ON l.UserID= u.UserID
+    JOIN copies AS c ON l.CopyID = c.CopyID
+    JOIN items AS i ON c.ItemID = i.ItemID
+    ORDER BY l.CreatedAt DESC; -- newest loans first
+END$$
 
 -- =========================================================
 -- Procedure: Get all active loans (with user and item details)
@@ -665,6 +707,29 @@ BEGIN
     JOIN loans AS l ON f.LoanID = l.LoanID
     JOIN users AS u ON f.UserID = u.UserID
     WHERE f.PaidStatus = 0 -- only unpaid fines
+    ORDER BY f.CreatedAt DESC; -- newest fines first
+END$$
+
+-- =========================================================
+-- Procedure: Get paid fines (with user details)
+-- =========================================================
+DROP PROCEDURE IF EXISTS GetPaidFines$$
+CREATE PROCEDURE GetPaidFines()
+BEGIN
+    SELECT
+        f.FineID,
+        f.UserID,
+        l.loanID,
+        CONCAT(u.FirstName, ' ', u.LastName) AS UserName,
+        f.FineAmount,
+        f.CreatedAt,
+        f.CreatedBy,
+        f.UpdatedAt,
+        f.UpdatedBy
+    FROM fines AS f
+    JOIN loans AS l ON f.LoanID = l.LoanID
+    JOIN users AS u ON f.UserID = u.UserID
+    WHERE f.PaidStatus = 1 -- only paid fines
     ORDER BY f.CreatedAt DESC; -- newest fines first
 END$$
 
