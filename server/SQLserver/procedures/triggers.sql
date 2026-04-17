@@ -72,14 +72,14 @@ BEGIN
                     UserID,
                     CopyID,
                     CreatedBy,
-                    CheckoutDate,
+                    CreatedAt,
                     DueDate
                 ) VALUES (
                     v_HoldUserID,
                     NEW.CopyID,
                     v_HoldUserID, -- CreatedBy is the user who is fulfilling the hold
-                    CURDATE(),
-                    DATE_ADD(CURDATE(), INTERVAL v_LoanPeriodDays DAY)
+                    CURRENT_TIMESTAMP(),
+                    DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL v_LoanPeriodDays DAY)
                 );
 
             END IF;
