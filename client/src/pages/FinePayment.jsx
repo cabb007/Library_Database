@@ -2,106 +2,132 @@ import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import API from "../api";
 
-export default function FinePayment(){
+export default function FinePayment() {
     const navigate = useNavigate();
-    const [user,setUser] = useState(null);
+    const [user, setUser] = useState(null);
+    const [balance, setBalance] = useState(0);
     const [submitting, setSubmitting] = useState(false);
-    
+    const [error, setError] = useState("");
 
-    const [form, setForm] = useState({
-        payment: ""
-    });
+    async function checkLogin() {
+        try {
+            const response = await fetch(`${API}/api/me`, {
+                credentials: "include"
+            });
 
-    function handleChange(e) {
-    setForm({ ...form, [e.target.name]: e.target.value });
+            const data = await response.json();
+
+            if (response.ok) {
+                setUser(data.user);
+            } else {
+                setUser(null);
+                alert("You must be logged in to access this page!");
+                navigate("/");
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    async function fetchBalance() {
+        try {
+            const response = await fetch(`${API}/api/user/balance`, {
+                credentials: "include"
+            });
+
+            if (!response.ok) {
+                setBalance(0);
+                return;
+            }
+
+            const data = await response.json();
+            setBalance(Number(data.Balance) || 0);
+        } catch (err) {
+            console.error(err);
+            setBalance(0);
+        }
     }
 
     useEffect(() => {
-        async function checkLogin() { //Checks that there is an active session in the browser (logged in), if not, alerts user and immediately redirects to landing page
-            try {
-                const response = await fetch(`${API}/api/me`, {
-                    credentials:"include"
-                });
-
-                const data = await response.json();
-
-                if(response.ok){
-                    setUser(data.user);
-                } else {
-                    setUser(null);
-                    alert("You must be logged in to access this page!");
-                    navigate("/");
-                }
-
-            } catch (err) {
-                console.error(err);
-            }
+        async function loadPage() {
+            await checkLogin();
+            await fetchBalance();
         }
 
-        checkLogin();
+        loadPage();
     }, []);
 
-    async function handleSubmit(){
-        try{
-            const response = await fetch(`${API}/api/finepayment`,{
-                credentials:"include",
-                method: "PUT",
-                headers: {
-                "Content-Type" : "application/json",
-            },
-                body: form.payment
+    async function handleSubmit(e) {
+        e.preventDefault();
+        setSubmitting(true);
+        setError("");
+
+        try {
+            const response = await fetch(`${API}/api/finepayment`, {
+                credentials: "include",
+                method: "PUT"
             });
 
-            console.log(form.payment)
-            console.log("Balance successfully changed",form.payment)
-        } catch(err){
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || "Payment failed");
+            }
+
+            await fetchBalance();
+            console.log("All unpaid fines paid successfully");
+        } catch (err) {
             console.error(err);
+            setError(err.message);
         } finally {
             setSubmitting(false);
         }
-
-        checkLogin();
     }
 
     return (
-        <div className="flex-col text-center gap-5 justify-center">
-            <button
-            className="bg-amber-700"
-            onClick={() => navigate("/")}>
-                Home
-            </button>
-            <h1>Fine Payment Page</h1>
-            <div>
-                {user ? <h1>Balance : ${user.Balance}</h1>:<p></p>}
-            </div>
-            <div>
-                <form onSubmit={handleSubmit}>
-                    <div className="flex-row min-w-2 gap-4">
-                        <label className="tracking-wide">
-                            Payment Amount
-                        </label>
-                        <input
-                        type="number"
-                        name="payment"
-                        min="0"
-                        value={form.payment}
-                        onChange={handleChange}
-                        required
-                        placeholder="0.00"
-                        className="w-30 bg-stone-800 border border-stone-700 focus:border-amber-700 focus:outline-none rounded px-4 py-2.5 text-amber-50 placeholder-stone-600 transition"
-                        >
-                        </input>
+        <div className="min-h-screen bg-stone-950 text-amber-50 flex flex-col items-center px-4 py-12">
+            <div className="w-full max-w-md">
+
+                <button
+                    onClick={() => navigate("/useraccount")}
+                    className="mb-6 text-amber-600 text-sm tracking-[0.2em] uppercase hover:text-amber-400 transition"
+                >
+                    ← Account
+                </button>
+
+                <div className="bg-stone-900 border border-stone-700 rounded-2xl overflow-hidden shadow-xl">
+
+                    <div className="bg-stone-800 px-8 py-8 border-b border-stone-700">
+                        <h1 className="text-2xl font-semibold tracking-wide">Fine Payment</h1>
+                        <p className="text-stone-400 text-sm mt-1 tracking-widest uppercase">Settle your outstanding balance</p>
                     </div>
 
-                    <button
-                    type="submit"
-                    disabled={submitting}
-                    className="mt-2 w-20 py-3 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold rounded transition tracking-wide"
-                    >
-                    {submitting ? "Processing..." : "Submit"}
-                    </button>
-                </form>
+                    <div className="px-8 py-8 flex flex-col items-center gap-6">
+                        <div className="flex flex-col items-center gap-1">
+                            <span className="text-stone-400 text-sm tracking-widest uppercase">Outstanding Balance</span>
+                            <span className={`text-4xl font-bold ${balance > 0 ? "text-red-400" : "text-green-400"}`}>
+                                ${Number(balance).toFixed(2)}
+                            </span>
+                        </div>
+
+                        {balance <= 0 ? (
+                            <p className="text-stone-500 text-sm">No outstanding fines — you're all clear.</p>
+                        ) : (
+                            <form onSubmit={handleSubmit} className="w-full">
+                                <button
+                                    type="submit"
+                                    disabled={submitting}
+                                    className="w-full py-3 bg-amber-700 hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed text-stone-950 font-semibold rounded-lg transition tracking-wide"
+                                >
+                                    {submitting ? "Processing..." : `Pay $${Number(balance).toFixed(2)}`}
+                                </button>
+                            </form>
+                        )}
+
+                        {error && <p className="text-red-400 text-sm">{error}</p>}
+                    </div>
+                </div>
             </div>
         </div>
-    )
+    );
 }

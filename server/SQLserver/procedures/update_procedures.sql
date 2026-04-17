@@ -18,7 +18,6 @@ CREATE PROCEDURE UpdateUser(
     IN p_Email VARCHAR(50),
     IN p_UserType SMALLINT,
     IN p_Status SMALLINT,
-    IN p_Balance DECIMAL(7,2),
     IN p_UpdatedBy INT
 )
 BEGIN
@@ -37,11 +36,6 @@ BEGIN
     IF v_existingType = 2 AND p_UserType != 2 THEN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Cannot change a Librarian user type.';
-    END IF;
-
-    IF p_Balance < 0 THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Balance cannot be negative.';
     END IF;
 
     -- Validate user type
@@ -84,8 +78,7 @@ BEGIN
         UserType = p_UserType,
         Status = p_Status,
         LoanPeriodDays = v_LoanPeriodDays,
-        Balance = p_Balance,
-        UpdatedAt = NOW(),
+        UpdatedAt = CURRENT_TIMESTAMP(),
         UpdatedBy = p_UpdatedBy
     WHERE UserID = p_UserID;
 
@@ -175,7 +168,7 @@ BEGIN
     UPDATE items
     SET
         Title = p_Title,
-        UpdatedAt = NOW(),
+        UpdatedAt = CURRENT_TIMESTAMP(),
         UpdatedBy = p_UpdatedBy
     WHERE ItemID = p_ItemID AND ItemCategory = 1;
 
@@ -219,7 +212,7 @@ BEGIN
     UPDATE items
     SET
         Title = p_Title,
-        UpdatedAt = NOW(),
+        UpdatedAt = CURRENT_TIMESTAMP(),
         UpdatedBy = p_UpdatedBy
     WHERE ItemID = p_ItemID AND ItemCategory = 2;
 
@@ -258,7 +251,7 @@ BEGIN
     UPDATE items
     SET
         Title = p_Title,
-        UpdatedAt = NOW(),
+        UpdatedAt = CURRENT_TIMESTAMP(),
         UpdatedBy = p_UpdatedBy
     WHERE ItemID = p_ItemID AND ItemCategory = 3;
 
