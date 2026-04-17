@@ -788,19 +788,26 @@ app.put("/api/finepayment", requireLogin, async (req, res) => {
   }
 });
 
-app.put("/api/user/loans/:loanId/return", requireLogin, async (req, res) => {
+// ================ USER LOANS =================
+app.get("/api/user/loans", requireLogin, async (req, res) => {
   try {
     const userId = req.session.user.UserID;
-    const loanId = Number(req.params.loanId);
-
-    await db.execute("CALL ReturnLoan(?, ?)", [loanId, userId]);
-
-    res.json({
-      success: true,
-      message: "Item returned successfully"
-    });
+    const [data] = await db.execute("CALL GetUserLoans(?)", [userId]);
+    res.json(data[0]);
   } catch (err) {
-    handleSqlError(res, err, err.sqlMessage || "Return failed");
+    console.error("Failed to fetch user loans:", err);
+    res.status(500).json({ error: "Failed to fetch loans" });
+  }
+});
+
+app.post("/api/user/loans/:loanId/return", requireLogin, async (req, res) => {
+  try {
+    const userId = req.session.user.UserID;
+    const loanId = parseInt(req.params.loanId);
+    await db.execute("CALL ReturnLoan(?, ?)", [loanId, userId]);
+    res.json({ success: true });
+  } catch (err) {
+    handleSqlError(res, err, err.sqlMessage || "Failed to return loan");
   }
 });
 

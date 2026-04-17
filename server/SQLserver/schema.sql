@@ -141,8 +141,9 @@ CREATE TABLE loans (
     UpdatedAt DATETIME NULL,
     UpdatedBy INT NULL,
 
+
     ActiveLoan TINYINT AS (IF(ReturnDate IS NULL, 1, NULL)) STORED,
-    
+
     CONSTRAINT fk_loans_user FOREIGN KEY (UserID) REFERENCES users(UserID)
         ON DELETE RESTRICT,
     CONSTRAINT fk_loans_copy FOREIGN KEY (CopyID) REFERENCES copies(CopyID)
