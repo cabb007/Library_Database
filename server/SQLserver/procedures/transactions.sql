@@ -117,16 +117,18 @@ CREATE PROCEDURE CheckoutItem (
 BEGIN
     DECLARE v_CopyID INT DEFAULT NULL;
     DECLARE v_DueDays INT DEFAULT NULL;
+    DECLARE v_UserStatus INT DEFAULT NULL;
     DECLARE v_UserType INT DEFAULT NULL;
+    DECLARE v_UnpaidBalance DECIMAL(7,2) DEFAULT 0.00;
     DECLARE v_MaxLoans INT DEFAULT 0;
     DECLARE v_CurrentLoans INT DEFAULT 0;
     DECLARE v_ExistingItemLoan INT DEFAULT 0;
 
     START TRANSACTION;
 
-    -- Get the user's loan period and lock the row during checkout
-    SELECT u.LoanPeriodDays
-    INTO v_DueDays
+    -- Get the user's loan period, status, and type; lock the row during checkout
+    SELECT u.LoanPeriodDays, u.Status, u.UserType
+    INTO v_DueDays, v_UserStatus, v_UserType
     FROM users AS u
     WHERE u.UserID = p_UserID
     FOR UPDATE;
@@ -137,33 +139,34 @@ BEGIN
         SET MESSAGE_TEXT = 'Invalid user';
     END IF;
 
-    -- Determine max allowed loans
-    SELECT u.UserType
-    INTO v_UserType
-    FROM users AS u
-    WHERE u.UserID = p_UserID;
-
-    IF v_UserType = 0 THEN
-        SET v_MaxLoans = 3; -- Student
-    ELSE
-        SET v_MaxLoans = 5; -- Librarian and Faculty
+    IF v_UserStatus <> 1 THEN
+        ROLLBACK;
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'User is not active.';
     END IF;
 
-    -- Count current active loans
-    SELECT COUNT(*)
-    INTO v_CurrentLoans
-    FROM loans AS l
-    WHERE l.UserID = p_UserID
-      AND l.ReturnDate IS NULL;
+    SET v_UnpaidBalance = GetUserBalanceValue(p_UserID);
+    IF v_UnpaidBalance <> 0 THEN
+        ROLLBACK;
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'User has an unpaid balance.';
+    END IF;
 
-    -- Stop if user is already at borrowing limit
+    IF v_UserType = 0 THEN
+        SET v_MaxLoans = 3;
+    ELSE
+        SET v_MaxLoans = 5;
+    END IF;
+
+    SELECT COUNT(*) INTO v_CurrentLoans
+    FROM loans WHERE UserID = p_UserID AND ReturnDate IS NULL;
+
     IF v_CurrentLoans >= v_MaxLoans THEN
         ROLLBACK;
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Borrowing limit exceeded for this user.';
     END IF;
 
-    -- Prevent user from checking out more than one copy of the same item
     SELECT COUNT(*)
     INTO v_ExistingItemLoan
     FROM loans AS l

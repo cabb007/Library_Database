@@ -800,6 +800,18 @@ app.get("/api/user/loans", requireLogin, async (req, res) => {
   }
 });
 
+// ================ USER HOLDS =================
+app.get("/api/user/holds", requireLogin, async (req, res) => {
+  try {
+    const userId = req.session.user.UserID;
+    const [data] = await db.execute("CALL GetUserHolds(?)", [userId]);
+    res.json(data[0]);
+  } catch (err) {
+    console.error("Failed to fetch user holds:", err);
+    res.status(500).json({ error: "Failed to fetch holds" });
+  }
+});
+
 app.post("/api/user/loans/:loanId/return", requireLogin, async (req, res) => {
   try {
     const userId = req.session.user.UserID;
