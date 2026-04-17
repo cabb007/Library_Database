@@ -43,6 +43,13 @@ export default function LibrarianDashboard() {
   const [analyticsAppliedFilters, setAnalyticsAppliedFilters] = useState(null);
   const [analyticsSummary, setAnalyticsSummary] = useState(null);
   const [overviewStats, setOverviewStats] = useState(null);
+  const [loansTab, setLoansTab] = useState("active");
+  const [activeLoans, setActiveLoans] = useState([]);
+  const [loansLoading, setLoansLoading] = useState(false);
+  const [overdueLoans, setOverdueLoans] = useState([]);
+  const [fines, setFines] = useState([]);
+  const [fineSearch, setFineSearch] = useState("");
+  const [finesFilter, setFinesFilter] = useState("all");
 
   const [showLitForm, setShowLitForm] = useState(false);
   const [showMediaForm, setShowMediaForm] = useState(false);
@@ -61,6 +68,14 @@ export default function LibrarianDashboard() {
     if (view === "home") {
       fetchOverviewStats();
     }
+    if (view === "loans") {
+      fetchActiveLoans();
+      if (users.length === 0) fetchUsersQuiet();
+    }
+    if (view === "fines") {
+      fetchFines("all");
+      if (users.length === 0) fetchUsersQuiet();
+    }
     if (view === "analytics") {
       if (!analyticsSummary) {
         fetch("http://localhost:3000/api/librarian/analytics/summary", { credentials: "include" })
@@ -73,6 +88,43 @@ export default function LibrarianDashboard() {
       }
     }
   }, [view]);
+
+  async function fetchActiveLoans() {
+    setLoansLoading(true);
+    try {
+      const res = await fetch("http://localhost:3000/api/librarian/loans/active", { credentials: "include" });
+      const data = await res.json();
+      if (res.ok) setActiveLoans(data);
+    } catch {
+      // table stays empty on failure
+    } finally {
+      setLoansLoading(false);
+    }
+  }
+
+  async function fetchFines(filter) {
+    const endpointMap = { all: "/api/librarian/fines", paid: "/api/librarian/fines/paid", unpaid: "/api/librarian/fines/unpaid" };
+    try {
+      const res = await fetch(`http://localhost:3000${endpointMap[filter]}`, { credentials: "include" });
+      const data = await res.json();
+      if (res.ok) setFines(data);
+    } catch {
+      // table stays empty on failure
+    }
+  }
+
+  async function fetchOverdueLoans() {
+    setLoansLoading(true);
+    try {
+      const res = await fetch("http://localhost:3000/api/librarian/loans/overdue", { credentials: "include" });
+      const data = await res.json();
+      if (res.ok) setOverdueLoans(data);
+    } catch {
+      // table stays empty on failure
+    } finally {
+      setLoansLoading(false);
+    }
+  }
 
   async function fetchOverviewStats() {
     try {
@@ -97,6 +149,16 @@ export default function LibrarianDashboard() {
     }
     checkAccess();
   }, []);
+
+  async function fetchUsersQuiet() {
+    try {
+      const res = await fetch("http://localhost:3000/api/librarian/users", { credentials: "include" });
+      const data = await res.json();
+      if (res.ok) setUsers(data);
+    } catch {
+      // names fall back to "#id" if this fails
+    }
+  }
 
   async function fetchUsers() {
     setError("");
@@ -609,6 +671,12 @@ export default function LibrarianDashboard() {
   }
 
   if (!user) return null;
+
+  const userNameById = (id) => {
+    if (!id) return "—";
+    const u = users.find(u => u.UserID === id);
+    return u ? `${u.FirstName} ${u.LastName} (#${id})` : `#${id}`;
+  };
 
   const userTypeLabel = (type) => {
     if (type === 0) return "Student";
@@ -1277,17 +1345,172 @@ export default function LibrarianDashboard() {
         <div>
           <h2>Loans</h2>
           <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
-            <button>Active</button>
-            <button>Overdue</button>
+            <button
+              onClick={() => { setLoansTab("active"); fetchActiveLoans(); }}
+              style={{ fontWeight: loansTab === "active" ? "bold" : "normal" }}
+            >
+              Active
+            </button>
+            <button
+              onClick={() => { setLoansTab("overdue"); fetchOverdueLoans(); }}
+              style={{ fontWeight: loansTab === "overdue" ? "bold" : "normal" }}
+            >
+              Overdue
+            </button>
           </div>
-          <p>Loans coming soon.</p>
+
+          {loansTab === "active" && (
+            loansLoading ? (
+              <p>Loading...</p>
+            ) : activeLoans.length === 0 ? (
+              <p>No active loans.</p>
+            ) : (
+              <table border="1" cellPadding="6" style={{ borderCollapse: "collapse", width: "100%" }}>
+                <thead>
+                  <tr>
+                    <th>Loan ID</th>
+                    <th>User ID</th>
+                    <th>User Name</th>
+                    <th>Copy ID</th>
+                    <th>Item ID</th>
+                    <th>Title</th>
+                    <th>Due Date</th>
+                    <th>Created At</th>
+                    <th>Created By</th>
+                    <th>Updated At</th>
+                    <th>Updated By</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {activeLoans.map(loan => (
+                    <tr key={loan.LoanID}>
+                      <td>{loan.LoanID}</td>
+                      <td>{loan.UserID}</td>
+                      <td>{loan.UserName}</td>
+                      <td>{loan.CopyID}</td>
+                      <td>{loan.ItemID}</td>
+                      <td>{loan.Title}</td>
+                      <td>{loan.DueDate ? new Date(loan.DueDate).toLocaleDateString() : "—"}</td>
+                      <td>{loan.CreatedAt ? new Date(loan.CreatedAt).toLocaleString() : "—"}</td>
+                      <td>{userNameById(loan.CreatedBy)}</td>
+                      <td>{loan.UpdatedAt ? new Date(loan.UpdatedAt).toLocaleString() : "—"}</td>
+                      <td>{userNameById(loan.UpdatedBy)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )
+          )}
+
+          {loansTab === "overdue" && (
+            loansLoading ? (
+              <p>Loading...</p>
+            ) : overdueLoans.length === 0 ? (
+              <p>No overdue loans.</p>
+            ) : (
+              <table border="1" cellPadding="6" style={{ borderCollapse: "collapse", width: "100%" }}>
+                <thead>
+                  <tr>
+                    <th>Loan ID</th>
+                    <th>User ID</th>
+                    <th>User Name</th>
+                    <th>Copy ID</th>
+                    <th>Item ID</th>
+                    <th>Title</th>
+                    <th>Due Date</th>
+                    <th>Created At</th>
+                    <th>Created By</th>
+                    <th>Updated At</th>
+                    <th>Updated By</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {overdueLoans.map(loan => (
+                    <tr key={loan.LoanID}>
+                      <td>{loan.LoanID}</td>
+                      <td>{loan.UserID}</td>
+                      <td>{loan.UserName}</td>
+                      <td>{loan.CopyID}</td>
+                      <td>{loan.ItemID}</td>
+                      <td>{loan.Title}</td>
+                      <td>{loan.DueDate ? new Date(loan.DueDate).toLocaleDateString() : "—"}</td>
+                      <td>{loan.CreatedAt ? new Date(loan.CreatedAt).toLocaleString() : "—"}</td>
+                      <td>{userNameById(loan.CreatedBy)}</td>
+                      <td>{loan.UpdatedAt ? new Date(loan.UpdatedAt).toLocaleString() : "—"}</td>
+                      <td>{userNameById(loan.UpdatedBy)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )
+          )}
         </div>
       )}
 
       {view === "fines" && (
         <div>
-          <h2>Fines</h2>
-          <p>Fines coming soon.</p>
+          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginBottom: "0.75rem" }}>
+            <label htmlFor="fines-filter" style={{ fontWeight: "bold" }}>Show:</label>
+            <select
+              id="fines-filter"
+              value={finesFilter}
+              onChange={e => {
+                const f = e.target.value;
+                setFinesFilter(f);
+                setFineSearch("");
+                fetchFines(f);
+              }}
+            >
+              <option value="all">All Fines</option>
+              <option value="unpaid">Unpaid</option>
+              <option value="paid">Paid</option>
+            </select>
+          </div>
+          <input
+            placeholder="Search by fine ID, borrower, or loan ID..."
+            value={fineSearch}
+            onChange={e => setFineSearch(e.target.value)}
+            style={{ marginBottom: "0.5rem", padding: "0.4rem", width: "100%" }}
+          />
+          <h2>Fines ({fines.filter(f =>
+            `${f.FineID} ${f.UserName} ${f.UserID} ${f.LoanID}`.toLowerCase().includes(fineSearch.toLowerCase())
+          ).length})</h2>
+          <table border="1" cellPadding="8" style={{ borderCollapse: "collapse", width: "100%", marginTop: "0.5rem" }}>
+            <thead>
+              <tr>
+                <th>Fine ID</th>
+                <th>Borrower</th>
+                <th>User ID</th>
+                <th>Loan ID</th>
+                <th>Amount</th>
+                <th>Paid</th>
+                <th>Paid At</th>
+                <th>Created At</th>
+                <th>Created By</th>
+                <th>Updated At</th>
+                <th>Updated By</th>
+              </tr>
+            </thead>
+            <tbody>
+              {fines.filter(f =>
+                `${f.FineID} ${f.UserName} ${f.UserID} ${f.LoanID}`.toLowerCase().includes(fineSearch.toLowerCase())
+              ).map(f => (
+                <tr key={f.FineID}>
+                  <td>{f.FineID}</td>
+                  <td>{f.UserName}</td>
+                  <td>{f.UserID}</td>
+                  <td>{f.LoanID}</td>
+                  <td>${Number(f.FineAmount).toFixed(2)}</td>
+                  <td>{f.PaidStatus === 1 ? "Yes" : "No"}</td>
+                  <td>{f.PaidAt ? new Date(f.PaidAt).toLocaleString() : "—"}</td>
+                  <td>{f.CreatedAt ? new Date(f.CreatedAt).toLocaleString() : "—"}</td>
+                  <td>{userNameById(f.CreatedBy)}</td>
+                  <td>{f.UpdatedAt ? new Date(f.UpdatedAt).toLocaleString() : "—"}</td>
+                  <td>{userNameById(f.UpdatedBy)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 
@@ -1327,6 +1550,10 @@ export default function LibrarianDashboard() {
                 <th>Type</th>
                 <th>Loan Period</th>
                 <th>Status</th>
+                <th>Created At</th>
+                <th>Created By</th>
+                <th>Updated At</th>
+                <th>Updated By</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -1341,6 +1568,10 @@ export default function LibrarianDashboard() {
                   <td>{userTypeLabel(u.UserType)}</td>
                   <td>{u.LoanPeriodDays} days</td>
                   <td>{u.Status === 1 ? "Active" : "Inactive"}</td>
+                  <td>{u.CreatedAt ? new Date(u.CreatedAt).toLocaleString() : "—"}</td>
+                  <td>{userNameById(u.CreatedBy)}</td>
+                  <td>{u.UpdatedAt ? new Date(u.UpdatedAt).toLocaleString() : "—"}</td>
+                  <td>{userNameById(u.UpdatedBy)}</td>
                   <td style={{ display: "flex", gap: "0.4rem" }}>
                     <button
                       onClick={() => startEditUser(u)}

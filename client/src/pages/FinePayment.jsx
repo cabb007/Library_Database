@@ -85,33 +85,49 @@ export default function FinePayment() {
     }
 
     return (
-        <div className="flex-col text-center gap-5 justify-center">
-            <button
-                className="bg-amber-700"
-                onClick={() => navigate("/")}
-            >
-                Home
-            </button>
+        <div className="min-h-screen bg-stone-950 text-amber-50 flex flex-col items-center px-4 py-12">
+            <div className="w-full max-w-md">
 
-            <h1>Fine Payment Page</h1>
+                <button
+                    onClick={() => navigate("/useraccount")}
+                    className="mb-6 text-amber-600 text-sm tracking-[0.2em] uppercase hover:text-amber-400 transition"
+                >
+                    ← Account
+                </button>
 
-            <div>
-                {user ? <h1>Balance : ${balance}</h1> : <p></p>}
+                <div className="bg-stone-900 border border-stone-700 rounded-2xl overflow-hidden shadow-xl">
+
+                    <div className="bg-stone-800 px-8 py-8 border-b border-stone-700">
+                        <h1 className="text-2xl font-semibold tracking-wide">Fine Payment</h1>
+                        <p className="text-stone-400 text-sm mt-1 tracking-widest uppercase">Settle your outstanding balance</p>
+                    </div>
+
+                    <div className="px-8 py-8 flex flex-col items-center gap-6">
+                        <div className="flex flex-col items-center gap-1">
+                            <span className="text-stone-400 text-sm tracking-widest uppercase">Outstanding Balance</span>
+                            <span className={`text-4xl font-bold ${balance > 0 ? "text-red-400" : "text-green-400"}`}>
+                                ${Number(balance).toFixed(2)}
+                            </span>
+                        </div>
+
+                        {balance <= 0 ? (
+                            <p className="text-stone-500 text-sm">No outstanding fines — you're all clear.</p>
+                        ) : (
+                            <form onSubmit={handleSubmit} className="w-full">
+                                <button
+                                    type="submit"
+                                    disabled={submitting}
+                                    className="w-full py-3 bg-amber-700 hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed text-stone-950 font-semibold rounded-lg transition tracking-wide"
+                                >
+                                    {submitting ? "Processing..." : `Pay $${Number(balance).toFixed(2)}`}
+                                </button>
+                            </form>
+                        )}
+
+                        {error && <p className="text-red-400 text-sm">{error}</p>}
+                    </div>
+                </div>
             </div>
-
-            <div>
-                <form onSubmit={handleSubmit}>
-                    <button
-                        type="submit"
-                        disabled={submitting || balance <= 0}
-                        className="mt-2 px-5 py-3 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold rounded transition tracking-wide"
-                    >
-                        {submitting ? "Processing..." : "Pay Full Balance"}
-                    </button>
-                </form>
-            </div>
-
-            {error && <p className="text-red-400">{error}</p>}
         </div>
     );
 }

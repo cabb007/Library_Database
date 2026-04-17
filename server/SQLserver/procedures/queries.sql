@@ -677,6 +677,8 @@ BEGIN
         l.LoanID,
         CONCAT(u.FirstName, ' ', u.LastName) AS UserName,
         f.FineAmount,
+        f.PaidStatus,
+        f.PaidAt,
         f.CreatedAt,
         f.CreatedBy,
         f.UpdatedAt,
@@ -699,6 +701,8 @@ BEGIN
         l.LoanID,
         CONCAT(u.FirstName, ' ', u.LastName) AS UserName,
         f.FineAmount,
+        f.PaidStatus,
+        f.PaidAt,
         f.CreatedAt,
         f.CreatedBy,
         f.UpdatedAt,
@@ -722,6 +726,8 @@ BEGIN
         l.LoanID,
         CONCAT(u.FirstName, ' ', u.LastName) AS UserName,
         f.FineAmount,
+        f.PaidStatus,
+        f.PaidAt,
         f.CreatedAt,
         f.CreatedBy,
         f.UpdatedAt,
@@ -1041,6 +1047,122 @@ BEGIN
         AND (p_transaction_type IS NULL OR p_transaction_type = 'Fine')
 
     ORDER BY TransactionDate DESC, TransactionType;
+END$$
+
+-- =========================================================
+-- Procedure: Get all loans for a specific user
+-- =========================================================
+DROP PROCEDURE IF EXISTS GetUserLoans$$
+CREATE PROCEDURE GetUserLoans(IN p_UserID INT)
+BEGIN
+    SELECT
+        l.LoanID,
+        l.CopyID,
+        c.ItemID,
+        i.Title,
+        l.DueDate,
+        l.ReturnDate,
+        l.CreatedAt,
+        CASE i.ItemCategory
+            WHEN 1 THEN CASE lit.ItemType
+                WHEN 1 THEN 'Book'
+                WHEN 2 THEN 'Textbook'
+                WHEN 3 THEN 'Magazine'
+                WHEN 4 THEN 'Audiobook'
+                ELSE 'Literature'
+            END
+            WHEN 2 THEN CASE med.ItemType
+                WHEN 1 THEN 'DVD/CD'
+                WHEN 2 THEN 'Blu-Ray'
+                WHEN 3 THEN 'Vinyl'
+                ELSE 'Media'
+            END
+            WHEN 3 THEN CASE dev.ItemType
+                WHEN 1 THEN 'Laptop'
+                WHEN 2 THEN 'Tablet'
+                WHEN 3 THEN 'Calculator'
+                ELSE 'Device'
+            END
+            ELSE 'Unknown'
+        END AS ItemTypeName
+    FROM loans AS l
+    JOIN copies      AS c   ON l.CopyID  = c.CopyID
+    JOIN items       AS i   ON c.ItemID  = i.ItemID
+    LEFT JOIN literature AS lit ON i.ItemID = lit.ItemID
+    LEFT JOIN media      AS med ON i.ItemID = med.ItemID
+    LEFT JOIN devices    AS dev ON i.ItemID = dev.ItemID
+    WHERE l.UserID = p_UserID
+    ORDER BY l.ReturnDate IS NULL DESC, l.DueDate ASC;
+END$$
+
+DROP PROCEDURE IF EXISTS ReturnLoan$$
+CREATE PROCEDURE ReturnLoan(
+    IN p_LoanID INT,
+    IN p_UserID INT
+)
+BEGIN
+    DECLARE v_CopyID INT DEFAULT NULL;
+    DECLARE v_LoanUserID INT DEFAULT NULL;
+    DECLARE v_ReturnDate DATETIME DEFAULT NULL;
+    DECLARE v_ReturnUserType INT DEFAULT NULL;
+    DECLARE v_AuditUserID INT DEFAULT 1;
+
+    START TRANSACTION;
+
+    SELECT CopyID, UserID, ReturnDate
+    INTO v_CopyID, v_LoanUserID, v_ReturnDate
+    FROM loans
+    WHERE LoanID = p_LoanID
+    FOR UPDATE;
+
+    IF v_CopyID IS NULL THEN
+        ROLLBACK;
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Invalid loan';
+    END IF;
+
+    IF v_LoanUserID <> p_UserID THEN
+        ROLLBACK;
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'User cannot return this loan';
+    END IF;
+
+    IF v_ReturnDate IS NOT NULL THEN
+        ROLLBACK;
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Loan already returned';
+    END IF;
+
+    SELECT UserType
+    INTO v_ReturnUserType
+    FROM users
+    WHERE UserID = p_UserID;
+
+    IF v_ReturnUserType IS NULL THEN
+        ROLLBACK;
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Invalid returning user';
+    END IF;
+
+    IF v_ReturnUserType = 2 THEN
+        SET v_AuditUserID = p_UserID;
+    ELSE
+        SET v_AuditUserID = 1;
+    END IF;
+
+    UPDATE loans
+    SET ReturnDate = CURRENT_TIMESTAMP(),
+        UpdatedAt = CURRENT_TIMESTAMP(),
+        UpdatedBy = v_AuditUserID
+    WHERE LoanID = p_LoanID;
+
+    UPDATE copies
+    SET CopyStatus = 0,
+        UpdatedAt = CURRENT_TIMESTAMP(),
+        UpdatedBy = v_AuditUserID
+    WHERE CopyID = v_CopyID;
+
+    COMMIT;
 END$$
 
 DELIMITER ;
