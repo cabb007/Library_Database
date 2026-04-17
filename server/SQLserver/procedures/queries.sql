@@ -635,3 +635,26 @@ BEGIN
 END$$
 
 DELIMITER ;
+
+-- =========================================================
+-- Procedure: Get all unpaid fines
+-- =========================================================
+-- =========================================================
+-- Prodcedure: Get unpaid fines (with user details)
+-- =========================================================
+DROP PROCEDURE IF EXISTS GetUnpaidFines$$
+CREATE PROCEDURE GetUnpaidFines()
+BEGIN
+    SELECT
+        f.FineID,
+        f.UserID,
+        l.loanID,
+        CONCAT(u.FirstName, ' ', u.LastName) AS UserName,
+        f.FineAmount,
+        f.CreatedAt
+    FROM fines AS f
+    JOIN loans AS l ON f.LoanID = l.LoanID
+    JOIN users AS u ON f.UserID = u.UserID
+    WHERE f.PaidStatus = 0 -- only unpaid fines
+    ORDER BY f.CreatedAt DESC; -- newest fines first
+END$$
