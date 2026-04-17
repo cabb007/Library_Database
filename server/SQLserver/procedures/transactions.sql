@@ -162,13 +162,14 @@ BEGIN
         CopyID,
         CreatedBy,
         CreatedAt,
-        CreatedAt,
+        UpdatedAt,
         DueDate
     )
     VALUES (
         p_UserID,
         v_CopyID,
-        1, -- Super User
+        p_UserID, -- Super User
+        CURDATE(),
         CURDATE(),
         DATE_ADD(CURDATE(), INTERVAL v_DueDays DAY)
     );
@@ -208,7 +209,7 @@ BEGIN
     END IF;
 
     -- Check for unpaid balances
-    CALL GetUserBalance(p_UserID, v_UserBalance);
+    SET v_UserBalance = GetUserBalanceValue(p_UserID);
     IF v_UserBalance > 0 THEN 
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Users with unpaid balances cannot place holds';
@@ -218,7 +219,7 @@ BEGIN
     IF NOT EXISTS (
         SELECT 1 
         FROM items 
-        WHERE ITEMID = p_ItemID
+        WHERE ItemID = p_ItemID
     ) THEN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Invalid item';
@@ -258,11 +259,6 @@ BEGIN
         CreatedBy,
         UpdatedAt,
         UpdatedBy
-        HoldStatus,
-        CreatedAt,
-        CreatedBy,
-        UpdatedAt,
-        UpdatedBy
     )
     VALUES (
         p_UserID,
@@ -273,7 +269,6 @@ BEGIN
         CURRENT_TIMESTAMP(),
         p_UserID
     );
-
 
 END$$
 
