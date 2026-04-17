@@ -8,7 +8,7 @@ FIELDS TERMINATED BY ','
 ENCLOSED BY '"'
 LINES TERMINATED BY '\r\n'
 IGNORE 1 ROWS
-(Password, FirstName, LastName, Email, Balance, UserType, LoanPeriodDays, Status, CreatedAt, @cb, UpdatedAt, @ub)
+(Password, FirstName, LastName, Email, UserType, LoanPeriodDays, Status, CreatedAt, @cb, UpdatedAt, @ub)
 SET
     CreatedBy = NULLIF(TRIM(REPLACE(@cb, '\r', '')), ''),
     UpdatedBy = NULLIF(TRIM(REPLACE(@ub, '\r', '')), '');
@@ -189,5 +189,7 @@ SELECT COUNT(*) FROM media;
 SELECT COUNT(*) FROM devices;
 SELECT COUNT(*) FROM copies;
 SELECT COUNT(*) FROM fines;
+
+CALL InitializeFineAmounts();
 
 SET FOREIGN_KEY_CHECKS = 1;

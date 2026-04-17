@@ -5,6 +5,7 @@ import API from "../api";
 
 export default function UserAccount() {
     const [user, setUser] = useState(null);
+    const [balance, setBalance] = useState(0);
     const [error, setError] = useState("");
 
     const navigate = useNavigate();
@@ -20,8 +21,10 @@ export default function UserAccount() {
 
                 if (response.ok) {
                     setUser(data.user);
+                    await fetchBalance();
                 } else {
                     setUser(null);
+                    setBalance(0);
                 }
             } catch (err) {
                 console.error(err);
@@ -30,6 +33,25 @@ export default function UserAccount() {
 
         checkLogin();
     }, []);
+
+    async function fetchBalance() {
+    try {
+        const response = await fetch(`${API}/api/user/balance`, {
+            credentials: "include"
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            setBalance(data.Balance);
+        } else {
+            setBalance(0);
+        }
+    } catch (err) {
+        console.error(err);
+        setBalance(0);
+    }
+}
 
     async function handleLogout() {
         setError("");
@@ -47,6 +69,7 @@ export default function UserAccount() {
             }
 
             setUser(null); // important UI reset
+            setBalance(0); 
             console.log("Logged out successfully");
             navigate("/login");
 
@@ -79,7 +102,7 @@ export default function UserAccount() {
 
                     {user ? (
                         <h1>
-                            Current Balance : ${user.Balance}
+                            Current Balance : ${balance}
 
                             <button
                                 onClick={() => navigate("/finepayment")}

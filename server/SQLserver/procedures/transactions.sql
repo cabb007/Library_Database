@@ -1,5 +1,110 @@
 DELIMITER $$
 
+-- =================================================================================================================
+--                                               PAYMENT QUERIES
+-- =================================================================================================================
+
+-- =========================================================
+-- Procedure: Initialize fine amounts after database load, creates missing fine rows for overdue active loans, then updates all unpaid overdue fine amounts
+-- =========================================================
+DROP PROCEDURE IF EXISTS InitializeFineAmounts$$
+CREATE PROCEDURE InitializeFineAmounts()
+BEGIN
+    -- Create missing fine rows for overdue loans
+    INSERT INTO fines (
+        UserID,
+        LoanID,
+        FineAmount,
+        PaidStatus,
+        PaidAt,
+        CreatedAt,
+        CreatedBy,
+        UpdatedAt,
+        UpdatedBy
+    )
+    SELECT
+        l.UserID,
+        l.LoanID,
+        GREATEST(DATEDIFF(COALESCE(l.ReturnDate, CURDATE()), l.DueDate), 0) * 2.00,
+        0,
+        NULL,
+        CURRENT_TIMESTAMP(),
+        1, 
+        CURRENT_TIMESTAMP(),
+        1 -- SysAdmin UserID = 1
+    FROM loans l
+    LEFT JOIN fines f ON f.LoanID = l.LoanID
+    WHERE f.FineID IS NULL
+      AND l.DueDate < CURDATE();
+
+    -- Update all existing unpaid fines
+    UPDATE fines f
+    JOIN loans l ON f.LoanID = l.LoanID
+    SET f.FineAmount = GREATEST(DATEDIFF(COALESCE(l.ReturnDate, CURDATE()), l.DueDate), 0) * 2.00,
+        f.UpdatedAt = CURRENT_TIMESTAMP(),
+        f.UpdatedBy = 1 -- SysAdmin UserID = 1
+    WHERE f.PaidStatus = 0
+      AND l.DueDate < CURDATE();
+END$$
+
+-- =========================================================
+-- Prodcedure: Pay a specific fine for a user
+-- =========================================================
+DROP PROCEDURE IF EXISTS PayFine$$
+
+CREATE PROCEDURE PayFine (
+    IN p_UserID INT
+)
+BEGIN
+    DECLARE v_UnpaidFineCount INT DEFAULT 0;
+    DECLARE v_ActiveLoanFineCount INT DEFAULT 0;
+
+    START TRANSACTION;
+
+    -- Check if the user has any unpaid fines
+    SELECT COUNT(*)
+    INTO v_UnpaidFineCount
+    FROM fines
+    WHERE UserID = p_UserID
+      AND PaidStatus = 0;
+
+    IF v_UnpaidFineCount = 0 THEN
+        ROLLBACK;
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'No unpaid fines found for this user';
+    END IF;
+
+    -- Check whether any unpaid fine is tied to an active loan
+    SELECT COUNT(*)
+    INTO v_ActiveLoanFineCount
+    FROM fines f
+    JOIN loans l ON f.LoanID = l.LoanID
+    WHERE f.UserID = p_UserID
+      AND f.PaidStatus = 0
+      AND l.ReturnDate IS NULL;
+
+    IF v_ActiveLoanFineCount > 0 THEN
+        ROLLBACK;
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Cannot pay fines for active loans';
+    END IF;
+
+    -- Mark all unpaid fines as paid
+    UPDATE fines
+    SET PaidStatus = 1,
+        PaidAt = CURRENT_TIMESTAMP(),
+        UpdatedAt = CURRENT_TIMESTAMP(),
+        UpdatedBy = p_UserID
+    WHERE UserID = p_UserID
+      AND PaidStatus = 0;
+
+    COMMIT;
+END$$
+
+-- =================================================================================================================
+--                                               LOAN & HOLD QUERIES
+-- =================================================================================================================
+
 -- =========================================================
 -- Procedure: Checkout an item for a specific user
 -- =========================================================
@@ -47,7 +152,7 @@ BEGIN
     -- Mark the copy as checked out; note CopyStatus: 0=Available,1=OnLoan
     UPDATE copies AS c
     SET c.CopyStatus = 1,
-        c.UpdatedAt = NOW(),
+        c.UpdatedAt = CURRENT_TIMESTAMP(),
         c.UpdatedBy = p_UserID
     WHERE c.CopyID = v_CopyID;
 
@@ -57,12 +162,14 @@ BEGIN
         CopyID,
         CreatedBy,
         CreatedAt,
+        UpdatedAt,
         DueDate
     )
     VALUES (
         p_UserID,
         v_CopyID,
-        1, -- Super User
+        p_UserID, -- Super User
+        CURDATE(),
         CURDATE(),
         DATE_ADD(CURDATE(), INTERVAL v_DueDays DAY)
     );
@@ -81,13 +188,13 @@ CREATE PROCEDURE CreateHold (
 )
 BEGIN
     DECLARE v_UserStatus INT DEFAULT NULL;
-    DECLARE v_UserBalance DECIMAL(7,2) DEFAULT NULL;
+    DECLARE v_UserBalance DECIMAL(7,2) DEFAULT 0.00;
     DECLARE v_AvailableCopies INT DEFAULT 0;
     DECLARE v_ExistingHold INT DEFAULT 0;
 
     -- Check if the user exists and has an active status
-    SELECT Status, Balance
-    INTO v_UserStatus, v_UserBalance
+    SELECT Status
+    INTO v_UserStatus
     FROM users
     WHERE UserID = p_UserID;
 
@@ -101,7 +208,9 @@ BEGIN
         SET MESSAGE_TEXT = 'User is not active';
     END IF;
 
-    IF v_UserBalance > 0 THEN -- I'm not sure if this is a rule we made yet, but it makes sense to prevent users with outstanding fines from placing holds (Mikkel)
+    -- Check for unpaid balances
+    SET v_UserBalance = GetUserBalanceValue(p_UserID);
+    IF v_UserBalance > 0 THEN 
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Users with unpaid balances cannot place holds';
     END IF;
@@ -110,7 +219,7 @@ BEGIN
     IF NOT EXISTS (
         SELECT 1 
         FROM items 
-        WHERE ITEMID = p_ItemID
+        WHERE ItemID = p_ItemID
     ) THEN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Invalid item';
@@ -142,7 +251,6 @@ BEGIN
     END IF;
 
     -- Create the hold request UserID,ItemID,HoldStatus,CreatedAt,CreatedBy,UpdatedAt,UpdatedBy
-
     INSERT INTO holds (
         UserID,
         ItemID,
@@ -152,13 +260,13 @@ BEGIN
         UpdatedAt,
         UpdatedBy
     )
-    VALUES ( -- This needs some work to set the CreatedBy/UpdatedBy fields, but we can discuss how to do that since holds don't have those columns (Mikkel)
+    VALUES (
         p_UserID,
         p_ItemID,
         0, -- Active hold
-        NOW(),
+        CURRENT_TIMESTAMP(),
         p_UserID,
-        NOW(),
+        CURRENT_TIMESTAMP(),
         p_UserID
     );
 

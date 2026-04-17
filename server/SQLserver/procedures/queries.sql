@@ -580,8 +580,12 @@ BEGIN
         l.CopyID,
         c.ItemID,
         i.Title,
+        l.DueDate,
+        l.ReturnDate,
         l.CreatedAt,
-        l.DueDate
+        l.CreatedBy,
+        l.UpdatedAt,
+        l.UpdatedBy
     FROM loans AS l
     JOIN users AS u ON l.UserID= u.UserID
     JOIN copies AS c ON l.CopyID = c.CopyID
@@ -603,8 +607,12 @@ BEGIN
         l.CopyID,
         c.ItemID,
         i.Title,
+        l.DueDate,
+        l.ReturnDate,
         l.CreatedAt,
-        l.DueDate
+        l.CreatedBy,
+        l.UpdatedAt,
+        l.UpdatedBy
     FROM loans AS l
     JOIN users AS u ON l.UserID = u.UserID
     JOIN copies AS c ON l.CopyID = c.CopyID
@@ -627,24 +635,43 @@ BEGIN
         l.loanID,
         CONCAT(u.FirstName, ' ', u.LastName) AS UserName,
         f.FineAmount,
-        f.CreatedAt
+        f.CreatedAt,
+        f.CreatedBy,
+        f.UpdatedAt,
+        f.UpdatedBy
     FROM fines AS f
     JOIN loans AS l ON f.LoanID = l.LoanID
     JOIN users AS u ON f.UserID = u.UserID
     ORDER BY f.CreatedAt DESC; -- newest fines first
 END$$
 
+-- =========================================================
+-- Procedure: Get unpaid fines (with user details)
+-- =========================================================
+DROP PROCEDURE IF EXISTS GetUnpaidFines$$
+CREATE PROCEDURE GetUnpaidFines()
+BEGIN
+    SELECT
+        f.FineID,
+        f.UserID,
+        l.loanID,
+        CONCAT(u.FirstName, ' ', u.LastName) AS UserName,
+        f.FineAmount,
+        f.CreatedAt,
+        f.CreatedBy,
+        f.UpdatedAt,
+        f.UpdatedBy
+    FROM fines AS f
+    JOIN loans AS l ON f.LoanID = l.LoanID
+    JOIN users AS u ON f.UserID = u.UserID
+    WHERE f.PaidStatus = 0 -- only unpaid fines
+    ORDER BY f.CreatedAt DESC; -- newest fines first
+END$$
+
 -- =================================================================================================================
---                                               ANALYTICS QUERIES
+--                                              ITEM ANALYTICS QUERIES
 -- =================================================================================================================
 
--- =========================================================
--- Procedure: Get most checked out items with filters
---   p_start_date  DATE      - earliest checkout date (NULL = no lower bound)
---   p_end_date    DATE      - latest checkout date   (NULL = no upper bound)
---   p_category    SMALLINT  - 1=Literature, 2=Media, 3=Device (NULL = all)
---   p_item_type   SMALLINT  - type within category (NULL = all types)
--- =========================================================
 -- =========================================================
 -- Procedure: Overview dashboard stats
 -- =========================================================
@@ -712,6 +739,13 @@ BEGIN
          WHERE ReturnDate IS NOT NULL) AS AvgLoanDays;
 END$$
 
+-- =========================================================
+-- Procedure: Get most checked out items with filters
+--   p_start_date  DATE      - earliest checkout date (NULL = no lower bound)
+--   p_end_date    DATE      - latest checkout date   (NULL = no upper bound)
+--   p_category    SMALLINT  - 1=Literature, 2=Media, 3=Device (NULL = all)
+--   p_item_type   SMALLINT  - type within category (NULL = all types)
+-- =========================================================
 DROP PROCEDURE IF EXISTS GetMostCheckedOut$$
 CREATE PROCEDURE GetMostCheckedOut(
     IN p_start_date DATE,
@@ -786,6 +820,162 @@ BEGIN
         i.ItemID, i.Title, i.ItemCategory,
         l.ItemType, m.ItemType, d.ItemType
     ORDER BY CheckoutCount DESC;
+END$$
+
+-- =================================================================================================================
+--                                              TRANSACTION ANALYTICS QUERIES
+-- =================================================================================================================
+
+-- =========================================================
+-- Procedure: Get transaction summary of all loans/holds/fines (totals, actives, overdues, averages)
+-- =========================================================
+DROP PROCEDURE IF EXISTS GetTransactionSummary$$
+CREATE PROCEDURE GetTransactionSummary()
+BEGIN
+    SELECT
+        (SELECT COUNT(*) FROM loans) AS TotalLoans,
+        (SELECT COUNT(*) FROM loans WHERE ReturnDate IS NULL) AS ActiveLoans,
+        (SELECT COUNT(*)
+         FROM loans
+         WHERE ReturnDate IS NULL -- Active loans only
+           AND DueDate < CURDATE()) AS OverdueLoans,
+        (SELECT COUNT(*) FROM holds) AS TotalHolds,
+        (SELECT COUNT(*) FROM holds WHERE HoldStatus = 0) AS ActiveHolds,
+        (SELECT COUNT(*) FROM holds WHERE HoldStatus = 1) AS FulfilledHolds,
+        (SELECT COUNT(*) FROM holds WHERE HoldStatus = 2) AS CancelledHolds,
+        (SELECT COUNT(*) FROM fines) AS TotalFines,
+        (SELECT COUNT(*) FROM fines WHERE PaidStatus = 0) AS UnpaidFines,
+        (SELECT COUNT(*) FROM fines WHERE PaidStatus = 1) AS PaidFines,
+        (SELECT COALESCE(SUM(FineAmount), 0.00)
+         FROM fines
+         WHERE PaidStatus = 0) AS TotalOutstandingFineAmount,
+        (SELECT ROUND(AVG(DATEDIFF(ReturnDate, CreatedAt)), 1)
+         FROM loans
+         WHERE ReturnDate IS NOT NULL) AS AvgCompletedLoanDays,
+        (SELECT ROUND(AVG(DATEDIFF(COALESCE(UpdatedAt, CURDATE()), CreatedAt)), 1)
+         FROM holds) AS AvgHoldLifecycleDays;
+END$$
+
+
+DROP PROCEDURE IF EXISTS GetTransactionReport$$
+CREATE PROCEDURE GetTransactionReport(
+    IN p_start_date DATE,
+    IN p_end_date DATE,
+    IN p_user_id INT,
+    IN p_transaction_type VARCHAR(10) -- 'Loan', 'Hold', 'Fine', NULL = all
+)
+BEGIN
+    -- Loans
+    SELECT
+        'Loan' AS TransactionType,
+        lo.LoanID AS TransactionID,
+        u.UserID,
+        CONCAT(u.FirstName, ' ', u.LastName) AS UserName,
+        u.Email,
+        i.ItemID,
+        i.Title,
+        lo.CreatedAt AS TransactionDate,
+        lo.DueDate,
+        lo.ReturnDate,
+        NULL AS FineAmount,
+        CASE
+            WHEN lo.ReturnDate IS NOT NULL THEN 'Returned'
+            WHEN lo.DueDate < CURDATE() THEN 'Overdue'
+            ELSE 'Active'
+        END AS StatusLabel,
+        DATEDIFF(COALESCE(lo.ReturnDate, CURDATE()), lo.CreatedAt) AS AgeDays,
+        CASE
+            WHEN lo.ReturnDate IS NULL AND lo.DueDate < CURDATE()
+                THEN DATEDIFF(CURDATE(), lo.DueDate)
+            ELSE 0
+        END AS DaysOverdue,
+        CASE
+            WHEN lo.ReturnDate IS NULL AND lo.DueDate < CURDATE() THEN 1
+            ELSE 0
+        END AS NeedsAttention
+    FROM loans lo
+    JOIN users u ON lo.UserID = u.UserID
+    JOIN copies c ON lo.CopyID = c.CopyID
+    JOIN items i ON c.ItemID = i.ItemID
+    WHERE
+        (p_start_date IS NULL OR DATE(lo.CreatedAt) >= p_start_date)
+        AND (p_end_date IS NULL OR DATE(lo.CreatedAt) <= p_end_date)
+        AND (p_user_id IS NULL OR lo.UserID = p_user_id)
+        AND (p_transaction_type IS NULL OR p_transaction_type = 'Loan')
+
+    UNION ALL
+
+    -- Holds
+    SELECT
+        'Hold' AS TransactionType,
+        h.HoldID AS TransactionID,
+        u.UserID,
+        CONCAT(u.FirstName, ' ', u.LastName) AS UserName,
+        u.Email,
+        i.ItemID,
+        i.Title,
+        h.CreatedAt AS TransactionDate,
+        NULL AS DueDate,
+        NULL AS ReturnDate,
+        NULL AS FineAmount,
+        CASE h.HoldStatus
+            WHEN 0 THEN 'Active'
+            WHEN 1 THEN 'Fulfilled'
+            WHEN 2 THEN 'Cancelled'
+            ELSE 'Unknown'
+        END AS StatusLabel,
+        DATEDIFF(COALESCE(h.UpdatedAt, CURDATE()), h.CreatedAt) AS AgeDays,
+        0 AS DaysOverdue,
+        CASE
+            WHEN h.HoldStatus = 0 AND DATEDIFF(CURDATE(), h.CreatedAt) > 7 THEN 1
+            ELSE 0
+        END AS NeedsAttention
+    FROM holds h
+    JOIN users u ON h.UserID = u.UserID
+    JOIN items i ON h.ItemID = i.ItemID
+    WHERE
+        (p_start_date IS NULL OR DATE(h.CreatedAt) >= p_start_date)
+        AND (p_end_date IS NULL OR DATE(h.CreatedAt) <= p_end_date)
+        AND (p_user_id IS NULL OR h.UserID = p_user_id)
+        AND (p_transaction_type IS NULL OR p_transaction_type = 'Hold')
+
+    UNION ALL
+
+    -- Fines
+    SELECT
+        'Fine' AS TransactionType,
+        f.FineID AS TransactionID,
+        u.UserID,
+        CONCAT(u.FirstName, ' ', u.LastName) AS UserName,
+        u.Email,
+        i.ItemID,
+        i.Title,
+        f.CreatedAt AS TransactionDate,
+        lo.DueDate,
+        lo.ReturnDate,
+        f.FineAmount,
+        CASE
+            WHEN f.PaidStatus = 1 THEN 'Paid'
+            ELSE 'Unpaid'
+        END AS StatusLabel,
+        DATEDIFF(COALESCE(f.PaidAt, CURDATE()), f.CreatedAt) AS AgeDays,
+        0 AS DaysOverdue,
+        CASE
+            WHEN f.PaidStatus = 0 THEN 1
+            ELSE 0
+        END AS NeedsAttention
+    FROM fines f
+    JOIN users u ON f.UserID = u.UserID
+    JOIN loans lo ON f.LoanID = lo.LoanID
+    JOIN copies c ON lo.CopyID = c.CopyID
+    JOIN items i ON c.ItemID = i.ItemID
+    WHERE
+        (p_start_date IS NULL OR DATE(f.CreatedAt) >= p_start_date)
+        AND (p_end_date IS NULL OR DATE(f.CreatedAt) <= p_end_date)
+        AND (p_user_id IS NULL OR f.UserID = p_user_id)
+        AND (p_transaction_type IS NULL OR p_transaction_type = 'Fine')
+
+    ORDER BY TransactionDate DESC, TransactionType;
 END$$
 
 DELIMITER ;

@@ -149,7 +149,6 @@ export default function LibrarianDashboard() {
       Email: u.Email,
       UserType: u.UserType,
       Status: u.Status,
-      Balance: u.Balance
     });
     setTimeout(() => editUserPanelRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
   }
@@ -168,7 +167,6 @@ export default function LibrarianDashboard() {
           Email: editUserForm.Email,
           UserType: Number(editUserForm.UserType),
           Status: Number(editUserForm.Status),
-          Balance: Number(editUserForm.Balance)
         })
       });
       const data = await res.json();
@@ -1334,7 +1332,6 @@ export default function LibrarianDashboard() {
                 <th>Email</th>
                 <th>Type</th>
                 <th>Loan Period</th>
-                <th>Balance</th>
                 <th>Status</th>
                 <th>Created At</th>
                 <th>Created By</th>
@@ -1353,7 +1350,6 @@ export default function LibrarianDashboard() {
                   <td>{u.Email}</td>
                   <td>{userTypeLabel(u.UserType)}</td>
                   <td>{u.LoanPeriodDays} days</td>
-                  <td>${Number(u.Balance).toFixed(2)}</td>
                   <td>{u.Status === 1 ? "Active" : "Inactive"}</td>
                   <td>{u.CreatedAt ? new Date(u.CreatedAt).toLocaleString() : "—"}</td>
                   <td>{userNameById(u.CreatedBy)}</td>
@@ -1415,14 +1411,6 @@ export default function LibrarianDashboard() {
                   <option value={1}>Active</option>
                   <option value={0}>Blocked</option>
                 </select>
-                <input
-                  placeholder="Balance"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={editUserForm.Balance}
-                  onChange={e => setEditUserForm({ ...editUserForm, Balance: e.target.value })}
-                />
                 <button type="submit">Save</button>
                 <button type="button" onClick={() => setEditingUser(null)}>Cancel</button>
               </form>

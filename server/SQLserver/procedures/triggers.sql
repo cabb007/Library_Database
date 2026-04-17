@@ -15,7 +15,7 @@ BEGIN
     DECLARE v_HoldID INT DEFAULT NULL;
     DECLARE v_HoldUserID INT DEFAULT NULL;
     DECLARE v_UserStatus INT;
-    DECLARE v_UserBalance DECIMAL(7,2);
+    DECLARE v_UnpaidBalance DECIMAL(7,2) DEFAULT 0.00;
     DECLARE v_LoanPeriodDays INT;
     DECLARE v_UserType INT;
     DECLARE v_CurrentLoans INT DEFAULT 0;
@@ -24,22 +24,24 @@ BEGIN
     -- Only run when a copy becomes Available (CopyStatus changes from 1 to 0)
     IF OLD.CopyStatus = 1 AND NEW.CopyStatus = 0 THEN
         
-        -- Find the earliest Active hold for this item (FIFO ordering by RequestDate)
+        -- Find the earliest Active hold for this item (FIFO ordering by CreatedAt)
         SELECT h.HoldID, h.UserID
         INTO v_HoldID, v_HoldUserID
         FROM holds AS h
         WHERE h.ItemID = NEW.ItemID
           AND h.HoldStatus = 0 -- HoldStatus: 0=Active, 1=Fulfilled, 2=Cancelled
-        ORDER BY h.RequestDate
+        ORDER BY h.CreatedAt
         LIMIT 1;
 
         -- Only continue if a hold exists for this item
         IF v_HoldID IS NOT NULL THEN
 
-            SELECT u.Status, u.Balance, u.LoanPeriodDays, u.UserType
-            INTO v_UserStatus, v_UserBalance, v_LoanPeriodDays, v_UserType
+            SELECT u.Status, u.LoanPeriodDays, u.UserType
+            INTO v_UserStatus, v_LoanPeriodDays, v_UserType
             FROM users AS u
             WHERE u.UserID = v_HoldUserID;
+
+            SET v_UnpaidBalance = GetUserBalanceValue(v_HoldUserID);
 
             -- Determine max allowed loans
             IF v_UserType = 0 THEN
@@ -57,7 +59,7 @@ BEGIN
 
             -- Check eligibility (active status, no unpaid balance, under loan limit)
             IF v_UserStatus = 1
-               AND v_UserBalance <= 0
+               AND v_UnpaidBalance <= 0
                AND v_CurrentLoans < v_MaxLoans THEN
 
                 -- Mark hold as fulfilled
@@ -95,16 +97,18 @@ BEFORE INSERT ON loans
 FOR EACH ROW
 BEGIN
     DECLARE v_UserStatus INT DEFAULT NULL;
-    DECLARE v_UserBalance DECIMAL(7,2) DEFAULT NULL;
+    DECLARE v_UnpaidBalance DECIMAL(7,2) DEFAULT 0.00;
     DECLARE v_UserType INT DEFAULT NULL;
     DECLARE v_MaxLoans INT DEFAULT 0;
     DECLARE v_CurrentLoans INT DEFAULT 0;
     
     -- Get user status, balance, and type
-    SELECT u.Status, u.Balance, u.UserType
-    INTO v_UserStatus, v_UserBalance, v_UserType
+    SELECT u.Status, u.UserType
+    INTO v_UserStatus, v_UserType
     FROM users AS u
     WHERE u.UserID = NEW.UserID;
+
+    SET v_UnpaidBalance = GetUserBalanceValue(NEW.UserID);
 
     -- Make sure the user exists
     IF v_UserStatus IS NULL THEN
@@ -136,7 +140,7 @@ BEGIN
     END IF;
 
     -- User must have no unpaid balance
-    IF v_UserBalance <> 0 THEN
+    IF v_UnpaidBalance <> 0 THEN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'User has an unpaid balance.';
     END IF;
