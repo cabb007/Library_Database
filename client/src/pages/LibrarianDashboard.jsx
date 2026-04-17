@@ -612,6 +612,12 @@ export default function LibrarianDashboard() {
 
   if (!user) return null;
 
+  const userNameById = (id) => {
+    if (!id) return "—";
+    const u = users.find(u => u.UserID === id);
+    return u ? `${u.FirstName} ${u.LastName} (#${id})` : `#${id}`;
+  };
+
   const userTypeLabel = (type) => {
     if (type === 0) return "Student";
     if (type === 1) return "Faculty";
@@ -1330,6 +1336,10 @@ export default function LibrarianDashboard() {
                 <th>Loan Period</th>
                 <th>Balance</th>
                 <th>Status</th>
+                <th>Created At</th>
+                <th>Created By</th>
+                <th>Updated At</th>
+                <th>Updated By</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -1345,6 +1355,10 @@ export default function LibrarianDashboard() {
                   <td>{u.LoanPeriodDays} days</td>
                   <td>${Number(u.Balance).toFixed(2)}</td>
                   <td>{u.Status === 1 ? "Active" : "Inactive"}</td>
+                  <td>{u.CreatedAt ? new Date(u.CreatedAt).toLocaleString() : "—"}</td>
+                  <td>{userNameById(u.CreatedBy)}</td>
+                  <td>{u.UpdatedAt ? new Date(u.UpdatedAt).toLocaleString() : "—"}</td>
+                  <td>{userNameById(u.UpdatedBy)}</td>
                   <td style={{ display: "flex", gap: "0.4rem" }}>
                     <button
                       onClick={() => startEditUser(u)}
