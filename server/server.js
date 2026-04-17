@@ -724,6 +724,38 @@ app.get("/api/librarian/analytics/most-checked-out", requireLibrarian, async (re
 });
 
 
+/* ================= LIBRARIAN: FINES ================= */
+
+app.get("/api/librarian/fines", requireLibrarian, async (req, res) => {
+  try {
+    const [rows] = await db.execute("CALL GetFines()");
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch fines" });
+  }
+});
+
+app.get("/api/librarian/fines/paid", requireLibrarian, async (req, res) => {
+  try {
+    const [rows] = await db.execute("CALL GetPaidFines()");
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch paid fines" });
+  }
+});
+
+app.get("/api/librarian/fines/unpaid", requireLibrarian, async (req, res) => {
+  try {
+    const [rows] = await db.execute("CALL GetUnpaidFines()");
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch unpaid fines" });
+  }
+});
+
 // ================ USER TRANSACTIONS =================
 app.get("/api/user/balance", requireLogin, async (req, res) => {
   try {

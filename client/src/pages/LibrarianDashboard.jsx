@@ -47,6 +47,9 @@ export default function LibrarianDashboard() {
   const [activeLoans, setActiveLoans] = useState([]);
   const [loansLoading, setLoansLoading] = useState(false);
   const [overdueLoans, setOverdueLoans] = useState([]);
+  const [fines, setFines] = useState([]);
+  const [fineSearch, setFineSearch] = useState("");
+  const [finesFilter, setFinesFilter] = useState("all");
 
   const [showLitForm, setShowLitForm] = useState(false);
   const [showMediaForm, setShowMediaForm] = useState(false);
@@ -67,6 +70,10 @@ export default function LibrarianDashboard() {
     }
     if (view === "loans") {
       fetchActiveLoans();
+      if (users.length === 0) fetchUsersQuiet();
+    }
+    if (view === "fines") {
+      fetchFines("all");
       if (users.length === 0) fetchUsersQuiet();
     }
     if (view === "analytics") {
@@ -92,6 +99,17 @@ export default function LibrarianDashboard() {
       // table stays empty on failure
     } finally {
       setLoansLoading(false);
+    }
+  }
+
+  async function fetchFines(filter) {
+    const endpointMap = { all: "/api/librarian/fines", paid: "/api/librarian/fines/paid", unpaid: "/api/librarian/fines/unpaid" };
+    try {
+      const res = await fetch(`http://localhost:3000${endpointMap[filter]}`, { credentials: "include" });
+      const data = await res.json();
+      if (res.ok) setFines(data);
+    } catch {
+      // table stays empty on failure
     }
   }
 
@@ -1431,8 +1449,68 @@ export default function LibrarianDashboard() {
 
       {view === "fines" && (
         <div>
-          <h2>Fines</h2>
-          <p>Fines coming soon.</p>
+          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginBottom: "0.75rem" }}>
+            <label htmlFor="fines-filter" style={{ fontWeight: "bold" }}>Show:</label>
+            <select
+              id="fines-filter"
+              value={finesFilter}
+              onChange={e => {
+                const f = e.target.value;
+                setFinesFilter(f);
+                setFineSearch("");
+                fetchFines(f);
+              }}
+            >
+              <option value="all">All Fines</option>
+              <option value="unpaid">Unpaid</option>
+              <option value="paid">Paid</option>
+            </select>
+          </div>
+          <input
+            placeholder="Search by fine ID, borrower, or loan ID..."
+            value={fineSearch}
+            onChange={e => setFineSearch(e.target.value)}
+            style={{ marginBottom: "0.5rem", padding: "0.4rem", width: "100%" }}
+          />
+          <h2>Fines ({fines.filter(f =>
+            `${f.FineID} ${f.UserName} ${f.UserID} ${f.LoanID}`.toLowerCase().includes(fineSearch.toLowerCase())
+          ).length})</h2>
+          <table border="1" cellPadding="8" style={{ borderCollapse: "collapse", width: "100%", marginTop: "0.5rem" }}>
+            <thead>
+              <tr>
+                <th>Fine ID</th>
+                <th>Borrower</th>
+                <th>User ID</th>
+                <th>Loan ID</th>
+                <th>Amount</th>
+                <th>Paid</th>
+                <th>Paid At</th>
+                <th>Created At</th>
+                <th>Created By</th>
+                <th>Updated At</th>
+                <th>Updated By</th>
+              </tr>
+            </thead>
+            <tbody>
+              {fines.filter(f =>
+                `${f.FineID} ${f.UserName} ${f.UserID} ${f.LoanID}`.toLowerCase().includes(fineSearch.toLowerCase())
+              ).map(f => (
+                <tr key={f.FineID}>
+                  <td>{f.FineID}</td>
+                  <td>{f.UserName}</td>
+                  <td>{f.UserID}</td>
+                  <td>{f.LoanID}</td>
+                  <td>${Number(f.FineAmount).toFixed(2)}</td>
+                  <td>{f.PaidStatus === 1 ? "Yes" : "No"}</td>
+                  <td>{f.PaidAt ? new Date(f.PaidAt).toLocaleString() : "—"}</td>
+                  <td>{f.CreatedAt ? new Date(f.CreatedAt).toLocaleString() : "—"}</td>
+                  <td>{userNameById(f.CreatedBy)}</td>
+                  <td>{f.UpdatedAt ? new Date(f.UpdatedAt).toLocaleString() : "—"}</td>
+                  <td>{userNameById(f.UpdatedBy)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 
