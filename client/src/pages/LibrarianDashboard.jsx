@@ -61,11 +61,16 @@ export default function LibrarianDashboard() {
     if (view === "home") {
       fetchOverviewStats();
     }
-    if (view === "analytics" && !analyticsSummary) {
-      fetch("http://localhost:3000/api/librarian/analytics/summary", { credentials: "include" })
-        .then(r => r.json())
-        .then(data => { if (!data.error) setAnalyticsSummary(data); })
-        .catch(() => {});
+    if (view === "analytics") {
+      if (!analyticsSummary) {
+        fetch("http://localhost:3000/api/librarian/analytics/summary", { credentials: "include" })
+          .then(r => r.json())
+          .then(data => { if (!data.error) setAnalyticsSummary(data); })
+          .catch(() => {});
+      }
+      if (!analyticsHasRun) {
+        fetchAnalytics();
+      }
     }
   }, [view]);
 
@@ -1082,12 +1087,30 @@ export default function LibrarianDashboard() {
           "3": [{ v: 1, l: "Laptop" }, { v: 2, l: "Tablet" }, { v: 3, l: "Calculator" }],
         };
 
+        const displaySummary = analyticsHasRun && analyticsResults.length > 0
+          ? (() => {
+              const total  = analyticsResults.reduce((s, r) => s + r.CheckoutCount, 0);
+              const wDays  = analyticsResults.reduce((s, r) => r.AvgLoanDays != null ? s + r.AvgLoanDays * r.CheckoutCount : s, 0);
+              const wCount = analyticsResults.reduce((s, r) => r.AvgLoanDays != null ? s + r.CheckoutCount : s, 0);
+              return {
+                TotalCheckouts:        total,
+                UniqueItemsCheckedOut: analyticsResults.length,
+                CurrentlyCheckedOut:   analyticsResults.reduce((s, r) => s + r.CurrentlyCheckedOut, 0),
+                OverdueItems:          analyticsResults.reduce((s, r) => s + r.OverdueCount, 0),
+                TopType:               analyticsResults[0]?.TypeLabel ?? null,
+                TopItemTitle:          analyticsResults[0]?.Title ?? null,
+                AvgLoanDays:           wCount > 0 ? Math.round(wDays / wCount * 10) / 10 : null,
+              };
+            })()
+          : analyticsSummary;
+
         const sorted = [...analyticsResults].sort((a, b) => {
           const dir = analyticsSort.dir === "asc" ? 1 : -1;
           if (analyticsSort.key === "CheckoutCount") return dir * (a.CheckoutCount - b.CheckoutCount);
           if (analyticsSort.key === "Title") return dir * a.Title.localeCompare(b.Title);
-          if (analyticsSort.key === "CategoryLabel") return dir * a.CategoryLabel.localeCompare(b.CategoryLabel);
           if (analyticsSort.key === "TypeLabel") return dir * a.TypeLabel.localeCompare(b.TypeLabel);
+          if (analyticsSort.key === "AvgLoanDays") return dir * ((a.AvgLoanDays ?? -1) - (b.AvgLoanDays ?? -1));
+          if (analyticsSort.key === "OverdueCount") return dir * (a.OverdueCount - b.OverdueCount);
           return 0;
         });
 
@@ -1109,15 +1132,15 @@ export default function LibrarianDashboard() {
             <h2>Checkout Analytics</h2>
 
             {/* Summary cards */}
-            {analyticsSummary && (() => {
+            {displaySummary && (() => {
               const cards = [
-                { label: "Total Checkouts",        value: analyticsSummary.TotalCheckouts },
-                { label: "Unique Items Checked Out", value: analyticsSummary.UniqueItemsCheckedOut },
-                { label: "Currently Checked Out",  value: analyticsSummary.CurrentlyCheckedOut },
-                { label: "Overdue",                value: analyticsSummary.OverdueItems },
-                { label: "Top Category",           value: analyticsSummary.TopCategory },
-                { label: "Most Checked Out Item",  value: analyticsSummary.TopItemTitle },
-                { label: "Avg Loan Duration",      value: analyticsSummary.AvgLoanDays != null ? `${analyticsSummary.AvgLoanDays} days` : "—" },
+                { label: "Total Checkouts",          value: displaySummary.TotalCheckouts },
+                { label: "Unique Items Checked Out", value: displaySummary.UniqueItemsCheckedOut },
+                { label: "Currently Checked Out",    value: displaySummary.CurrentlyCheckedOut },
+                { label: "Overdue",                  value: displaySummary.OverdueItems },
+                { label: "Top Type",                 value: displaySummary.TopType },
+                { label: "Most Checked Out Item",    value: displaySummary.TopItemTitle },
+                { label: "Avg Loan Duration",        value: displaySummary.AvgLoanDays != null ? `${displaySummary.AvgLoanDays} days` : "—" },
               ];
               return (
                 <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", marginBottom: "1.5rem" }}>
@@ -1219,14 +1242,17 @@ export default function LibrarianDashboard() {
                       <th style={{ cursor: "pointer" }} onClick={() => toggleSort("Title")}>
                         Title{sortIndicator("Title")}
                       </th>
-                      <th style={{ cursor: "pointer" }} onClick={() => toggleSort("CategoryLabel")}>
-                        Category{sortIndicator("CategoryLabel")}
-                      </th>
                       <th style={{ cursor: "pointer" }} onClick={() => toggleSort("TypeLabel")}>
                         Type{sortIndicator("TypeLabel")}
                       </th>
                       <th style={{ cursor: "pointer" }} onClick={() => toggleSort("CheckoutCount")}>
                         Checkouts{sortIndicator("CheckoutCount")}
+                      </th>
+                      <th style={{ cursor: "pointer" }} onClick={() => toggleSort("AvgLoanDays")}>
+                        Avg Loan Duration{sortIndicator("AvgLoanDays")}
+                      </th>
+                      <th style={{ cursor: "pointer" }} onClick={() => toggleSort("OverdueCount")}>
+                        Overdue{sortIndicator("OverdueCount")}
                       </th>
                     </tr>
                   </thead>
@@ -1235,9 +1261,10 @@ export default function LibrarianDashboard() {
                       <tr key={row.ItemID}>
                         <td>{idx + 1}</td>
                         <td>{row.Title}</td>
-                        <td>{row.CategoryLabel}</td>
                         <td>{row.TypeLabel}</td>
                         <td>{row.CheckoutCount}</td>
+                        <td>{row.AvgLoanDays != null ? `${row.AvgLoanDays} days` : "—"}</td>
+                        <td>{row.OverdueCount}</td>
                       </tr>
                     ))}
                   </tbody>

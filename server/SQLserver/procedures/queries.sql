@@ -671,17 +671,29 @@ BEGIN
          FROM loans lo
          JOIN copies c ON lo.CopyID = c.CopyID) AS UniqueItemsCheckedOut,
 
-        (SELECT CASE i.ItemCategory
-             WHEN 1 THEN 'Literature'
-             WHEN 2 THEN 'Media'
-             WHEN 3 THEN 'Devices'
-         END
-         FROM loans lo
-         JOIN copies c ON lo.CopyID = c.CopyID
-         JOIN items  i ON c.ItemID  = i.ItemID
-         GROUP BY i.ItemCategory
+        (SELECT TypeLabel FROM (
+             SELECT CASE i.ItemCategory
+                 WHEN 1 THEN CASE l.ItemType
+                     WHEN 1 THEN 'Book' WHEN 2 THEN 'Textbook'
+                     WHEN 3 THEN 'Magazine' WHEN 4 THEN 'Audiobook' ELSE '—' END
+                 WHEN 2 THEN CASE m.ItemType
+                     WHEN 1 THEN 'DVD/CD' WHEN 2 THEN 'Blu-ray'
+                     WHEN 3 THEN 'Vinyl' ELSE '—' END
+                 WHEN 3 THEN CASE d.ItemType
+                     WHEN 1 THEN 'Laptop' WHEN 2 THEN 'Tablet'
+                     WHEN 3 THEN 'Calculator' ELSE '—' END
+                 ELSE '—'
+             END AS TypeLabel
+             FROM loans lo
+             JOIN copies c ON lo.CopyID = c.CopyID
+             JOIN items  i ON c.ItemID  = i.ItemID
+             LEFT JOIN literature l ON i.ItemID = l.ItemID AND i.ItemCategory = 1
+             LEFT JOIN media      m ON i.ItemID = m.ItemID AND i.ItemCategory = 2
+             LEFT JOIN devices    d ON i.ItemID = d.ItemID AND i.ItemCategory = 3
+         ) AS tl
+         GROUP BY TypeLabel
          ORDER BY COUNT(*) DESC
-         LIMIT 1) AS TopCategory,
+         LIMIT 1) AS TopType,
 
         (SELECT i.Title
          FROM loans lo
@@ -741,7 +753,19 @@ BEGIN
             END
             ELSE '—'
         END AS TypeLabel,
-        COUNT(lo.LoanID) AS CheckoutCount
+        COUNT(lo.LoanID) AS CheckoutCount,
+        ROUND(AVG(CASE WHEN lo.ReturnDate IS NOT NULL THEN DATEDIFF(lo.ReturnDate, lo.CreatedAt) END), 1) AS AvgLoanDays,
+        (SELECT COUNT(*)
+         FROM copies c2
+         JOIN loans lo2 ON c2.CopyID = lo2.CopyID
+         WHERE c2.ItemID = i.ItemID
+           AND lo2.ReturnDate IS NULL) AS CurrentlyCheckedOut,
+        (SELECT COUNT(*)
+         FROM copies c2
+         JOIN loans lo2 ON c2.CopyID = lo2.CopyID
+         WHERE c2.ItemID = i.ItemID
+           AND lo2.ReturnDate IS NULL
+           AND lo2.DueDate < CURDATE()) AS OverdueCount
     FROM items AS i
     LEFT JOIN literature AS l ON i.ItemID = l.ItemID AND i.ItemCategory = 1
     LEFT JOIN media      AS m ON i.ItemID = m.ItemID AND i.ItemCategory = 2
