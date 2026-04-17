@@ -43,6 +43,10 @@ export default function LibrarianDashboard() {
   const [analyticsAppliedFilters, setAnalyticsAppliedFilters] = useState(null);
   const [analyticsSummary, setAnalyticsSummary] = useState(null);
   const [overviewStats, setOverviewStats] = useState(null);
+  const [loansTab, setLoansTab] = useState("active");
+  const [activeLoans, setActiveLoans] = useState([]);
+  const [loansLoading, setLoansLoading] = useState(false);
+  const [overdueLoans, setOverdueLoans] = useState([]);
 
   const [showLitForm, setShowLitForm] = useState(false);
   const [showMediaForm, setShowMediaForm] = useState(false);
@@ -61,6 +65,10 @@ export default function LibrarianDashboard() {
     if (view === "home") {
       fetchOverviewStats();
     }
+    if (view === "loans") {
+      fetchActiveLoans();
+      if (users.length === 0) fetchUsersQuiet();
+    }
     if (view === "analytics") {
       if (!analyticsSummary) {
         fetch("http://localhost:3000/api/librarian/analytics/summary", { credentials: "include" })
@@ -73,6 +81,32 @@ export default function LibrarianDashboard() {
       }
     }
   }, [view]);
+
+  async function fetchActiveLoans() {
+    setLoansLoading(true);
+    try {
+      const res = await fetch("http://localhost:3000/api/librarian/loans/active", { credentials: "include" });
+      const data = await res.json();
+      if (res.ok) setActiveLoans(data);
+    } catch {
+      // table stays empty on failure
+    } finally {
+      setLoansLoading(false);
+    }
+  }
+
+  async function fetchOverdueLoans() {
+    setLoansLoading(true);
+    try {
+      const res = await fetch("http://localhost:3000/api/librarian/loans/overdue", { credentials: "include" });
+      const data = await res.json();
+      if (res.ok) setOverdueLoans(data);
+    } catch {
+      // table stays empty on failure
+    } finally {
+      setLoansLoading(false);
+    }
+  }
 
   async function fetchOverviewStats() {
     try {
@@ -97,6 +131,16 @@ export default function LibrarianDashboard() {
     }
     checkAccess();
   }, []);
+
+  async function fetchUsersQuiet() {
+    try {
+      const res = await fetch("http://localhost:3000/api/librarian/users", { credentials: "include" });
+      const data = await res.json();
+      if (res.ok) setUsers(data);
+    } catch {
+      // names fall back to "#id" if this fails
+    }
+  }
 
   async function fetchUsers() {
     setError("");
@@ -1283,10 +1327,105 @@ export default function LibrarianDashboard() {
         <div>
           <h2>Loans</h2>
           <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
-            <button>Active</button>
-            <button>Overdue</button>
+            <button
+              onClick={() => { setLoansTab("active"); fetchActiveLoans(); }}
+              style={{ fontWeight: loansTab === "active" ? "bold" : "normal" }}
+            >
+              Active
+            </button>
+            <button
+              onClick={() => { setLoansTab("overdue"); fetchOverdueLoans(); }}
+              style={{ fontWeight: loansTab === "overdue" ? "bold" : "normal" }}
+            >
+              Overdue
+            </button>
           </div>
-          <p>Loans coming soon.</p>
+
+          {loansTab === "active" && (
+            loansLoading ? (
+              <p>Loading...</p>
+            ) : activeLoans.length === 0 ? (
+              <p>No active loans.</p>
+            ) : (
+              <table border="1" cellPadding="6" style={{ borderCollapse: "collapse", width: "100%" }}>
+                <thead>
+                  <tr>
+                    <th>Loan ID</th>
+                    <th>User ID</th>
+                    <th>User Name</th>
+                    <th>Copy ID</th>
+                    <th>Item ID</th>
+                    <th>Title</th>
+                    <th>Due Date</th>
+                    <th>Created At</th>
+                    <th>Created By</th>
+                    <th>Updated At</th>
+                    <th>Updated By</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {activeLoans.map(loan => (
+                    <tr key={loan.LoanID}>
+                      <td>{loan.LoanID}</td>
+                      <td>{loan.UserID}</td>
+                      <td>{loan.UserName}</td>
+                      <td>{loan.CopyID}</td>
+                      <td>{loan.ItemID}</td>
+                      <td>{loan.Title}</td>
+                      <td>{loan.DueDate ? new Date(loan.DueDate).toLocaleDateString() : "—"}</td>
+                      <td>{loan.CreatedAt ? new Date(loan.CreatedAt).toLocaleString() : "—"}</td>
+                      <td>{userNameById(loan.CreatedBy)}</td>
+                      <td>{loan.UpdatedAt ? new Date(loan.UpdatedAt).toLocaleString() : "—"}</td>
+                      <td>{userNameById(loan.UpdatedBy)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )
+          )}
+
+          {loansTab === "overdue" && (
+            loansLoading ? (
+              <p>Loading...</p>
+            ) : overdueLoans.length === 0 ? (
+              <p>No overdue loans.</p>
+            ) : (
+              <table border="1" cellPadding="6" style={{ borderCollapse: "collapse", width: "100%" }}>
+                <thead>
+                  <tr>
+                    <th>Loan ID</th>
+                    <th>User ID</th>
+                    <th>User Name</th>
+                    <th>Copy ID</th>
+                    <th>Item ID</th>
+                    <th>Title</th>
+                    <th>Due Date</th>
+                    <th>Created At</th>
+                    <th>Created By</th>
+                    <th>Updated At</th>
+                    <th>Updated By</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {overdueLoans.map(loan => (
+                    <tr key={loan.LoanID}>
+                      <td>{loan.LoanID}</td>
+                      <td>{loan.UserID}</td>
+                      <td>{loan.UserName}</td>
+                      <td>{loan.CopyID}</td>
+                      <td>{loan.ItemID}</td>
+                      <td>{loan.Title}</td>
+                      <td>{loan.DueDate ? new Date(loan.DueDate).toLocaleDateString() : "—"}</td>
+                      <td>{loan.CreatedAt ? new Date(loan.CreatedAt).toLocaleString() : "—"}</td>
+                      <td>{userNameById(loan.CreatedBy)}</td>
+                      <td>{loan.UpdatedAt ? new Date(loan.UpdatedAt).toLocaleString() : "—"}</td>
+                      <td>{userNameById(loan.UpdatedBy)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )
+          )}
         </div>
       )}
 

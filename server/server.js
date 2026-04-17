@@ -756,6 +756,27 @@ app.put("/api/finepayment", requireLogin, async (req, res) => {
   }
 });
 
+// ================ LOANS =================
+app.get("/api/librarian/loans/active", requireLibrarian, async (req, res) => {
+  try {
+    const [data] = await db.execute("CALL GetActiveLoans()");
+    res.json(data[0]);
+  } catch (err) {
+    console.error("Failed to fetch active loans:", err);
+    res.status(500).json({ error: "Failed to fetch active loans" });
+  }
+});
+
+app.get("/api/librarian/loans/overdue", requireLibrarian, async (req, res) => {
+  try {
+    const [data] = await db.execute("CALL GetOverdueLoans()");
+    res.json(data[0]);
+  } catch (err) {
+    console.error("Failed to fetch overdue loans:", err);
+    res.status(500).json({ error: "Failed to fetch overdue loans" });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
