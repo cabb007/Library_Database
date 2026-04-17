@@ -788,6 +788,29 @@ app.put("/api/finepayment", requireLogin, async (req, res) => {
   }
 });
 
+// ================ USER LOANS =================
+app.get("/api/user/loans", requireLogin, async (req, res) => {
+  try {
+    const userId = req.session.user.UserID;
+    const [data] = await db.execute("CALL GetUserLoans(?)", [userId]);
+    res.json(data[0]);
+  } catch (err) {
+    console.error("Failed to fetch user loans:", err);
+    res.status(500).json({ error: "Failed to fetch loans" });
+  }
+});
+
+app.post("/api/user/loans/:loanId/return", requireLogin, async (req, res) => {
+  try {
+    const userId = req.session.user.UserID;
+    const loanId = parseInt(req.params.loanId);
+    await db.execute("CALL ReturnLoan(?, ?)", [loanId, userId]);
+    res.json({ success: true });
+  } catch (err) {
+    handleSqlError(res, err, err.sqlMessage || "Failed to return loan");
+  }
+});
+
 // ================ LOANS =================
 app.get("/api/librarian/loans/active", requireLibrarian, async (req, res) => {
   try {
