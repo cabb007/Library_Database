@@ -3,3 +3,41 @@
 button {
     cursor: pointer;
 }
+
+.librarian-dashboard button {
+    border: 1px solid #aaa;
+    padding: 0.3rem 0.75rem;
+    border-radius: 3px;
+    background: #fff;
+}
+
+.librarian-dashboard button:hover:not(:disabled) {
+    background: #f0f0f0;
+}
+
+.librarian-dashboard button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.librarian-dashboard table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.librarian-dashboard th,
+.librarian-dashboard td {
+    border: 1px solid #ddd;
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+}
+
+.librarian-dashboard th {
+    background: #f5f5f5;
+    text-align: center;
+    font-weight: 600;
+}
+
+.librarian-dashboard tbody tr:hover {
+    background: #fafafa;
+}

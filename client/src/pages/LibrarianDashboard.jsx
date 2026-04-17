@@ -33,6 +33,17 @@ export default function LibrarianDashboard() {
   const [editingDevice, setEditingDevice] = useState(null);
   const [editDeviceForm, setEditDeviceForm] = useState({});
   const editDevicePanelRef = useRef(null);
+  const [analyticsFilters, setAnalyticsFilters] = useState({
+    startDate: "", endDate: "", category: "", itemType: ""
+  });
+  const [analyticsResults, setAnalyticsResults] = useState([]);
+  const [analyticsSort, setAnalyticsSort] = useState({ key: "CheckoutCount", dir: "desc" });
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [analyticsHasRun, setAnalyticsHasRun] = useState(false);
+  const [analyticsAppliedFilters, setAnalyticsAppliedFilters] = useState(null);
+  const [analyticsSummary, setAnalyticsSummary] = useState(null);
+  const [overviewStats, setOverviewStats] = useState(null);
+
   const [showLitForm, setShowLitForm] = useState(false);
   const [showMediaForm, setShowMediaForm] = useState(false);
   const [showDeviceForm, setShowDeviceForm] = useState(false);
@@ -47,6 +58,33 @@ export default function LibrarianDashboard() {
   });
 
   useEffect(() => {
+    if (view === "home") {
+      fetchOverviewStats();
+    }
+    if (view === "analytics") {
+      if (!analyticsSummary) {
+        fetch("http://localhost:3000/api/librarian/analytics/summary", { credentials: "include" })
+          .then(r => r.json())
+          .then(data => { if (!data.error) setAnalyticsSummary(data); })
+          .catch(() => {});
+      }
+      if (!analyticsHasRun) {
+        fetchAnalytics();
+      }
+    }
+  }, [view]);
+
+  async function fetchOverviewStats() {
+    try {
+      const res = await fetch("http://localhost:3000/api/librarian/overview/stats", { credentials: "include" });
+      const data = await res.json();
+      if (res.ok) setOverviewStats(data);
+    } catch {
+      // cards show "—" on failure
+    }
+  }
+
+  useEffect(() => {
     async function checkAccess() {
       const res = await fetch("http://localhost:3000/api/me", { credentials: "include" });
       const data = await res.json();
@@ -54,6 +92,7 @@ export default function LibrarianDashboard() {
         navigate("/login");
       } else {
         setUser(data.user);
+        fetchOverviewStats();
       }
     }
     checkAccess();
@@ -530,6 +569,32 @@ export default function LibrarianDashboard() {
   }
 
 
+  async function fetchAnalytics() {
+    setAnalyticsLoading(true);
+    setError("");
+    try {
+      const params = new URLSearchParams();
+      if (analyticsFilters.startDate) params.set("startDate", analyticsFilters.startDate);
+      if (analyticsFilters.endDate)   params.set("endDate",   analyticsFilters.endDate);
+      if (analyticsFilters.category)  params.set("category",  analyticsFilters.category);
+      if (analyticsFilters.itemType)  params.set("itemType",  analyticsFilters.itemType);
+      const res = await fetch(
+        `http://localhost:3000/api/librarian/analytics/most-checked-out?${params}`,
+        { credentials: "include" }
+      );
+      const data = await res.json();
+      if (!res.ok) { setError(data.error); return; }
+      setAnalyticsResults(data);
+      setAnalyticsHasRun(true);
+      setAnalyticsAppliedFilters({ ...analyticsFilters });
+      setView("analytics");
+    } catch {
+      setError("Failed to load analytics");
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  }
+
   async function handleLogout() {
     try {
       await fetch("http://localhost:3000/api/logout", {
@@ -553,7 +618,7 @@ export default function LibrarianDashboard() {
   };
 
   return (
-    <div style={{ padding: "2rem" }}>
+    <div className="librarian-dashboard" style={{ padding: "2rem" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
         <h1>Librarian Dashboard</h1>
         <div>
@@ -565,18 +630,44 @@ export default function LibrarianDashboard() {
 
       {error && <p style={{ color: "red", marginBottom: "1rem" }}>{error}</p>}
 
-      {view === "home" && (
-        <div style={{ display: "flex", gap: "0.5rem" }}>
-          <button onClick={fetchUsers}>Users</button>
-          <button onClick={fetchCatalog}>Catalog</button>
-        </div>
+      <nav style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem", borderBottom: "1px solid #ccc", paddingBottom: "0.75rem" }}>
+        {[
+          { label: "Overview",  key: "home",      action: () => setView("home") },
+          { label: "Users",     key: "users",     action: fetchUsers },
+          { label: "Catalog",   key: "catalog",   action: fetchCatalog },
+          { label: "Loans",     key: "loans",     action: () => setView("loans") },
+          { label: "Fines",     key: "fines",     action: () => setView("fines") },
+          { label: "Analytics", key: "analytics", action: () => setView("analytics") },
+        ].map(({ label, key, action }) => (
+          <button key={key} onClick={action} style={{ fontWeight: view === key ? "bold" : "normal" }}>
+            {label}
+          </button>
+        ))}
+      </nav>
 
+      {view === "home" && (
+        <div>
+          <h2>Overview</h2>
+          <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginTop: "1rem" }}>
+            {[
+              { label: "Total Users",      value: overviewStats?.TotalUsers,    subtitle: "registered accounts" },
+              { label: "Active Loans",     value: overviewStats?.ActiveLoans,   subtitle: "items currently checked out" },
+              { label: "Overdue Loans",    value: overviewStats?.OverdueLoans,  subtitle: "items past due date" },
+              { label: "Total Fines Owed", value: overviewStats?.TotalFinesOwed != null ? `$${Number(overviewStats.TotalFinesOwed).toFixed(2)}` : null, subtitle: "unpaid balance" },
+            ].map(card => (
+              <div key={card.label} style={{ border: "1px solid #ccc", borderRadius: "4px", padding: "1rem 1.25rem", minWidth: "160px", flex: "1 1 160px", background: "#f9f9f9" }}>
+                <div style={{ fontSize: "0.75rem", color: "#666", marginBottom: "0.25rem" }}>{card.label}</div>
+                <div style={{ fontSize: "1.75rem", fontWeight: "bold", marginBottom: "0.25rem" }}>{card.value ?? "—"}</div>
+                <div style={{ fontSize: "0.75rem", color: "#999" }}>{card.subtitle}</div>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
       {view === "catalog" && (
         <div>
           <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
-            <button onClick={() => { setView("home"); setEditingLit(null); setEditingMedia(null); setEditingDevice(null); }}>Back</button>
             <button onClick={() => { setCatalogTab("books"); setSelectedItem(null); setCopies([]); setEditingMedia(null); setEditingDevice(null); }}>Books</button>
             <button onClick={fetchMedia}>Media</button>
             <button onClick={fetchDevices}>Devices</button>
@@ -987,10 +1078,222 @@ export default function LibrarianDashboard() {
         </div>
       )}
 
+      {view === "analytics" && (() => {
+        const typeOptions = {
+          "1": [{ v: 1, l: "Book" }, { v: 2, l: "Textbook" }, { v: 3, l: "Magazine" }, { v: 4, l: "Audiobook" }],
+          "2": [{ v: 1, l: "DVD/CD" }, { v: 2, l: "Blu-ray" }, { v: 3, l: "Vinyl" }],
+          "3": [{ v: 1, l: "Laptop" }, { v: 2, l: "Tablet" }, { v: 3, l: "Calculator" }],
+        };
+
+        const displaySummary = analyticsHasRun && analyticsResults.length > 0
+          ? (() => {
+              const total  = analyticsResults.reduce((s, r) => s + r.CheckoutCount, 0);
+              const wDays  = analyticsResults.reduce((s, r) => r.AvgLoanDays != null ? s + r.AvgLoanDays * r.CheckoutCount : s, 0);
+              const wCount = analyticsResults.reduce((s, r) => r.AvgLoanDays != null ? s + r.CheckoutCount : s, 0);
+              return {
+                TotalCheckouts:        total,
+                UniqueItemsCheckedOut: analyticsResults.length,
+                CurrentlyCheckedOut:   analyticsResults.reduce((s, r) => s + r.CurrentlyCheckedOut, 0),
+                OverdueItems:          analyticsResults.reduce((s, r) => s + r.OverdueCount, 0),
+                TopType:               analyticsResults[0]?.TypeLabel ?? null,
+                TopItemTitle:          analyticsResults[0]?.Title ?? null,
+                AvgLoanDays:           wCount > 0 ? Math.round(wDays / wCount * 10) / 10 : null,
+              };
+            })()
+          : analyticsSummary;
+
+        const sorted = [...analyticsResults].sort((a, b) => {
+          const dir = analyticsSort.dir === "asc" ? 1 : -1;
+          if (analyticsSort.key === "CheckoutCount") return dir * (a.CheckoutCount - b.CheckoutCount);
+          if (analyticsSort.key === "Title") return dir * a.Title.localeCompare(b.Title);
+          if (analyticsSort.key === "TypeLabel") return dir * a.TypeLabel.localeCompare(b.TypeLabel);
+          if (analyticsSort.key === "AvgLoanDays") return dir * ((a.AvgLoanDays ?? -1) - (b.AvgLoanDays ?? -1));
+          if (analyticsSort.key === "OverdueCount") return dir * (a.OverdueCount - b.OverdueCount);
+          return 0;
+        });
+
+        function toggleSort(key) {
+          setAnalyticsSort(prev =>
+            prev.key === key
+              ? { key, dir: prev.dir === "desc" ? "asc" : "desc" }
+              : { key, dir: "desc" }
+          );
+        }
+
+        function sortIndicator(key) {
+          if (analyticsSort.key !== key) return " ↕";
+          return analyticsSort.dir === "desc" ? " ↓" : " ↑";
+        }
+
+        return (
+          <div>
+            <h2>Checkout Analytics</h2>
+
+            {/* Summary cards */}
+            {displaySummary && (() => {
+              const cards = [
+                { label: "Total Checkouts",          value: displaySummary.TotalCheckouts },
+                { label: "Unique Items Checked Out", value: displaySummary.UniqueItemsCheckedOut },
+                { label: "Currently Checked Out",    value: displaySummary.CurrentlyCheckedOut },
+                { label: "Overdue",                  value: displaySummary.OverdueItems },
+                { label: "Top Type",                 value: displaySummary.TopType },
+                { label: "Most Checked Out Item",    value: displaySummary.TopItemTitle },
+                { label: "Avg Loan Duration",        value: displaySummary.AvgLoanDays != null ? `${displaySummary.AvgLoanDays} days` : "—" },
+              ];
+              return (
+                <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", marginBottom: "1.5rem" }}>
+                  {cards.map(card => (
+                    <div key={card.label} style={{
+                      border: "1px solid #ccc",
+                      borderRadius: "4px",
+                      padding: "0.75rem 1rem",
+                      minWidth: "130px",
+                      flex: "1 1 130px",
+                      background: "#f9f9f9"
+                    }}>
+                      <div style={{ fontSize: "0.75rem", color: "#666", marginBottom: "0.25rem" }}>{card.label}</div>
+                      <div style={{ fontSize: "1.25rem", fontWeight: "bold" }}>{card.value ?? "—"}</div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+
+            {/* Filter bar */}
+            <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", alignItems: "flex-end", marginBottom: "1rem", padding: "0.75rem", border: "1px solid #ccc" }}>
+              <div>
+                <label style={{ display: "block", fontSize: "0.8rem", marginBottom: "2px" }}>Start Date</label>
+                <input
+                  type="date"
+                  value={analyticsFilters.startDate}
+                  onChange={e => setAnalyticsFilters({ ...analyticsFilters, startDate: e.target.value })}
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: "0.8rem", marginBottom: "2px" }}>End Date</label>
+                <input
+                  type="date"
+                  value={analyticsFilters.endDate}
+                  onChange={e => setAnalyticsFilters({ ...analyticsFilters, endDate: e.target.value })}
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: "0.8rem", marginBottom: "2px" }}>Category</label>
+                <select
+                  value={analyticsFilters.category}
+                  onChange={e => setAnalyticsFilters({ ...analyticsFilters, category: e.target.value, itemType: "" })}
+                >
+                  <option value="">All</option>
+                  <option value="1">Literature</option>
+                  <option value="2">Media</option>
+                  <option value="3">Devices</option>
+                </select>
+              </div>
+              {analyticsFilters.category && (
+                <div>
+                  <label style={{ display: "block", fontSize: "0.8rem", marginBottom: "2px" }}>Type</label>
+                  <select
+                    value={analyticsFilters.itemType}
+                    onChange={e => setAnalyticsFilters({ ...analyticsFilters, itemType: e.target.value })}
+                  >
+                    <option value="">All</option>
+                    {(typeOptions[analyticsFilters.category] || []).map(o => (
+                      <option key={o.v} value={o.v}>{o.l}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              <button onClick={fetchAnalytics} disabled={analyticsLoading}>
+                {analyticsLoading ? "Loading…" : "Run Report"}
+              </button>
+              {(analyticsFilters.startDate || analyticsFilters.endDate || analyticsFilters.category) && (
+                <button
+                  onClick={() => setAnalyticsFilters({ startDate: "", endDate: "", category: "", itemType: "" })}
+                >
+                  Clear Filters
+                </button>
+              )}
+            </div>
+
+            {/* Results */}
+            {!analyticsHasRun && !analyticsLoading && (
+              <p style={{ color: "#666" }}>Set filters above and click Run Report to see results.</p>
+            )}
+            {analyticsHasRun && !analyticsLoading && analyticsResults.length === 0 && (
+              <p style={{ color: "#666" }}>No results found for the selected filters.</p>
+            )}
+            {analyticsResults.length > 0 && (
+              <>
+                {analyticsAppliedFilters && (
+                  <p style={{ marginBottom: "0.25rem", color: "#555" }}>
+                    <strong>Date range:</strong>{" "}
+                    {analyticsAppliedFilters.startDate || analyticsAppliedFilters.endDate
+                      ? `${analyticsAppliedFilters.startDate || "—"} to ${analyticsAppliedFilters.endDate || "—"}`
+                      : "All time"}
+                  </p>
+                )}
+                <p style={{ marginBottom: "0.5rem", color: "#555" }}>{sorted.length} item{sorted.length !== 1 ? "s" : ""} — click a column header to sort</p>
+                <table border="1" cellPadding="8" style={{ borderCollapse: "collapse", width: "100%" }}>
+                  <thead>
+                    <tr>
+                      <th style={{ width: "3rem" }}>#</th>
+                      <th style={{ cursor: "pointer" }} onClick={() => toggleSort("Title")}>
+                        Title{sortIndicator("Title")}
+                      </th>
+                      <th style={{ cursor: "pointer" }} onClick={() => toggleSort("TypeLabel")}>
+                        Type{sortIndicator("TypeLabel")}
+                      </th>
+                      <th style={{ cursor: "pointer" }} onClick={() => toggleSort("CheckoutCount")}>
+                        Checkouts{sortIndicator("CheckoutCount")}
+                      </th>
+                      <th style={{ cursor: "pointer" }} onClick={() => toggleSort("AvgLoanDays")}>
+                        Avg Loan Duration{sortIndicator("AvgLoanDays")}
+                      </th>
+                      <th style={{ cursor: "pointer" }} onClick={() => toggleSort("OverdueCount")}>
+                        Overdue{sortIndicator("OverdueCount")}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sorted.map((row, idx) => (
+                      <tr key={row.ItemID}>
+                        <td>{idx + 1}</td>
+                        <td>{row.Title}</td>
+                        <td>{row.TypeLabel}</td>
+                        <td>{row.CheckoutCount}</td>
+                        <td>{row.AvgLoanDays != null ? `${row.AvgLoanDays} days` : "—"}</td>
+                        <td>{row.OverdueCount}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </>
+            )}
+          </div>
+        );
+      })()}
+
+      {view === "loans" && (
+        <div>
+          <h2>Loans</h2>
+          <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
+            <button>Active</button>
+            <button>Overdue</button>
+          </div>
+          <p>Loans coming soon.</p>
+        </div>
+      )}
+
+      {view === "fines" && (
+        <div>
+          <h2>Fines</h2>
+          <p>Fines coming soon.</p>
+        </div>
+      )}
+
       {view === "users" && (
         <div>
           <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
-            <button onClick={() => { setView("home"); setEditingUser(null); }}>Back</button>
             <button onClick={() => setShowForm(!showForm)}>{showForm ? "Cancel" : "Add User"}</button>
           </div>
 

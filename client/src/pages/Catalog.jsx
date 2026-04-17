@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import API from "../api";
 
 export default function ItemDashboard() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("browse");
-  const [activeSubTab, setActiveSubTab] = useState("books");
+  const [activeSubTab, setActiveSubTab] = useState(location.state?.subTab ?? "books");
 
   const [literature, setLiterature] = useState([]);
   const [media, setMedia] = useState([]);
