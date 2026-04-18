@@ -3,6 +3,11 @@ import mysql from "mysql2/promise";
 import cors from "cors";
 import session from "express-session";
 import "dotenv/config";
+import path from "path"; // current folder
+import { fileURLToPath } from "url"; // current file
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 
@@ -34,6 +39,9 @@ app.use(
     },
   })
 );
+
+// builds absolute file path using __dirname
+app.use("/images", express.static(path.join(__dirname, "SQLserver/data/images")));
 
 app.get("/", (req, res) => {
   res.send("Backend is running");
