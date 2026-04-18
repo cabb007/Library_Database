@@ -1,10 +1,9 @@
 DELIMITER $$
 
 
--- =========================================================
--- Library Database User Procedures - GetUsers, CreateUser, DeleteUser
--- =========================================================
-
+-- =================================================================================================================
+--                                               INSERT / REMOVAL QUERIES
+-- =================================================================================================================
 
 -- =========================================================
 -- Procedure: Get all users
@@ -15,7 +14,6 @@ BEGIN
     SELECT * FROM users
     ORDER BY UserID;
 END$$
-
 
 -- =========================================================
 -- Procedure: Delete a specific user by ID
@@ -124,7 +122,6 @@ BEGIN
         FirstName,
         LastName,
         Email,
-        Balance,
         UserType,
         LoanPeriodDays,
         Status,
@@ -135,7 +132,6 @@ BEGIN
         p_FirstName,
         p_LastName,
         p_Email,
-        0.00, -- Default balance
         p_UserType,
         v_LoanPeriodDays,
         1, -- Active status
@@ -183,7 +179,6 @@ BEGIN
         FirstName,
         LastName,
         Email,
-        Balance,
         UserType,
         LoanPeriodDays,
         Status,
@@ -194,7 +189,6 @@ BEGIN
         p_FirstName,
         p_LastName,
         p_Email,
-        0.00, -- Default balance
         0, -- Default to Student user type for self-registration
         14, -- Default loan period for students
         1, -- Active status
@@ -210,6 +204,79 @@ BEGIN
     SET CreatedBy = v_NewUserID,
         UpdatedBy = v_NewUserID
     WHERE UserID = v_NewUserID;
+END$$
+
+-- =================================================================================================================
+--                                               BALANCE QUERIES
+-- =================================================================================================================
+
+-- =========================================================
+-- Function: Get balance value for a specific user, to be used in other procedures
+-- =========================================================
+DROP FUNCTION IF EXISTS GetUserBalanceValue$$
+CREATE FUNCTION GetUserBalanceValue(p_UserID INT)
+RETURNS DECIMAL(7,2)
+DETERMINISTIC
+READS SQL DATA
+BEGIN
+    DECLARE v_Balance DECIMAL(7,2);
+
+    SELECT COALESCE(SUM(FineAmount), 0.00)
+    INTO v_Balance
+    FROM fines
+    WHERE UserID = p_UserID
+      AND PaidStatus = 0;
+
+    RETURN v_Balance;
+END$$
+
+-- =========================================================
+-- Procedure: Get balance for a specific user
+-- =========================================================
+DROP PROCEDURE IF EXISTS GetUserBalance$$
+CREATE PROCEDURE GetUserBalance (
+    IN p_UserID INT
+)
+BEGIN
+    SELECT GetUserBalanceValue(p_UserID) AS Balance;
+END$$
+
+
+-- =================================================================================================================
+--                                               NOTIFICATION QUERIES
+-- =================================================================================================================
+
+-- =========================================================
+-- Procedure: Get notifications for a specific user (works for librarians and faculty as well)
+-- =========================================================
+DROP PROCEDURE IF EXISTS GetUserNotifications$$
+CREATE PROCEDURE GetUserNotifications(
+    IN p_UserID INT
+)
+BEGIN
+    SELECT
+        NotificationID,
+        UserID,
+        Message,
+        IsRead,
+        CreatedAt
+    FROM notifications
+    WHERE UserID = p_UserID
+    ORDER BY CreatedAt DESC, NotificationID DESC;
+END$$
+
+
+-- =========================================================
+-- Procedure: Mark a notification as read
+-- =========================================================
+DROP PROCEDURE IF EXISTS MarkNotificationRead$$
+CREATE PROCEDURE MarkNotificationRead(
+    IN p_NotificationID INT
+)
+BEGIN
+    UPDATE notifications
+    SET IsRead = 1
+    WHERE NotificationID = p_NotificationID;
 END$$
 
 DELIMITER ;

@@ -15,7 +15,7 @@ BEGIN
     DECLARE v_HoldID INT DEFAULT NULL;
     DECLARE v_HoldUserID INT DEFAULT NULL;
     DECLARE v_UserStatus INT;
-    DECLARE v_UserBalance DECIMAL(7,2);
+    DECLARE v_UnpaidBalance DECIMAL(7,2) DEFAULT 0.00;
     DECLARE v_LoanPeriodDays INT;
     DECLARE v_UserType INT;
     DECLARE v_CurrentLoans INT DEFAULT 0;
@@ -24,22 +24,24 @@ BEGIN
     -- Only run when a copy becomes Available (CopyStatus changes from 1 to 0)
     IF OLD.CopyStatus = 1 AND NEW.CopyStatus = 0 THEN
         
-        -- Find the earliest Active hold for this item (FIFO ordering by RequestDate)
+        -- Find the earliest Active hold for this item (FIFO ordering by CreatedAt)
         SELECT h.HoldID, h.UserID
         INTO v_HoldID, v_HoldUserID
         FROM holds AS h
         WHERE h.ItemID = NEW.ItemID
           AND h.HoldStatus = 0 -- HoldStatus: 0=Active, 1=Fulfilled, 2=Cancelled
-        ORDER BY h.RequestDate
+        ORDER BY h.CreatedAt
         LIMIT 1;
 
         -- Only continue if a hold exists for this item
         IF v_HoldID IS NOT NULL THEN
 
-            SELECT u.Status, u.Balance, u.LoanPeriodDays, u.UserType
-            INTO v_UserStatus, v_UserBalance, v_LoanPeriodDays, v_UserType
+            SELECT u.Status, u.LoanPeriodDays, u.UserType
+            INTO v_UserStatus, v_LoanPeriodDays, v_UserType
             FROM users AS u
             WHERE u.UserID = v_HoldUserID;
+
+            SET v_UnpaidBalance = GetUserBalanceValue(v_HoldUserID);
 
             -- Determine max allowed loans
             IF v_UserType = 0 THEN
@@ -57,94 +59,154 @@ BEGIN
 
             -- Check eligibility (active status, no unpaid balance, under loan limit)
             IF v_UserStatus = 1
-               AND v_UserBalance <= 0
+               AND v_UnpaidBalance <= 0
                AND v_CurrentLoans < v_MaxLoans THEN
 
                 -- Mark hold as fulfilled
                 UPDATE holds
-                SET HoldStatus = 1 -- 1=Fulfilled
+                SET HoldStatus = 1,
+                    UpdatedAt = CURRENT_TIMESTAMP(),
+                    UpdatedBy = 1 -- Super UserID = 1 for system actions
                 WHERE HoldID = v_HoldID;
 
                 -- Create a new loan for this copy
                 INSERT INTO loans (
                     UserID,
                     CopyID,
+                    DueDate,
+                    CreatedAt,
                     CreatedBy,
-                    CheckoutDate,
-                    DueDate
+                    UpdatedAt,
+                    UpdatedBy
                 ) VALUES (
                     v_HoldUserID,
                     NEW.CopyID,
-                    v_HoldUserID, -- CreatedBy is the user who is fulfilling the hold
-                    CURDATE(),
-                    DATE_ADD(CURDATE(), INTERVAL v_LoanPeriodDays DAY)
+                    DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL v_LoanPeriodDays DAY),
+                    CURRENT_TIMESTAMP(),
+                    v_HoldUserID,
+                    CURRENT_TIMESTAMP(),
+                    NULL
                 );
 
+                -- Send notification to the user whose hold was fulfilled
+                INSERT INTO notifications (
+                    UserID,
+                    Message,
+                    IsRead,
+                    CreatedAt,
+                    CreatedBy,
+                    UpdatedAt,
+                    UpdatedBy
+                ) VALUES (
+                    v_HoldUserID,
+                    'Your hold has been fulfilled and the item has been checked out to your account.',
+                    0,
+                    CURRENT_TIMESTAMP(),
+                    1, -- Super UserID = 1 for system actions
+                    CURRENT_TIMESTAMP(),
+                    NULL
+                );
             END IF;
         END IF;
     END IF;
 END$$
 
+
 -- =========================================================
--- Trigger: EnforceBorrowingLimitTrigger
--- Only checks borrower eligibility when attempting to loan/checkout an item
+-- Trigger: Return Integrity / Notification Trigger
 -- =========================================================
-DROP TRIGGER IF EXISTS EnforceBorrowingLimitTrigger$$
-CREATE TRIGGER EnforceBorrowingLimitTrigger
-BEFORE INSERT ON loans
+DROP TRIGGER IF EXISTS ReturnIntegrityNotificationTrigger$$
+CREATE TRIGGER ReturnIntegrityNotificationTrigger
+AFTER UPDATE ON loans
 FOR EACH ROW
 BEGIN
-    DECLARE v_UserStatus INT DEFAULT NULL;
-    DECLARE v_UserBalance DECIMAL(7,2) DEFAULT NULL;
-    DECLARE v_UserType INT DEFAULT NULL;
-    DECLARE v_MaxLoans INT DEFAULT 0;
-    DECLARE v_CurrentLoans INT DEFAULT 0;
-    
-    -- Get user status, balance, and type
-    SELECT u.Status, u.Balance, u.UserType
-    INTO v_UserStatus, v_UserBalance, v_UserType
-    FROM users AS u
-    WHERE u.UserID = NEW.UserID;
+    DECLARE v_UpdatedByType INT DEFAULT NULL;
+    DECLARE v_CopyStatus INT DEFAULT NULL;
+    DECLARE v_ActiveLoanCount INT DEFAULT 0;
+    DECLARE v_Balance DECIMAL(7,2) DEFAULT 0.00;
 
-    -- Make sure the user exists
-    IF v_UserStatus IS NULL THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'User does not exist.';
-    END IF;
+    -- Only run when a loan changes from active to returned
+    IF OLD.ReturnDate IS NULL AND NEW.ReturnDate IS NOT NULL THEN
 
-    -- Set max loans based on user type
-    IF v_UserType = 0 THEN
-        SET v_MaxLoans = 3;  -- Student
-    ELSEIF v_UserType IN (1, 2) THEN
-        SET v_MaxLoans = 5;  -- Librarian and Faculty
-    ELSE
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Invalid user type.';
-    END IF;
+        -- Processor must exist and be a librarian
+        SELECT UserType
+        INTO v_UpdatedByType
+        FROM users
+        WHERE UserID = NEW.UpdatedBy;
 
-    -- Count current active loans
-    SELECT COUNT(*)
-    INTO v_CurrentLoans
-    FROM loans AS l
-    WHERE l.UserID = NEW.UserID
-      AND l.ReturnDate IS NULL;
+        IF v_UpdatedByType IS NULL THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Invalid UpdatedBy user on return.';
+        END IF;
 
-    -- User must be active
-    IF v_UserStatus <> 1 THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'User is not active.';
-    END IF;
+        IF v_UpdatedByType <> 2 THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Only librarians may process returns.';
+        END IF;
 
-    -- User must have no unpaid balance
-    IF v_UserBalance <> 0 THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'User has an unpaid balance.';
-    END IF;
+        -- Associated copy must still be OnLoan at this moment
+        SELECT CopyStatus
+        INTO v_CopyStatus
+        FROM copies
+        WHERE CopyID = NEW.CopyID;
 
-    -- User must be under borrowing limit
-    IF v_CurrentLoans >= v_MaxLoans THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Borrowing limit exceeded for this user.';
+        IF v_CopyStatus IS NULL THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Associated copy does not exist.';
+        END IF;
+
+        IF v_CopyStatus <> 1 THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Return invalid: copy is not currently OnLoan.';
+        END IF;
+
+        -- Ensure no duplicate active loans for this copy
+        SELECT COUNT(*)
+        INTO v_ActiveLoanCount
+        FROM loans
+        WHERE CopyID = NEW.CopyID
+          AND ReturnDate IS NULL;
+
+        IF v_ActiveLoanCount <> 0 THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Return invalid: copy still has another active loan.';
+        END IF;
+
+        --  4. Chronological validation
+        IF NEW.ReturnDate < NEW.CreatedAt THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'ReturnDate cannot be earlier than CreatedAt.';
+        END IF;
+
+        IF NEW.ReturnDate > CURRENT_TIMESTAMP() THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'ReturnDate cannot be in the future.';
+        END IF;
+
+        -- Check borrower balance using existing function
+        SET v_Balance = GetUserBalanceValue(NEW.UserID);
+
+        --  Notify borrower if unpaid balance exists
+        IF v_Balance > 0 THEN
+            INSERT INTO notifications (
+                UserID,
+                Message,
+                IsRead,
+                CreatedAt,
+                CreatedBy,
+                UpdatedAt,
+                UpdatedBy
+            ) VALUES (
+                NEW.UserID,
+                'All fines must be paid in full before new checkouts or holds can proceed',
+                0,
+                CURRENT_TIMESTAMP(),
+                1, -- System admin
+                CURRENT_TIMESTAMP(),
+                NULL
+            );
+        END IF;
+
     END IF;
 END$$
 

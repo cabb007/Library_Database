@@ -64,9 +64,9 @@ export default function Landing() {
   }, []);
 
   const CATEGORIES = [
-    { label: "Literature", count: counts.Literature, icon: CATEGORY_ICONS.Literature },
-    { label: "Media",      count: counts.Media,      icon: CATEGORY_ICONS.Media      },
-    { label: "Devices",    count: counts.Devices,    icon: CATEGORY_ICONS.Devices    },
+    { label: "Literature", subTab: "books",   count: counts.Literature, icon: CATEGORY_ICONS.Literature },
+    { label: "Media",      subTab: "media",   count: counts.Media,      icon: CATEGORY_ICONS.Media      },
+    { label: "Devices",    subTab: "devices", count: counts.Devices,    icon: CATEGORY_ICONS.Devices    },
   ];
 
   return (
@@ -147,9 +147,10 @@ export default function Landing() {
         {/* Category cards */}
         <div className="flex-1 flex flex-col gap-4 max-w-sm w-full">
           {CATEGORIES.map((cat) => (
-            <div
+            <button
               key={cat.label}
-              className="flex items-center gap-5 bg-stone-900 border border-amber-900/30 rounded-xl px-6 py-5 shadow-lg shadow-amber-950/30 hover:border-amber-700/50 transition"
+              onClick={() => navigate("/catalog", { state: { subTab: cat.subTab } })}
+              className="flex items-center gap-5 bg-stone-900 border border-amber-900/30 rounded-xl px-6 py-5 shadow-lg shadow-amber-950/30 hover:border-amber-700/50 hover:bg-stone-800 transition text-left w-full"
             >
               <div className="text-amber-500">{cat.icon}</div>
               <div className="flex-1">
@@ -157,7 +158,7 @@ export default function Landing() {
                 <p className="text-stone-500 text-sm">Available in catalog</p>
               </div>
               <p className="text-amber-400 font-serif text-xl">{cat.count}</p>
-            </div>
+            </button>
           ))}
 
           {/* Bookshelf decoration */}

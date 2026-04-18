@@ -1,115 +1,292 @@
-import { useState } from "react";
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../api";
 
 export default function UserAccount() {
     const [user, setUser] = useState(null);
+    const [balance, setBalance] = useState(0);
+    const [loans, setLoans] = useState([]);
+    const [holds, setHolds] = useState([]);
     const [error, setError] = useState("");
+    const [returnError, setReturnError] = useState("");
 
     const navigate = useNavigate();
 
     useEffect(() => {
         async function checkLogin() {
             try {
-                const response = await fetch(`${API}/api/me`, {
-                    credentials:"include"
-                });
-
+                const response = await fetch(`${API}/api/me`, { credentials: "include" });
                 const data = await response.json();
-
                 if (response.ok) {
                     setUser(data.user);
+                    await Promise.all([fetchBalance(), fetchLoans(), fetchHolds()]);
                 } else {
                     setUser(null);
+                    setBalance(0);
                 }
             } catch (err) {
                 console.error(err);
             }
         }
-
         checkLogin();
     }, []);
 
+    async function fetchBalance() {
+        try {
+            const response = await fetch(`${API}/api/user/balance`, { credentials: "include" });
+            const data = await response.json();
+            setBalance(response.ok ? data.Balance : 0);
+        } catch (err) {
+            console.error(err);
+            setBalance(0);
+        }
+    }
+
+    async function fetchLoans() {
+        try {
+            const response = await fetch(`${API}/api/user/loans`, { credentials: "include" });
+            const data = await response.json();
+            setLoans(response.ok ? data : []);
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    async function fetchHolds() {
+        try {
+            const response = await fetch(`${API}/api/user/holds`, { credentials: "include" });
+            const data = await response.json();
+            setHolds(response.ok ? data : []);
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    async function handleReturn(loanId) {
+        setReturnError("");
+        try {
+            const response = await fetch(`${API}/api/user/loans/${loanId}/return`, {
+                method: "POST",
+                credentials: "include"
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || "Failed to return item");
+            await fetchLoans();
+        } catch (err) {
+            setReturnError(err.message);
+        }
+    }
+
     async function handleLogout() {
         setError("");
-
         try {
             const response = await fetch(`${API}/api/logout`, {
                 method: "POST",
                 credentials: "include"
             });
-
             const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.error || data.message || "Failed to logout");
-            }
-
-            setUser(null); // important UI reset
-            console.log("Logged out successfully");
+            if (!response.ok) throw new Error(data.error || data.message || "Failed to logout");
+            setUser(null);
+            setBalance(0);
             navigate("/login");
-
         } catch (err) {
             setError(err.message);
         }
     }
 
+    const initials = user
+        ? `${user.FirstName?.[0] ?? ""}${user.LastName?.[0] ?? ""}`.toUpperCase()
+        : "";
+
+    const activeLoans = loans.filter(l => !l.ReturnDate);
+    const pastLoans = loans.filter(l => l.ReturnDate);
+
+    function formatDate(dateStr) {
+        if (!dateStr) return "—";
+        return new Date(dateStr).toLocaleDateString();
+    }
+
+    function isOverdue(dueDateStr) {
+        return !dueDateStr ? false : new Date(dueDateStr) < new Date();
+    }
+
     return (
-        <div className="min-h-screen bg-stone-950 text-amber-50 flex flex-col">
-            <div className="flex flex-1 flex-col md:flex-row items-center justify-center gap-16 px-10 py-20 max-w-6xl mx-auto w-full">
+        <div className="min-h-screen bg-stone-950 text-amber-50 flex flex-col items-center px-4 py-12">
 
-                <div className="flex-1 flex flex-col gap-6">
+            <div className="w-full max-w-2xl">
 
-                    <button
-                        onClick={() => navigate("/")}
-                        className="text-amber-600 text-lg tracking-[0.3em] uppercase"
-                    >
-                        Home
-                    </button>
+                <button
+                    onClick={() => navigate("/")}
+                    className="mb-6 text-amber-600 text-sm tracking-[0.2em] uppercase hover:text-amber-400 transition"
+                >
+                    ← Home
+                </button>
 
-                    {user ? (
-                        <h1>Logged in as {user.FirstName} {user.LastName}</h1>
-                    ) : (
-                        <h1>Not logged in</h1>
+                {/* Profile Card */}
+                <div className="bg-stone-900 border border-stone-700 rounded-2xl overflow-hidden shadow-xl mb-8">
+
+                    <div className="bg-stone-800 px-8 py-8 flex items-center gap-5 border-b border-stone-700">
+                        <div className="w-16 h-16 rounded-full bg-amber-700 flex items-center justify-center text-2xl font-bold text-stone-950 shrink-0">
+                            {initials || "?"}
+                        </div>
+                        <div>
+                            {user ? (
+                                <>
+                                    <h1 className="text-2xl font-semibold tracking-wide">
+                                        {user.FirstName} {user.LastName}
+                                    </h1>
+                                    <p className="text-stone-400 text-sm mt-0.5 tracking-widest uppercase">Member</p>
+                                </>
+                            ) : (
+                                <h1 className="text-xl text-stone-400">Not logged in</h1>
+                            )}
+                        </div>
+                    </div>
+
+                    {user && (
+                        <div className="px-8 py-6 flex flex-col gap-4">
+                            <div className="flex justify-between items-center border-b border-stone-800 pb-4">
+                                <span className="text-stone-400 text-sm tracking-widest uppercase">User ID</span>
+                                <span className="text-amber-100 font-mono">{user.UserID}</span>
+                            </div>
+                            <div className="flex justify-between items-center border-b border-stone-800 pb-4">
+                                <span className="text-stone-400 text-sm tracking-widest uppercase">Email</span>
+                                <span className="text-amber-100">{user.Email}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span className="text-stone-400 text-sm tracking-widest uppercase">Balance</span>
+                                <div className="flex items-center gap-3">
+                                    <span className={`font-semibold text-lg ${balance > 0 ? "text-red-400" : "text-green-400"}`}>
+                                        ${Number(balance).toFixed(2)}
+                                    </span>
+                                    {balance > 0 && (
+                                        <button
+                                            onClick={() => navigate("/finepayment")}
+                                            className="px-3 py-1 bg-amber-700 hover:bg-amber-600 text-stone-950 text-sm font-semibold rounded transition"
+                                        >
+                                            Pay
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
                     )}
 
-                    {user ? <h1>User ID : {user.UserID}</h1> : <h1></h1>}
-                    {user ? <h1>Email : {user.Email}</h1> : <h1></h1>}
-
-                    {user ? (
-                        <h1>
-                            Current Balance : ${user.Balance}
-
-                            <button
-                                onClick={() => navigate("/finepayment")}
-                                className="px-5 py-2 ml-4 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold rounded transition tracking-wide"
-                            >
-                                Pay balance
-                            </button>
-                        </h1>
-                    ) : (
-                        <h1></h1>
-                    )}
-
-                    {user ? (
-                        <p className="text-amber-600 tracking-[0.3em] uppercase">
+                    {user && (
+                        <div className="px-8 py-5 border-t border-stone-700">
+                            {error && <p className="text-red-400 text-sm mb-3">{error}</p>}
                             <button
                                 onClick={handleLogout}
-                                className="px-5 py-2 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold rounded transition tracking-wide"
+                                className="w-full py-2.5 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold rounded-lg transition tracking-wide"
                             >
                                 Logout
                             </button>
-                        </p>
-                    ) : (
-                        <h1></h1>
+                        </div>
                     )}
-
-                    {error && (
-                        <p className="text-red-400">{error}</p>
-                    )}
-
                 </div>
+
+                {/* Loans Section */}
+                {user && (
+                    <>
+                        {returnError && (
+                            <p className="text-red-400 text-sm mb-4">{returnError}</p>
+                        )}
+
+                        {/* Active Loans */}
+                        <div className="mb-6">
+                            <h2 className="text-lg font-semibold tracking-widest uppercase text-amber-500 mb-3">
+                                Active Loans ({activeLoans.length})
+                            </h2>
+                            {activeLoans.length === 0 ? (
+                                <p className="text-stone-500 text-sm">No active loans.</p>
+                            ) : (
+                                <div className="flex flex-col gap-3">
+                                    {activeLoans.map(loan => (
+                                        <div
+                                            key={loan.LoanID}
+                                            className="bg-stone-900 border border-stone-700 rounded-xl px-5 py-4 flex items-center justify-between gap-4"
+                                        >
+                                            <div className="flex flex-col gap-0.5 min-w-0">
+                                                <span className="font-medium truncate">{loan.Title}</span>
+                                                <span className="text-stone-400 text-xs">{loan.ItemTypeName}</span>
+                                                <span className={`text-xs mt-1 ${isOverdue(loan.DueDate) ? "text-red-400" : "text-stone-400"}`}>
+                                                    Due: {formatDate(loan.DueDate)}
+                                                    {isOverdue(loan.DueDate) && " — Overdue"}
+                                                </span>
+                                            </div>
+                                            <button
+                                                onClick={() => handleReturn(loan.LoanID)}
+                                                className="shrink-0 px-4 py-2 bg-amber-700 hover:bg-amber-600 text-stone-950 text-sm font-semibold rounded-lg transition"
+                                            >
+                                                Return
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Active Holds */}
+                        <div className="mb-6">
+                            <h2 className="text-lg font-semibold tracking-widest uppercase text-amber-500 mb-3">
+                                Holds ({holds.filter(h => h.HoldStatus === 0).length})
+                            </h2>
+                            {holds.filter(h => h.HoldStatus === 0).length === 0 ? (
+                                <p className="text-stone-500 text-sm">No active holds.</p>
+                            ) : (
+                                <div className="flex flex-col gap-3">
+                                    {holds.filter(h => h.HoldStatus === 0).map(hold => (
+                                        <div
+                                            key={hold.HoldID}
+                                            className="bg-stone-900 border border-stone-700 rounded-xl px-5 py-4 flex items-center justify-between gap-4"
+                                        >
+                                            <div className="flex flex-col gap-0.5 min-w-0">
+                                                <span className="font-medium truncate">{hold.Title}</span>
+                                                <span className="text-stone-400 text-xs">{hold.ItemTypeName}</span>
+                                                <span className="text-stone-400 text-xs mt-1">
+                                                    Placed: {formatDate(hold.CreatedAt)}
+                                                </span>
+                                            </div>
+                                            <span className="shrink-0 text-xs text-amber-500 font-semibold tracking-wide uppercase">
+                                                Queued
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Past Loans */}
+                        <div>
+                            <h2 className="text-lg font-semibold tracking-widest uppercase text-stone-500 mb-3">
+                                Past Loans ({pastLoans.length})
+                            </h2>
+                            {pastLoans.length === 0 ? (
+                                <p className="text-stone-500 text-sm">No past loans.</p>
+                            ) : (
+                                <div className="flex flex-col gap-3">
+                                    {pastLoans.map(loan => (
+                                        <div
+                                            key={loan.LoanID}
+                                            className="bg-stone-900 border border-stone-800 rounded-xl px-5 py-4 flex items-center justify-between gap-4 opacity-60"
+                                        >
+                                            <div className="flex flex-col gap-0.5 min-w-0">
+                                                <span className="font-medium truncate">{loan.Title}</span>
+                                                <span className="text-stone-400 text-xs">{loan.ItemTypeName}</span>
+                                                <span className="text-stone-500 text-xs mt-1">
+                                                    Returned: {formatDate(loan.ReturnDate)}
+                                                </span>
+                                            </div>
+                                            <span className="shrink-0 text-xs text-green-600 font-semibold tracking-wide uppercase">
+                                                Returned
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </>
+                )}
             </div>
         </div>
     );
