@@ -2,8 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../api";
 
-
-
 const CATEGORY_ICONS = {
   Literature: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-8 h-8">
@@ -77,11 +75,10 @@ function FeaturedCard({ entry }) {
             {formatAvailability(entry.availableCopies)}
           </p>
           <div
-            className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${
-              isAvailable
+            className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${isAvailable
                 ? "border border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
                 : "border border-amber-500/20 bg-amber-500/10 text-amber-200"
-            }`}
+              }`}
           >
             {isAvailable ? "Ready Now" : "High Demand"}
           </div>
@@ -158,37 +155,35 @@ export default function Landing() {
   const [userType, setUserType] = useState(null);
   const featuredSectionRef = useRef(null);
   const [notifications, setNotifications] = useState([]);
-  const [showNotif, setShowNotif] = useState(false);  
+  const [notifOpen, setNotifOpen] = useState(false);
+  const notifRef = useRef(null);
 
-
-  //modified to populate notifications and to set showNotif to true
   useEffect(() => {
     async function checkAuth() {
-  try {
-    const res = await fetch(`${API}/api/me`, { credentials: "include" });
-    const data = await res.json();
+      try {
+        const res = await fetch(`${API}/api/me`, { credentials: "include" });
+        const data = await res.json();
+        setLoggedIn(data.loggedIn === true);
+        setUserType(data.user?.UserType ?? null);
+        if (data.loggedIn === true) {
+          try {
+            const notifRes = await fetch(`${API}/api/notifications`, {
+              credentials: "include",
+            });
 
-    const isLoggedIn = data.loggedIn === true;
-
-    setLoggedIn(isLoggedIn);
-    setUserType(data.user?.UserType ?? null);
-    if (isLoggedIn) {
-      const notifRes = await fetch(`${API}/api/notifications`, {
-        credentials: "include",
-      });
-
-      const notifData = await notifRes.json();
-
-      if (Array.isArray(notifData) && notifData.length > 0) {
-        setNotifications(notifData);
-        setShowNotif(true);
+            if (notifRes.ok) {
+              const notifData = await notifRes.json();
+              setNotifications(Array.isArray(notifData) ? notifData : []);
+            }
+          } catch (err) {
+            console.error("notifications failed", err);
+          }
+        }
+      } catch {
+        setLoggedIn(false);
       }
     }
-
-  } catch {
-    setLoggedIn(false);
-  }
-}
+    checkAuth();
 
     async function fetchCounts() {
       try {
@@ -236,8 +231,8 @@ export default function Landing() {
 
   const CATEGORIES = [
     { label: "Literature", count: counts.Literature, icon: CATEGORY_ICONS.Literature },
-    { label: "Media",      count: counts.Media,      icon: CATEGORY_ICONS.Media      },
-    { label: "Devices",    count: counts.Devices,    icon: CATEGORY_ICONS.Devices    },
+    { label: "Media", count: counts.Media, icon: CATEGORY_ICONS.Media },
+    { label: "Devices", count: counts.Devices, icon: CATEGORY_ICONS.Devices },
   ];
 
   function scrollToFeatured() {
@@ -251,40 +246,103 @@ export default function Landing() {
     <div className="min-h-screen bg-stone-950 text-amber-50 flex flex-col">
       {/* Navbar */}
       <nav className="flex flex-col gap-4 border-b border-amber-900/40 px-6 py-5 md:flex-row md:items-center md:justify-between md:px-10">
-        <h1 className="text-2xl font-serif tracking-widest text-amber-400">
-          Team 7 Library
-        </h1>
-        <div className="flex flex-wrap gap-3 md:justify-end">
-          {!loggedIn && (
-            <>
-              <button
-                onClick={() => navigate("/login")}
-                className="px-5 py-2 border border-amber-700 text-amber-300 hover:bg-amber-900/30 transition rounded text-sm tracking-wide"
-              >
-                Login
-              </button>
-              <button
-                onClick={() => navigate("/register")}
-                className="px-5 py-2 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold transition rounded text-sm tracking-wide"
-              >
-                Register
-              </button>
-            </>
-          )}
-          {userType === 2 && (
-            <button
-              onClick={() => navigate("/librarian")}
-              className="px-5 py-2 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold transition rounded text-sm tracking-wide">
-              Librarian Dashboard
-            </button>
-          )}
+  <h1 className="text-2xl font-serif tracking-widest text-amber-400">
+    Cougar Commons
+  </h1>
+
+  <div className="flex items-center gap-4 w-full md:justify-end">
+
+    {/* LEFT BUTTON GROUP */}
+    <div className="flex flex-wrap gap-3 items-center">
+
+      {!loggedIn && (
+        <>
           <button
-            onClick={() => navigate("/useraccount")}
-            className="px-5 py-2 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold transition rounded text-sm tracking-wide">
-            My Account
+            onClick={() => navigate("/login")}
+            className="px-5 py-2 border border-amber-700 text-amber-300 hover:bg-amber-900/30 transition rounded text-sm tracking-wide"
+          >
+            Login
           </button>
-        </div>
-      </nav>
+
+          <button
+            onClick={() => navigate("/register")}
+            className="px-5 py-2 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold transition rounded text-sm tracking-wide"
+          >
+            Register
+          </button>
+        </>
+      )}
+
+      {userType === 2 && (
+        <button
+          onClick={() => navigate("/librarian")}
+          className="px-5 py-2 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold transition rounded text-sm tracking-wide"
+        >
+          Librarian Dashboard
+        </button>
+      )}
+
+      {/* 👇 FIXED: stays next to other buttons */}
+      <button
+        onClick={() => navigate("/useraccount")}
+        className="px-5 py-2 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold transition rounded text-sm tracking-wide"
+      >
+        My Account
+      </button>
+
+    </div>
+
+    {/* RIGHT SIDE: NOTIFICATIONS */}
+    {loggedIn && (
+      <div className="relative">
+
+        <button
+          onClick={() => setNotifOpen(!notifOpen)}
+          className="relative px-4 py-2 border border-amber-700 rounded hover:bg-amber-900/30 transition"
+        >
+          🔔
+
+          {/* 🔴 RED DOT / STAR (only if unread exist) */}
+          {notifications.length > 0 && (
+            <span className="absolute -top-1 -right-1 text-red-500 text-lg leading-none">
+              *
+            </span>
+          )}
+        </button>
+
+        {/* DROPDOWN */}
+        {notifOpen && (
+          <div className="absolute right-0 mt-2 w-80 bg-stone-900 border border-amber-700 rounded-lg shadow-xl z-50">
+
+            <div className="p-3 border-b border-amber-900/30 text-amber-300">
+              Notifications
+            </div>
+
+            <div className="max-h-64 overflow-y-auto">
+              {notifications.length === 0 ? (
+                <div className="p-3 text-stone-400 text-sm">
+                  No notifications
+                </div>
+              ) : (
+                notifications.map((n, i) => (
+                  <div
+                    key={i}
+                    className="p-3 border-b border-amber-900/10 text-sm text-stone-300"
+                  >
+                    {n.message || n.Message}
+                  </div>
+                ))
+              )}
+            </div>
+
+          </div>
+        )}
+
+      </div>
+    )}
+
+  </div>
+</nav>
 
       {/* Hero */}
       <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col items-center justify-center gap-16 px-6 py-16 md:flex-row md:px-10 md:py-20">
@@ -314,20 +372,21 @@ export default function Landing() {
             </button>
 
             <button
-            onClick={scrollToFeatured}
-            className="px-7 py-3 border border-stone-600 text-stone-300 hover:border-amber-700 hover:text-amber-300 rounded transition tracking-wide"
+              onClick={scrollToFeatured}
+              className="px-7 py-3 border border-stone-600 text-stone-300 hover:border-amber-700 hover:text-amber-300 rounded transition tracking-wide"
             >
               Featured Dashboard
-            </button>         
+            </button>
           </div>
         </div>
 
         {/* Category cards */}
         <div className="flex-1 flex flex-col gap-4 max-w-sm w-full">
           {CATEGORIES.map((cat) => (
-            <div
+            <button
               key={cat.label}
-              className="flex items-center gap-5 bg-stone-900 border border-amber-900/30 rounded-xl px-6 py-5 shadow-lg shadow-amber-950/30 hover:border-amber-700/50 transition"
+              onClick={() => navigate("/catalog", { state: { subTab: cat.subTab } })}
+              className="flex items-center gap-5 bg-stone-900 border border-amber-900/30 rounded-xl px-6 py-5 shadow-lg shadow-amber-950/30 hover:border-amber-700/50 hover:bg-stone-800 transition text-left w-full"
             >
               <div className="text-amber-500">{cat.icon}</div>
               <div className="flex-1">
@@ -335,7 +394,7 @@ export default function Landing() {
                 <p className="text-stone-500 text-sm">Available in catalog</p>
               </div>
               <p className="text-amber-400 font-serif text-xl">{cat.count}</p>
-            </div>
+            </button>
           ))}
 
           {/* Bookshelf decoration */}
@@ -418,38 +477,8 @@ export default function Landing() {
 
       {/* Footer strip */}
       <div className="border-t border-amber-900/30 py-4 text-center text-stone-600 text-xs tracking-widest">
-        Team 7 Library &mdash; READ MORE, LEARN MORE
+        Cougar Commons &mdash; READ MORE, LEARN MORE
       </div>
-      {showNotif && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="bg-stone-900 border border-amber-700 rounded-2xl shadow-xl w-full max-w-md p-6">
-      
-        <h3 className="text-xl font-semibold text-amber-400 mb-4">
-          Notifications
-        </h3>
-
-        <div className="flex flex-col gap-3 max-h-64 overflow-y-auto">
-          {notifications.map((n, i) => (
-            <div
-              key={i}
-              className="p-3 rounded-lg bg-stone-800 border border-amber-900/30 text-sm text-stone-300"
-            >
-              {n.message || n.Message || JSON.stringify(n)}
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-5 flex justify-end">
-          <button
-            onClick={() => setShowNotif(false)}
-            className="px-4 py-2 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold rounded transition"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
-  )}
     </div>
   );
 }

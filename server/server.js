@@ -31,6 +31,7 @@ const ITEM_TYPE_LABELS = {
   },
 };
 
+
 app.set("trust proxy", 1);
 app.use(express.json());
 
@@ -1049,24 +1050,20 @@ app.post('/api/loans/return', async (req, res) => {
 
 
 // ================ NOTIFICATIONS =================
-
 // Get current user's notifications
-app.get('/api/notifications', async (req, res) => {
+app.get("/api/notifications", requireLogin, async (req, res) => {
   try {
-    if (!req.session || !req.session.user) {
-      return res.status(401).json({ error: 'Not authenticated' });
-    }
-
     const userId = req.session.user.UserID;
 
-    const [rows] = await db.promise().query('CALL GetUserNotifications(?)', [userId]);
+    const [data] = await db.execute(
+      "CALL GetUserNotifications(?)",
+      [userId]
+    );
 
-    res.json(rows[0]);
+    res.json(data[0]);
   } catch (err) {
-    console.error('Notifications route error:', err);
-    res.status(500).json({
-      error: err.sqlMessage || 'Failed to fetch notifications'
-    });
+    console.error("Failed to fetch notifications:", err);
+    res.status(500).json({ error: "Failed to fetch notifications" });
   }
 });
 
