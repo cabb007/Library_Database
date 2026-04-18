@@ -105,12 +105,12 @@ const server = http.createServer(async (req,res) => {
     }
 
     try {
-        //LANDING PAGE - SERVER HEALTH CHECKS
+        //LANDING PAGE
         if (method === "GET" && url === "/") {
             sendText(res,200,"Backend is running");
             return;
         }
-
+        //SERVER HEALTH CHECK
         if (method === "GET" && url === "/health") {
             sendText(res,200,"ok");
             return;
@@ -150,7 +150,7 @@ const server = http.createServer(async (req,res) => {
                 SelectedItem: null
             });
 
-            sendJson(res,200,{success:true,user:sessions[sessionID]},
+            sendJson(res,200,{success:true, user:sessions.get(sessionID)},
                 {
                     "Set-Cookie" : `sessionID=${encodeURIComponent(sessionID)}; Path=/; HttpOnly; SameSite=Lax`
                 }
@@ -233,9 +233,8 @@ const server = http.createServer(async (req,res) => {
             const userID = session.UserID;
             
             if(!itemId) {
-                return res.status(400).json({
-                    error: "No item selected"
-                });
+                sendJson(res,400, {error: "No item selected."});
+                return;
             }
 
             await db.execute("CALL CheckoutItem(?,?)",[userID, itemId]);
@@ -261,13 +260,39 @@ const server = http.createServer(async (req,res) => {
             sendJson(res,200,{success: true, message: "Hold placed successfully"});
         }
 
-        //LIBRARIAN USERS
+        //LIBRARIAN USER ROUTES
+
+        //USERS RETRIEVAL
         if(method === "GET" && url === "/api/librarian/users") {
           const [rows] = await db.execute("CALL GetUsers()");
           sendJson(res,200,rows[0]);
           return;
         }
 
+        //UPDATE USER
+        if(method === "PUT" && url.startsWith("/api/librarian/users/")){
+            const cookies = parseCookies(req);
+            const sessionID = cookies.sessionID;
+            const session = sessions.get(sessionID);
+            const urlParts = req.url.split("/");
+            const userId = Number(urlParts[4]);
+
+
+            if (userId === session.UserID) {
+                sendJson(res,401,{message: "Cannot edit own account"})
+                return;
+            }
+
+            const body = await getJsonBody(req);
+            const { FirstName, LastName, Email, UserType, Status } = body;
+
+            await db.execute("CALL UpdateUser(?, ?, ?, ?, ?, ?, ?)", [userId, FirstName, LastName, Email, UserType, Status,session.UserID]);
+
+            sendJson(res,200,{message: "User Updated success"});
+            return;
+        }
+
+        //ADD USER
         if(method === "POST" && url === "/api/librarian/users") {
           const cookies = parseCookies(req);
           const sessionID = cookies.sessionID;
@@ -293,7 +318,9 @@ const server = http.createServer(async (req,res) => {
           sendJson(res,201, {message: "User added", id: rows[0].UserID});
         }
 
-        if(method === "DELETE" && url === "/api/librarian/users/:id") {
+
+        //USER DELETION
+        if(method === "DELETE" && url.startsWith("/api/librarian/users/")) {
           const urlParts = req.url.split("/");
           const userId = Number(urlParts[4]);
           const cookies = parseCookies(req);
@@ -311,15 +338,18 @@ const server = http.createServer(async (req,res) => {
           return;
         }
 
-        //LIBRARIAN CATALOGUE
+        //LIBRARIAN CATALOGUE/ITEMS ROUTES
 
-        if(method === "DELETE" && "/api/librarian/catalog/literature/:id") {
+        //DELETE LITERATURE
+        if(method === "DELETE" && url.startsWith("/api/librarian/catalog/literature/")) {
           const urlParts = req.url.split("/");
-          await db.execute("CALL DeleteLiterature(?)", Number(urlParts[5]));
+          await db.execute("CALL DeleteLiterature(?)", [Number(urlParts[5])]);
           sendJson(res,200,{message: "Literature Delete Success"});
           return;
         }
 
+
+        //RETRIEVE COPIES/CATALOGUE
         if (method === "GET" && url.startsWith("/api/librarian/catalog/") && url.endsWith("/copies")) {
           const urlParts = req.url.split("/");
           const itemId = Number(urlParts[4]);
@@ -334,37 +364,56 @@ const server = http.createServer(async (req,res) => {
           return;
         }
 
-        if(method === "DELETE" && url === "/api/librarian/catalog/copies/:copyId"){
+        //DELETE A COPY
+        if(method === "DELETE" && url.startsWith("/api/librarian/catalog/copies/")){
           const urlParts = req.url.split("/");
-          await db.execute("CALL DeleteCopy(?)", Number(urlParts[4]));
+          await db.execute("CALL DeleteCopy(?)", [Number(urlParts[4])]);
           sendJson(res,200,{message:"Copy Delete Success"});
           return;
         }
 
-        if(method === "DELETE" && url === "/api/librarian/catalog/devices/:id") {
+        //DELETE A DEVICE
+        if(method === "DELETE" && url.startsWith("/api/librarian/catalog/devices/")) {
           const urlParts = req.url.split("/");
-          await db.execute("CALL DeleteDevice(?)", Number(urlParts[4]));
+          await db.execute("CALL DeleteDevice(?)", [Number(urlParts[4])]);
           sendJson(res,200,{message:"Device Delete Success"});
           return;
         }
 
+        //ADD A DEVICE
         if(method === "POST" && url === "/api/librarian/catalog/devices") {
-          const body = await getJsonBody(req);
-          const { Title, ItemType, Manufacturer, Model, Copies } = body;
+            const cookies = parseCookies(req);
+            const sessionID = cookies.sessionID;
+            const session = sessions.get(sessionID);
+            const body = await getJsonBody(req);
+            const { Title, ItemType, Manufacturer, Model, Copies } = body;
 
-          const [[{nextID}]] = await db.execute("SELECT COALESCE(MAX(ItemID), 0) + 1 AS nextID FROM items");
+            const [[{nextID}]] = await db.execute("SELECT COALESCE(MAX(ItemID), 0) + 1 AS nextID FROM items");
 
-          sendJson(res,201, {message: "Device Added Successfully"});
-          return;
+            await db.execute("CALL AddDevice(?, ?, ?, ?, ?, ?, ?)", [
+                nextID,
+                Title,
+                ItemType,
+                Manufacturer,
+                Model || null,
+                Copies,
+                session.UserID,
+            ]);
+
+            sendJson(res,201, {message: "Device Added Successfully"});
+            return;
         }
 
-        if(method === "DELETE" && url === "/api/librarian/catalog/media/:id"){
+
+        //DELETE MEDIA
+        if(method === "DELETE" && url.startsWith("/api/librarian/catalog/media/")){
           const urlParts = req.url.split("/");
-          await db.execute("CALL DeleteMedia(?)", Number(urlParts[4]));
+          await db.execute("CALL DeleteMedia(?)", [Number(urlParts[4])]);
           sendJson(res,200,{message:"Media Deleted Success"});
           return;
         }
 
+        //ADD MEDIA
         if(method === "POST" && url === "/api/librarian/catalog/media") {
           const cookies = parseCookies(req);
           const sessionID = cookies.sessionID;
@@ -389,6 +438,7 @@ const server = http.createServer(async (req,res) => {
           sendJson(res,201,{message: "media added"});
         }
 
+        //ADD LITERATURE
         if(method === "POST" && url === "/api/librarian/catalog/literature") {
           const cookies = parseCookies(req);
           const sessionID = cookies.sessionID;
@@ -411,18 +461,22 @@ const server = http.createServer(async (req,res) => {
         }
 
         //DATA CALLS FROM DB (QUERIES)
+
+        //LITERATURE DATA
         if (method === "GET" && url === "/api/literature") {
             const [data] = await db.execute("CALL GetLiterature()");
             sendJson(res,200,data);
             return;
         }
 
+        //MEDIA DATA
         if (method === "GET" && url === "/api/media") {
             const [data] = await db.execute("CALL GetMedia()");
             sendJson(res,200,data);
             return;
         }
 
+        //DEVICE DATA
         if (method === "GET" && url === "/api/devices") {
             const [data] = await db.execute("CALL GetDevices()");
             sendJson(res,200,data);

@@ -18,7 +18,7 @@ CREATE PROCEDURE UpdateUser(
     IN p_Email VARCHAR(50),
     IN p_UserType SMALLINT,
     IN p_Status SMALLINT,
-    IN p_Balance DECIMAL(7,2),
+    --IN p_Balance DECIMAL(7,2),  -- Possibly need to update backend to support balance input?
     IN p_UpdatedBy INT
 )
 BEGIN
