@@ -2,6 +2,51 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../api";
 
+// ─── CONFIGURE FEATURED ITEMS  ──────────────────────────────────────
+// Replace each `id` with the actual ItemID from database to change navigation.
+// Image paths match filenames in server/SQLserver/data/images/
+const SHELVES = [
+  {
+    label: "Literature",
+    subtitle: "Curated picks from our book collection",
+    subTab: "books",
+    items: [
+      { id: 9780061965487, title: "1984",                     credit: "George Orwell",        badge: "BOOK",   image: `${API}/images/literature/1984.jpeg` },
+      { id: 9780385490818, title: "The Great Gatsby",          credit: "F. Scott Fitzgerald",  badge: "BOOK",   image: `${API}/images/literature/The Great Gatsby.jpeg` },
+      { id: 9780062315007, title: "The Hobbit",               credit: "J.R.R. Tolkien",       badge: "BOOK",   image: `${API}/images/literature/The Hobbit.jpeg` },
+      { id: 9780743273565, title: "To Kill a Mockingbird",    credit: "Harper Lee",           badge: "BOOK",   image: `${API}/images/literature/To Kill a Mockingbird.jpeg` },
+      { id: 9780316769174, title: "Pride and Prejudice",      credit: "Jane Austen",          badge: "BOOK",   image: `${API}/images/literature/Pride and Prejudice.jpeg` },
+      { id: 9780062409867, title: "Crime and Punishment",     credit: "Fyodor Dostoevsky",    badge: "BOOK",   image: `${API}/images/literature/Crime and Punishment.jpeg` },
+    ],
+  },
+  {
+    label: "Media",
+    subtitle: "Featured films and recordings",
+    subTab: "media",
+    items: [
+      { id: 43396519466,  title: "Inception",                credit: "Christopher Nolan",    badge: "DVD/CD", image: `${API}/images/media/Inception.jpeg` },
+      { id: 883929318513, title: "The Godfather",            credit: "Francis Ford Coppola", badge: "DVD/CD", image: `${API}/images/media/The Godfather.jpeg` },
+      { id: 31398282068,  title: "The Dark Knight",          credit: "Christopher Nolan",    badge: "DVD/CD", image: `${API}/images/media/The Dark Knight.jpeg` },
+      { id: 715515159227, title: "The Shawshank Redemption", credit: "Frank Darabont",       badge: "DVD/CD", image: `${API}/images/media/The Shawshank Redemption.jpeg` },
+      { id: 24543153788,  title: "Pulp Fiction",             credit: "Quentin Tarantino",    badge: "DVD/CD", image: `${API}/images/media/Pulp Fiction.jpeg` },
+      { id: 786936847543, title: "Goodfellas",               credit: "Martin Scorsese",      badge: "DVD/CD", image: `${API}/images/media/Goodfellas.jpeg` },
+    ],
+  },
+  {
+    label: "Devices",
+    subtitle: "Technology available for loan",
+    subTab: "devices",
+    items: [
+      { id: 1767950141, title: "MacBook Air M2",             credit: "Apple",     badge: "LAPTOP", image: `${API}/images/devices/Apple,MacBook Air M2.jpeg` },
+      { id: 4326338643, title: 'iPad Pro 12.9" M2',         credit: "Apple",     badge: "TABLET", image: `${API}/images/devices/Apple,iPad Pro 12.9-inch M2.jpeg` },
+      { id: 2067004398, title: "XPS 15 9530",               credit: "Dell",      badge: "LAPTOP", image: `${API}/images/devices/Dell,XPS 15 9530.jpeg` },
+      { id: 6170128796, title: "Surface Pro 9",             credit: "Microsoft", badge: "TABLET", image: `${API}/images/devices/Microsoft,Surface Pro 9.jpeg` },
+      { id: 3930751749, title: "ThinkPad X1 Carbon Gen 11", credit: "Lenovo",    badge: "LAPTOP", image: `${API}/images/devices/Lenovo,ThinkPad X1 Carbon Gen 11.jpeg` },
+      { id: 2729251472, title: "Galaxy Tab S9 Ultra",        credit: "Samsung",   badge: "TABLET", image: `${API}/images/devices/Samsung,Galaxy Tab S9 Ultra.jpeg` },
+    ],
+  },
+];
+
 const CATEGORY_ICONS = {
   Literature: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-8 h-8">
@@ -148,6 +193,7 @@ function FeaturedCollection({
 
 export default function Landing() {
   const navigate = useNavigate();
+  const featuredRef = useRef(null);
   const [counts, setCounts] = useState({ Literature: "—", Media: "—", Devices: "—" });
   const [featured, setFeatured] = useState({ items: [], devices: [] });
   const [featuredLoading, setFeaturedLoading] = useState(true);
@@ -372,10 +418,10 @@ export default function Landing() {
             </button>
 
             <button
-              onClick={scrollToFeatured}
+              onClick={() => featuredRef.current?.scrollIntoView({ behavior: "smooth" })}
               className="px-7 py-3 border border-stone-600 text-stone-300 hover:border-amber-700 hover:text-amber-300 rounded transition tracking-wide"
             >
-              Featured Dashboard
+              Dashboard
             </button>
           </div>
         </div>
@@ -420,60 +466,55 @@ export default function Landing() {
         </div>
       </div>
 
-      <section
-        ref={featuredSectionRef}
-        className="w-full border-t border-amber-900/20 bg-[linear-gradient(180deg,rgba(28,25,23,0),rgba(28,25,23,0.92)),radial-gradient(circle_at_top,rgba(180,83,9,0.18),transparent_38%)] scroll-mt-20"
-      >
-        <div className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-6 py-16 md:px-10">
-          <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
-            <div>
-              <p className="text-sm uppercase tracking-[0.35em] text-amber-500/80">
-                New on Landing
-              </p>
-              <h2 className="mt-3 text-4xl font-serif leading-tight text-amber-50 md:text-5xl">
-                Featured items and devices, right from the front door.
-              </h2>
-              <p className="mt-4 max-w-2xl text-base leading-relaxed text-stone-400">
-                This dashboard highlights image-backed favorites from the catalog
-                so visitors can jump from discovery to checkout faster.
-              </p>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-3">
-              {CATEGORIES.map((cat) => (
-                <div
-                  key={`featured-${cat.label}`}
-                  className="rounded-2xl border border-amber-900/25 bg-stone-900/60 px-5 py-5"
-                >
-                  <p className="text-xs uppercase tracking-[0.25em] text-stone-500">
-                    {cat.label}
-                  </p>
-                  <p className="mt-3 text-3xl font-serif text-amber-300">
-                    {cat.count}
-                  </p>
-                  <p className="mt-1 text-sm text-stone-400">Total records live</p>
-                </div>
-              ))}
-            </div>
+      {/* Featured Shelves */}
+      <div ref={featuredRef} className="w-full bg-stone-950 px-10 py-14 border-t border-amber-900/20">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex items-baseline gap-3 mb-10">
+            <h3 className="text-3xl font-serif text-amber-400 tracking-wide">Featured</h3>
+            <span className="text-stone-600 text-sm tracking-widest uppercase">Staff picks</span>
           </div>
-
-          <FeaturedCollection
-            title="Featured Items"
-            description="A highlighted mix of books, audiobooks, and media with cover art from the library image set."
-            entries={featured.items}
-            isLoading={featuredLoading}
-            onBrowse={() => navigate("/catalog")}
-          />
-
-          <FeaturedCollection
-            title="Featured Devices"
-            description="Popular laptops, tablets, and lab-ready equipment that students can spot instantly before heading into the full catalog."
-            entries={featured.devices}
-            isLoading={featuredLoading}
-            onBrowse={() => navigate("/catalog")}
-          />
+          {SHELVES.map((shelf) => (
+            <div key={shelf.label} className="mb-14">
+              <div className="flex items-baseline justify-between mb-1">
+                <div>
+                  <span className="text-amber-50 font-serif text-2xl tracking-wide">{shelf.label}</span>
+                  <p className="text-stone-500 text-sm mt-0.5">{shelf.subtitle}</p>
+                </div>
+                <button
+                  onClick={() => navigate("/catalog", { state: { subTab: shelf.subTab } })}
+                  className="text-amber-500 hover:text-amber-300 text-xs tracking-widest uppercase transition shrink-0 ml-4"
+                >
+                  View All →
+                </button>
+              </div>
+              <div className="h-px bg-amber-900/30 mb-5" />
+              <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+                {shelf.items.map((item) => (
+                  <button
+                    key={`${item.id}`} // 
+                    onClick={() => navigate("/catalog", { state: { subTab: shelf.subTab, highlightId: item.id } })}
+                    className="flex-shrink-0 w-36 bg-stone-900 border border-amber-900/25 rounded-xl overflow-hidden shadow-lg shadow-black/40 hover:border-amber-700/50 hover:bg-stone-800 transition text-left group"
+                  >
+                    <div className="w-full h-48 bg-stone-800 overflow-hidden">
+                      <img
+                        src={item.image}
+                        alt={item.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        onError={(e) => { e.currentTarget.style.display = "none"; }}
+                      />
+                    </div>
+                    <div className="p-3 flex flex-col gap-1">
+                      <span className="text-xs font-bold tracking-widest text-amber-600 uppercase">{item.badge}</span>
+                      <p className="text-amber-50 text-sm font-semibold leading-snug line-clamp-2">{item.title}</p>
+                      <p className="text-stone-500 text-xs truncate">{item.credit}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
-      </section>
+      </div>
 
       {/* Footer strip */}
       <div className="border-t border-amber-900/30 py-4 text-center text-stone-600 text-xs tracking-widest">

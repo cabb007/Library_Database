@@ -5,7 +5,11 @@ import cors from "cors";
 import path from "path";
 import session from "express-session";
 import "dotenv/config";
-import { fileURLToPath } from "url";
+import path from "path"; // current folder
+import { fileURLToPath } from "url"; // current file
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
@@ -61,7 +65,8 @@ app.use(
   })
 );
 
-app.use("/library-images", express.static(imageRoot));
+// builds absolute file path using __dirname
+app.use("/images", express.static(path.join(__dirname, "SQLserver/data/images")));
 
 app.get("/", (req, res) => {
   res.send("Backend is running");

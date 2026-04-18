@@ -117,6 +117,7 @@ INTO TABLE loans
 FIELDS TERMINATED BY ','
 ENCLOSED BY '"'
 LINES TERMINATED BY '\n'
+LINES TERMINATED BY '\n'
 IGNORE 1 ROWS
 (UserID, CopyID, @cb, @checkout_date, DueDate, @ret_date, CreatedAt, UpdatedAt, @ub)
 SET

@@ -4,6 +4,12 @@ button {
     cursor: pointer;
 }
 
+/* hides the scrollbar on a horizontally scrollable 
+image row so users can scroll through images without seeing the scrollbar. 
+only works if we add more items that don't fit on the horizontal row*/
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
 .librarian-dashboard button {
     border: 1px solid #aaa;
     padding: 0.3rem 0.75rem;
