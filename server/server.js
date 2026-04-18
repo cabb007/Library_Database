@@ -11,7 +11,7 @@ const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const imageRoot = path.join(__dirname, "SQLserver", "data", "images");
-const FEATURED_LIMIT = 6;
+const SHELF_LIMIT = 10;
 const ITEM_TYPE_LABELS = {
   literature: {
     1: "Book",
@@ -44,6 +44,8 @@ app.use(
     credentials: true,
   })
 );
+
+app.use("/library-images", express.static(imageRoot));
 
 app.use(
   session({
@@ -98,8 +100,9 @@ function buildImageIndex(folderName) {
   );
 }
 
-const FEATURED_IMAGE_INDEXES = {
-  items: buildImageIndex("items"),
+const SHELF_IMAGE_INDEXES = {
+  literature: buildImageIndex("literature"),
+  media: buildImageIndex("media"),
   devices: buildImageIndex("devices"),
 };
 
@@ -109,15 +112,10 @@ function normalizeAvailableCopies(value) {
 }
 
 function buildAssetUrl(req, folderName, fileName) {
-  const encodedPath = fileName
-    .split("/")
-    .map((segment) => encodeURIComponent(segment))
-    .join("/");
-
-  return `${req.protocol}://${req.get("host")}/library-images/${folderName}/${encodedPath}`;
+  return `${req.protocol}://${req.get("host")}/library-images/${folderName}/${encodeURIComponent(fileName)}`;
 }
 
-function pickFeaturedRecords(records, imageIndex, getImageKey) {
+function buildShelf(records, imageIndex, getImageKey) {
   return records
     .map((record) => {
       const fileName = imageIndex.get(getImageKey(record));
@@ -138,7 +136,7 @@ function pickFeaturedRecords(records, imageIndex, getImageKey) {
         right.availableCopies - left.availableCopies ||
         left.title.localeCompare(right.title)
     )
-    .slice(0, FEATURED_LIMIT);
+    .slice(0, SHELF_LIMIT);
 }
 
 function handleSqlError(res, err, fallbackMessage = "Request failed") {
@@ -555,7 +553,7 @@ app.get("/api/devices", async (req, res) => {
   }
 });
 
-app.get("/api/landing/featured", async (req, res) => {
+app.get("/api/landing/shelves", async (req, res) => {
   try {
     const [literatureResult, mediaResult, devicesResult] = await Promise.all([
       db.execute("CALL GetLiterature()"),
@@ -571,53 +569,58 @@ app.get("/api/landing/featured", async (req, res) => {
       ? devicesResult[0][0]
       : [];
 
-    const featuredItems = pickFeaturedRecords(
-      [
-        ...literature.map((item) => ({
-          id: item.ItemID,
-          title: item.Title,
-          category: "Literature",
-          badge: ITEM_TYPE_LABELS.literature[item.ItemType] || "Literature",
-          detail: item.Author || item.Publisher || "Library favorite",
-          availableCopies: item.AvailableCopies,
-        })),
-        ...media.map((item) => ({
-          id: item.ItemID,
-          title: item.Title,
-          category: "Media",
-          badge: ITEM_TYPE_LABELS.media[item.ItemType] || "Media",
-          detail: item.Producer || "Screening room pick",
-          availableCopies: item.AvailableCopies,
-        })),
-      ],
-      FEATURED_IMAGE_INDEXES.items,
+    const literatureShelf = buildShelf(
+      literature.map((item) => ({
+        id: item.ItemID,
+        title: item.Title,
+        badge: ITEM_TYPE_LABELS.literature[item.ItemType] || "Literature",
+        detail: item.Author || item.Publisher || "Library pick",
+        availableCopies: item.AvailableCopies,
+      })),
+      SHELF_IMAGE_INDEXES.literature,
       (record) => record.title
     ).map((record) => ({
       id: record.id,
       title: record.title,
-      category: record.category,
       badge: record.badge,
       detail: record.detail,
       availableCopies: record.availableCopies,
-      imageUrl: buildAssetUrl(req, "items", record.fileName),
+      imageUrl: buildAssetUrl(req, "literature", record.fileName),
     }));
 
-    const featuredDevices = pickFeaturedRecords(
+    const mediaShelf = buildShelf(
+      media.map((item) => ({
+        id: item.ItemID,
+        title: item.Title,
+        badge: ITEM_TYPE_LABELS.media[item.ItemType] || "Media",
+        detail: item.Producer || "Screening room pick",
+        availableCopies: item.AvailableCopies,
+      })),
+      SHELF_IMAGE_INDEXES.media,
+      (record) => record.title
+    ).map((record) => ({
+      id: record.id,
+      title: record.title,
+      badge: record.badge,
+      detail: record.detail,
+      availableCopies: record.availableCopies,
+      imageUrl: buildAssetUrl(req, "media", record.fileName),
+    }));
+
+    const devicesShelf = buildShelf(
       devices.map((item) => ({
         id: item.ItemID,
         title: item.Title,
-        category: "Devices",
         badge: ITEM_TYPE_LABELS.devices[item.ItemType] || "Device",
         detail: [item.Manufacturer, item.Model].filter(Boolean).join(" • "),
         availableCopies: item.AvailableCopies,
         imageKey: [item.Manufacturer, item.Model].filter(Boolean).join(","),
       })),
-      FEATURED_IMAGE_INDEXES.devices,
+      SHELF_IMAGE_INDEXES.devices,
       (record) => record.imageKey
     ).map((record) => ({
       id: record.id,
       title: record.title,
-      category: record.category,
       badge: record.badge,
       detail: record.detail || "Campus device",
       availableCopies: record.availableCopies,
@@ -625,12 +628,13 @@ app.get("/api/landing/featured", async (req, res) => {
     }));
 
     res.json({
-      items: featuredItems,
-      devices: featuredDevices,
+      literature: literatureShelf,
+      media: mediaShelf,
+      devices: devicesShelf,
     });
   } catch (err) {
-    console.error("Failed to fetch landing dashboard content:", err);
-    res.status(500).json({ error: "Failed to fetch landing dashboard content" });
+    console.error("Failed to fetch landing shelves:", err);
+    res.status(500).json({ error: "Failed to fetch landing shelves" });
   }
 });
 
