@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../api";
 
@@ -22,11 +22,268 @@ const CATEGORY_ICONS = {
   ),
 };
 
+const FEATURED_SHELVES = [
+  {
+    key: "literature",
+    label: "Literature",
+    title: "Featured Literature",
+    eyebrow: "Classics worth checking out",
+    subTab: "books",
+    imageFolder: "literature",
+    meta: (item) => `${item.Author} • ${item.PublicationYear}`,
+    match: (item, entry) => item.Title === entry.title,
+    items: [
+      { title: "To Kill a Mockingbird", filename: "To Kill a Mockingbird.jpeg" },
+      { title: "1984", filename: "1984.jpeg" },
+      { title: "The Great Gatsby", filename: "The Great Gatsby.jpeg" },
+      { title: "Pride and Prejudice", filename: "Pride and Prejudice.jpeg" },
+      { title: "Brave New World", filename: "Brave New World.jpeg" },
+      { title: "The Hobbit", filename: "The Hobbit.jpeg" },
+      { title: "Animal Farm", filename: "Animal Farm.jpeg" },
+      { title: "Jane Eyre", filename: "Jane Eyre.jpeg" },
+    ],
+  },
+  {
+    key: "media",
+    label: "Media",
+    title: "Featured Media",
+    eyebrow: "Films and albums from the stacks",
+    subTab: "media",
+    imageFolder: "media",
+    meta: (item) => `${item.Producer} • ${item.DurationMinutes} min`,
+    match: (item, entry) => item.Title === entry.title,
+    items: [
+      { title: "The Godfather", filename: "The Godfather.jpeg" },
+      { title: "The Shawshank Redemption", filename: "The Shawshank Redemption.jpeg" },
+      { title: "Pulp Fiction", filename: "Pulp Fiction.jpeg" },
+      { title: "Fight Club", filename: "Fight Club.jpeg" },
+      { title: "The Matrix", filename: "The Matrix.jpeg" },
+      { title: "Inception", filename: "Inception.jpeg" },
+      { title: "The Dark Knight", filename: "The Dark Knight.jpeg" },
+      { title: "Casablanca", filename: "Casablanca.jpeg" },
+    ],
+  },
+  {
+    key: "devices",
+    label: "Devices",
+    title: "Featured Devices",
+    eyebrow: "Tech ready for study sessions",
+    subTab: "devices",
+    imageFolder: "devices",
+    meta: (item) => `${item.Manufacturer} • ${item.Model}`,
+    match: (item, entry) =>
+      item.Manufacturer === entry.manufacturer && item.Model === entry.model,
+    items: [
+      {
+        manufacturer: "Apple",
+        model: "MacBook Pro 14-inch M3",
+        filename: "Apple,MacBook Pro 14-inch M3.jpeg",
+      },
+      {
+        manufacturer: "Apple",
+        model: "MacBook Air M2",
+        filename: "Apple,MacBook Air M2.jpeg",
+      },
+      {
+        manufacturer: "Dell",
+        model: "XPS 15 9530",
+        filename: "Dell,XPS 15 9530.jpeg",
+      },
+      {
+        manufacturer: "Dell",
+        model: "Latitude 5540",
+        filename: "Dell,Latitude 5540.jpeg",
+      },
+      {
+        manufacturer: "HP",
+        model: "EliteBook 840 G10",
+        filename: "HP,EliteBook 840 G10.jpeg",
+      },
+      {
+        manufacturer: "Lenovo",
+        model: "ThinkPad X1 Carbon Gen 11",
+        filename: "Lenovo,ThinkPad X1 Carbon Gen 11.jpeg",
+      },
+      {
+        manufacturer: "Microsoft",
+        model: "Surface Laptop 5",
+        filename: "Microsoft,Surface Laptop 5.jpeg",
+      },
+      {
+        manufacturer: "Samsung",
+        model: "Galaxy Tab S9 Ultra",
+        filename: "Samsung,Galaxy Tab S9 Ultra.jpeg",
+      },
+    ],
+  },
+];
+
+function normalizeRows(data) {
+  if (Array.isArray(data?.[0])) {
+    return data[0];
+  }
+
+  return Array.isArray(data) ? data : [];
+}
+
+function buildAssetUrl(folder, filename) {
+  return `${API}/api/assets/${folder}/${encodeURIComponent(filename)}`;
+}
+
+function buildFeaturedShelves(catalog) {
+  return FEATURED_SHELVES.map((section) => ({
+    ...section,
+    items: section.items
+      .map((entry) => {
+        const match = catalog[section.key]?.find((item) => section.match(item, entry));
+
+        if (!match) {
+          return null;
+        }
+
+        return {
+          ...match,
+          imageSrc: buildAssetUrl(section.imageFolder, entry.filename),
+          metaLabel: section.meta(match),
+          availabilityLabel:
+            match.AvailableCopies > 0
+              ? `${match.AvailableCopies} available`
+              : "Currently unavailable",
+        };
+      })
+      .filter(Boolean),
+  })).filter((section) => section.items.length > 0);
+}
+
+function ShelfArrow({ direction = "right", onClick, label }) {
+  const isLeft = direction === "left";
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-amber-700/40 bg-stone-900/80 text-amber-200 transition hover:border-amber-500 hover:bg-stone-800"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        className={`h-5 w-5 ${isLeft ? "" : "rotate-180"}`}
+      >
+        <path d="M15 6l-6 6 6 6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </button>
+  );
+}
+
+function FeaturedShelfRow({ section, onViewAll }) {
+  const stripRef = useRef(null);
+
+  function scrollShelf(direction) {
+    const strip = stripRef.current;
+
+    if (!strip) {
+      return;
+    }
+
+    strip.scrollBy({
+      left: direction * Math.max(strip.clientWidth * 0.85, 320),
+      behavior: "smooth",
+    });
+  }
+
+  return (
+    <section className="rounded-[2rem] border border-amber-900/30 bg-gradient-to-br from-stone-900 via-stone-950 to-stone-900/90 p-6 shadow-[0_18px_60px_rgba(0,0,0,0.35)] md:p-8">
+      <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+        <div className="space-y-2">
+          <p className="text-xs uppercase tracking-[0.3em] text-amber-500/80">
+            {section.eyebrow}
+          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <h3 className="text-2xl font-serif text-amber-50 md:text-3xl">
+              {section.title}
+            </h3>
+            <span className="rounded-full border border-amber-800/40 px-3 py-1 text-xs tracking-[0.2em] text-stone-400 uppercase">
+              {section.items.length} picks
+            </span>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <ShelfArrow
+            direction="left"
+            onClick={() => scrollShelf(-1)}
+            label={`Scroll ${section.label} left`}
+          />
+          <ShelfArrow
+            direction="right"
+            onClick={() => scrollShelf(1)}
+            label={`Scroll ${section.label} right`}
+          />
+          <button
+            type="button"
+            onClick={onViewAll}
+            className="rounded-full border border-amber-700/50 px-5 py-2 text-sm font-semibold tracking-wide text-amber-200 transition hover:border-amber-500 hover:bg-amber-600 hover:text-stone-950"
+          >
+            View All
+          </button>
+        </div>
+      </div>
+
+      <div
+        ref={stripRef}
+        className="featured-strip mt-8 flex gap-4 overflow-x-auto pb-3 scroll-smooth"
+      >
+        {section.items.map((item) => (
+          <button
+            type="button"
+            key={item.ItemID}
+            onClick={onViewAll}
+            className="group w-[10.75rem] shrink-0 text-left"
+          >
+            <div className="relative aspect-[3/4] overflow-hidden rounded-[1.4rem] border border-amber-900/25 bg-stone-900 shadow-[0_12px_35px_rgba(0,0,0,0.35)]">
+              <img
+                src={item.imageSrc}
+                alt={`${item.Title} cover`}
+                loading="lazy"
+                className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+              />
+              <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-stone-950 via-stone-950/50 to-transparent opacity-80" />
+              <span
+                className={`absolute left-3 top-3 rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                  item.AvailableCopies > 0
+                    ? "bg-emerald-400/90 text-emerald-950"
+                    : "bg-stone-200/85 text-stone-900"
+                }`}
+              >
+                {item.availabilityLabel}
+              </span>
+            </div>
+
+            <div className="px-1 pt-3">
+              <p className="min-h-[2.6rem] text-sm font-semibold leading-snug text-amber-50 transition group-hover:text-amber-300">
+                {item.Title}
+              </p>
+              <p className="mt-1 min-h-[2.4rem] text-xs leading-relaxed text-stone-400">
+                {item.metaLabel}
+              </p>
+            </div>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export default function Landing() {
   const navigate = useNavigate();
   const [counts, setCounts] = useState({ Literature: "—", Media: "—", Devices: "—" });
+  const [featuredShelves, setFeaturedShelves] = useState([]);
   const [loggedIn, setLoggedIn] = useState(false);
   const [userType, setUserType] = useState(null);
+  const featuredRef = useRef(null);
 
   useEffect(() => {
     async function checkAuth() {
@@ -41,26 +298,43 @@ export default function Landing() {
     }
     checkAuth();
 
-    async function fetchCounts() {
+    async function fetchCatalogSummary() {
       try {
         const [litRes, mediaRes, devRes] = await Promise.all([
           fetch(`${API}/api/literature`),
           fetch(`${API}/api/media`),
           fetch(`${API}/api/devices`),
         ]);
+
         const [lit, media, dev] = await Promise.all([
-          litRes.json(), mediaRes.json(), devRes.json()
+          litRes.json(),
+          mediaRes.json(),
+          devRes.json(),
         ]);
+
+        const literature = normalizeRows(lit);
+        const mediaItems = normalizeRows(media);
+        const deviceItems = normalizeRows(dev);
+
         setCounts({
-          Literature: Array.isArray(lit) ? lit.length : lit[0]?.length ?? "—",
-          Media: Array.isArray(media) ? media.length : media[0]?.length ?? "—",
-          Devices: Array.isArray(dev) ? dev.length : dev[0]?.length ?? "—",
+          Literature: literature.length,
+          Media: mediaItems.length,
+          Devices: deviceItems.length,
         });
+
+        setFeaturedShelves(
+          buildFeaturedShelves({
+            literature,
+            media: mediaItems,
+            devices: deviceItems,
+          })
+        );
       } catch (err) {
         console.error(err);
       }
     }
-    fetchCounts();
+
+    fetchCatalogSummary();
   }, []);
 
   const CATEGORIES = [
@@ -136,10 +410,16 @@ export default function Landing() {
             </button>
 
             <button
-            onClick={() => navigate("/litcatalogue")}
+            type="button"
+            onClick={() =>
+              featuredRef.current?.scrollIntoView({
+                behavior: "smooth",
+                block: "start",
+              })
+            }
             className="px-7 py-3 border border-stone-600 text-stone-300 hover:border-amber-700 hover:text-amber-300 rounded transition tracking-wide"
             >
-              Dashboard
+              Featured Dashboard
             </button>         
           </div>
         </div>
@@ -183,6 +463,40 @@ export default function Landing() {
           <div className="h-1 bg-amber-900/40 rounded-full mx-4" />
         </div>
       </div>
+
+      <section
+        ref={featuredRef}
+        className="w-full border-t border-amber-900/30 bg-[radial-gradient(circle_at_top,_rgba(180,83,9,0.18),_transparent_34%),linear-gradient(180deg,_rgba(17,24,39,0.18),_rgba(12,10,9,0.96))] px-6 py-20 md:px-10"
+      >
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-8">
+          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div className="max-w-2xl space-y-3">
+              <p className="text-sm uppercase tracking-[0.35em] text-amber-600">
+                Featured Dashboard
+              </p>
+              <h2 className="text-4xl font-serif leading-tight text-amber-50 md:text-5xl">
+                Browse featured picks across literature, media, and devices.
+              </h2>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => navigate("/catalog")}
+              className="self-start rounded-full bg-amber-700 px-6 py-3 text-sm font-semibold tracking-wide text-stone-950 transition hover:bg-amber-600"
+            >
+              Open Full Catalog
+            </button>
+          </div>
+
+          {featuredShelves.map((section) => (
+            <FeaturedShelfRow
+              key={section.key}
+              section={section}
+              onViewAll={() => navigate("/catalog", { state: { subTab: section.subTab } })}
+            />
+          ))}
+        </div>
+      </section>
 
       {/* Footer strip */}
       <div className="border-t border-amber-900/30 py-4 text-center text-stone-600 text-xs tracking-widest">

@@ -41,3 +41,11 @@ button {
 .librarian-dashboard tbody tr:hover {
     background: #fafafa;
 }
+
+.featured-strip {
+    scrollbar-width: none;
+}
+
+.featured-strip::-webkit-scrollbar {
+    display: none;
+}
