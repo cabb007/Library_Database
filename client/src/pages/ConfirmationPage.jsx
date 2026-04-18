@@ -10,7 +10,31 @@ export default function ConfirmationPage() {
   const [submitting, setSubmitting] = useState(false);
 
   // Data passed from ItemDashboard through React Router state
-  const { itemId, title = "Unknown Item", confirmFlag } = location.state || {};
+  const {
+    itemId,
+    title = "Unknown Item",
+    confirmFlag,
+    returnTo = { pathname: "/catalog" },
+  } = location.state || {};
+
+  function navigateToReturnTarget(replace = false) {
+    navigate(returnTo.pathname || "/catalog", {
+      replace,
+      state: returnTo.state,
+    });
+  }
+
+  function redirectToLogin() {
+    navigate("/login", {
+      replace: true,
+      state: {
+        redirectTo: "/confirmationpage",
+        redirectState: location.state,
+        backTo: returnTo.pathname || "/catalog",
+        backState: returnTo.state,
+      },
+    });
+  }
 
   useEffect(() => {
     async function checkAuth() {
@@ -24,25 +48,25 @@ export default function ConfirmationPage() {
 
         // If not logged in, send user to login page
         if (!meRes.ok || !meData.user) {
-          navigate("/login");
+          redirectToLogin();
           return;
         }
 
         // If this page was opened without item data, return to dashboard
         if (!itemId || !confirmFlag) {
-          navigate("/Catalog");
+          navigateToReturnTarget(true);
           return;
         }
       } catch (err) {
         console.error("Failed to load confirmation page:", err);
-        navigate("/login");
+        redirectToLogin();
       } finally {
         setLoading(false);
       }
     }
 
     checkAuth();
-  }, [navigate, itemId, confirmFlag]);
+  }, [navigate, itemId, confirmFlag, location.state]);
 
   async function handleConfirm() {
     try {
@@ -62,6 +86,11 @@ export default function ConfirmationPage() {
         const data = await res.json();
 
         if (!res.ok) {
+          if (res.status === 401) {
+            redirectToLogin();
+            return;
+          }
+
           throw new Error(data.error || "Checkout failed");
         }
       }
@@ -80,12 +109,17 @@ export default function ConfirmationPage() {
         const data = await res.json();
 
         if (!res.ok) {
+          if (res.status === 401) {
+            redirectToLogin();
+            return;
+          }
+
           throw new Error(data.error || "Hold failed");
         }
       }
 
       // Return to dashboard after successful action
-      navigate("/Catalog");
+      navigateToReturnTarget();
     } catch (err) {
       console.error("Confirmation failed:", err);
       alert(err.message);
@@ -95,7 +129,7 @@ export default function ConfirmationPage() {
   }
 
   function handleCancel() {
-    navigate("/Catalog");
+    navigateToReturnTarget();
   }
 
   if (loading) {

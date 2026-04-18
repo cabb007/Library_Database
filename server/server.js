@@ -3,19 +3,11 @@ import mysql from "mysql2/promise";
 import cors from "cors";
 import session from "express-session";
 import "dotenv/config";
-import path from "path";
-import { fileURLToPath } from "url";
 
 const app = express();
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 app.set("trust proxy", 1);
 app.use(express.json());
-app.use(
-  "/api/assets",
-  express.static(path.join(__dirname, "SQLserver", "data", "images"))
-);
 
 app.use(
   cors({

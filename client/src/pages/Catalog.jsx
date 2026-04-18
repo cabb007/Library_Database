@@ -89,6 +89,10 @@ export default function ItemDashboard() {
         itemId: item.ItemID,
         title: item.Title,
         confirmFlag: 1,
+        returnTo: {
+          pathname: "/catalog",
+          state: { subTab: activeSubTab },
+        },
       },
     });
   }
@@ -99,6 +103,10 @@ export default function ItemDashboard() {
         itemId: item.ItemID,
         title: item.Title,
         confirmFlag: 2,
+        returnTo: {
+          pathname: "/catalog",
+          state: { subTab: activeSubTab },
+        },
       },
     });
   }

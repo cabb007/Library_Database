@@ -2,6 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../api";
 
+const FEATURED_IMAGE_ASSETS = import.meta.glob("../../images/**/*.{jpeg,jpg,png,webp}", {
+  eager: true,
+  import: "default",
+});
+
 const CATEGORY_ICONS = {
   Literature: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-8 h-8">
@@ -127,7 +132,7 @@ function normalizeRows(data) {
 }
 
 function buildAssetUrl(folder, filename) {
-  return `${API}/api/assets/${folder}/${encodeURIComponent(filename)}`;
+  return FEATURED_IMAGE_ASSETS[`../../images/${folder}/${filename}`] ?? "";
 }
 
 function buildFeaturedShelves(catalog) {
@@ -178,7 +183,7 @@ function ShelfArrow({ direction = "right", onClick, label }) {
   );
 }
 
-function FeaturedShelfRow({ section, onViewAll }) {
+function FeaturedShelfRow({ section, onViewAll, onSelectItem }) {
   const stripRef = useRef(null);
 
   function scrollShelf(direction) {
@@ -240,7 +245,7 @@ function FeaturedShelfRow({ section, onViewAll }) {
           <button
             type="button"
             key={item.ItemID}
-            onClick={onViewAll}
+            onClick={() => onSelectItem(item, section)}
             className="group w-[10.75rem] shrink-0 text-left"
           >
             <div className="relative aspect-[3/4] overflow-hidden rounded-[1.4rem] border border-amber-900/25 bg-stone-900 shadow-[0_12px_35px_rgba(0,0,0,0.35)]">
@@ -342,6 +347,24 @@ export default function Landing() {
     { label: "Media",      subTab: "media",   count: counts.Media,      icon: CATEGORY_ICONS.Media      },
     { label: "Devices",    subTab: "devices", count: counts.Devices,    icon: CATEGORY_ICONS.Devices    },
   ];
+
+  function handleFeaturedItemSelect(item, section) {
+    if (item.AvailableCopies <= 0) {
+      navigate("/catalog", { state: { subTab: section.subTab } });
+      return;
+    }
+
+    navigate("/confirmationpage", {
+      state: {
+        itemId: item.ItemID,
+        title: item.Title,
+        confirmFlag: 1,
+        returnTo: {
+          pathname: "/",
+        },
+      },
+    });
+  }
 
   return (
     <div className="min-h-screen bg-stone-950 text-amber-50 flex flex-col">
@@ -493,6 +516,7 @@ export default function Landing() {
               key={section.key}
               section={section}
               onViewAll={() => navigate("/catalog", { state: { subTab: section.subTab } })}
+              onSelectItem={handleFeaturedItemSelect}
             />
           ))}
         </div>
