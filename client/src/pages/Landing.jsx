@@ -387,11 +387,14 @@ export default function Landing() {
             Log in with your student or faculty account to get started.
           </p>
           <div className="mt-2 flex flex-wrap gap-4">
-            <button
-              onClick={() => navigate(loggedIn ? "/catalog" : "/login")}
-              className="px-7 py-3 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold rounded transition tracking-wide">
-              {loggedIn ? "Open Catalog" : "Get Started"}
-            </button>
+           {!loggedIn && (
+              <button
+                onClick={() => navigate("/login")}
+                className="px-7 py-3 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold rounded transition tracking-wide"
+              >
+                Get Started
+              </button>
+            )}
             <button
               onClick={() => navigate("/catalog")}
               className="px-7 py-3 border border-stone-600 text-stone-300 hover:border-amber-700 hover:text-amber-300 rounded transition tracking-wide">
