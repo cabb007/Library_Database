@@ -301,8 +301,6 @@ export default function Landing() {
                 className="relative px-4 py-2 border border-amber-700 rounded hover:bg-amber-900/30 transition"
               >
                 🔔
-
-                {/* 🔴 RED DOT / STAR (only if unread exist) */}
                 {notifications.length > 0 && (
                   <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 shadow-lg ring-2 ring-stone-950" />
                 )}
