@@ -304,9 +304,7 @@ export default function Landing() {
 
                 {/* 🔴 RED DOT / STAR (only if unread exist) */}
                 {notifications.length > 0 && (
-                  <span className="absolute -top-1 -right-1 text-red-500 text-lg leading-none">
-                    *
-                  </span>
+                  <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 shadow-lg ring-2 ring-stone-950" />
                 )}
               </button>
 
