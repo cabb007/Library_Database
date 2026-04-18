@@ -404,6 +404,25 @@ const server = http.createServer(async (req,res) => {
             return;
         }
 
+        //UPDATE DEVICE
+        if(method === "PUT" && url.startsWith("/api/librarian/catalog/devices/")){
+            const cookies = parseCookies(req);
+            const sessionID = cookies.sessionID;
+            const session = sessions.get(sessionID);
+            const urlParts = req.url.split("/");
+            const deviceId = urlParts[5];
+            const body = await getJsonBody(req);
+            const { Title, ItemType, Manufacturer, Model } = body;
+
+            await db.execute("CALL UpdateDevice(?, ?, ?, ?, ?, ?)", [
+                deviceId, Title, ItemType, Manufacturer, Model || null,
+                session.UserID
+            ]);
+
+            sendJson(res,200,{message: "Device updated successfully"});
+            return;
+        }
+
 
         //DELETE MEDIA
         if(method === "DELETE" && url.startsWith("/api/librarian/catalog/media/")){
@@ -438,6 +457,24 @@ const server = http.createServer(async (req,res) => {
           sendJson(res,201,{message: "media added"});
         }
 
+        //UPDATE MEDIA
+        if(method === "PUT" && url.startsWith("/api/librarian/catalog/media/")){
+            const cookies = parseCookies(req);
+            const sessionID = cookies.sessionID;
+            const session = sessions.get(sessionID);
+            const urlParts = req.url.split("/");
+            const mediaId = urlParts[5];
+            const body = await getJsonBody(req);
+            const { Title, ItemType, Producer, DurationMinutes } = body;
+            
+            await db.execute("CALL UpdateMedia(?, ?, ?, ?, ?, ?)", [
+                mediaId, Title, ItemType, Producer, DurationMinutes ? DurationMinutes : null,
+                session.UserID
+            ]);
+            sendJson(res,200,{message: "Media updated"});
+
+        }
+
         //ADD LITERATURE
         if(method === "POST" && url === "/api/librarian/catalog/literature") {
           const cookies = parseCookies(req);
@@ -460,6 +497,32 @@ const server = http.createServer(async (req,res) => {
           sendJson(res,201,{message: "Literature Added Successfully"});
         }
 
+        //UPDATE LITERATURE
+        if(method === "PUT" && url.startsWith("/api/librarian/catalog/literature/")) {
+            const cookies = parseCookies(req);
+            const sessionID = cookies.sessionID;
+            const session = sessions.get(sessionID);
+            const urlParts = req.url.split("/");
+            const litId = urlParts[5];
+
+            const body = getJsonBody(req);
+            const {Title, ItemType, Author, Publisher, PublicationYear} = body;
+
+            await db.execute("CALL UpdateLiterature(?, ?, ?, ?, ?, ?, ?)", [
+                litId, Title, ItemType, Author, Publisher,
+                PublicationYear ? PublicationYear : null, session.UserID
+            ]);
+            sendJson({message: "Literature Updated Successfully"});
+        }
+
+        //LIBRARIAN FINES
+
+        //GET FINES
+
+        //GET PAID FINES
+
+        //GET UNPAID FINES
+
         //DATA CALLS FROM DB (QUERIES)
 
         //LITERATURE DATA
@@ -481,6 +544,43 @@ const server = http.createServer(async (req,res) => {
             const [data] = await db.execute("CALL GetDevices()");
             sendJson(res,200,data);
             return;
+        }
+
+        //TITLE (?) DATA
+        if(method === "GET" && url === "/api/title") {
+            const cookies = parseCookies(req);
+            const sessionID = cookies.sessionID;
+            const session = sessions.get(sessionID);
+
+            const selectedItem = session.UserID;
+
+            if(!selectedItem) {
+                sendJson(res,400,{error: "No item selected"});
+            }
+
+            const [data] = await db.execute("CALL getTitle(?)", [selectedItem]);
+
+            sendJson(res,200,[data]);
+        }
+
+        //ANALYTICS
+
+        //ANALYTICS STATS OVERVIEW
+        if(method === "GET" && url === "/api/librarian/overview/stats"){
+            const [data] = await db.execute("CALL GetOverviewStats()");
+            sendJson(res,200,data[0][0]);
+            return;
+        }
+
+        //ANALYTICS SUMMARY
+        if(method === "GET" && url === "/api/librarian/analytics/summary"){
+            const [data] = await db.execute("CALL GetAnalyticsSummary()");
+            sendJson(res,200,data[0][0]);
+            return;
+        }
+        //ANALYTICS MOST CHECKED OUT
+        if(method === "GET" && url === "/api/librarian/analytics/most-checked-out"){
+            //WORK IN PROGRESS
         }
 
         sendJson(res,404, {error: "Route not found"});

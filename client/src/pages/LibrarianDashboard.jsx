@@ -79,7 +79,7 @@ export default function LibrarianDashboard() {
     }
     if (view === "analytics") {
       if (!analyticsSummary) {
-        fetch("http://localhost:3000/api/librarian/analytics/summary", { credentials: "include" })
+        fetch(`${API}/api/librarian/analytics/summary`, { credentials: "include" })
           .then(r => r.json())
           .then(data => { if (!data.error) setAnalyticsSummary(data); })
           .catch(() => {});
@@ -93,7 +93,7 @@ export default function LibrarianDashboard() {
   async function fetchActiveLoans() {
     setLoansLoading(true);
     try {
-      const res = await fetch("http://localhost:3000/api/librarian/loans/active", { credentials: "include" });
+      const res = await fetch(`${API}/api/librarian/loans/active`, { credentials: "include" });
       const data = await res.json();
       if (res.ok) setActiveLoans(data);
     } catch {
@@ -106,7 +106,7 @@ export default function LibrarianDashboard() {
   async function fetchFines(filter) {
     const endpointMap = { all: "/api/librarian/fines", paid: "/api/librarian/fines/paid", unpaid: "/api/librarian/fines/unpaid" };
     try {
-      const res = await fetch(`http://localhost:3000${endpointMap[filter]}`, { credentials: "include" });
+      const res = await fetch(`${API}${endpointMap[filter]}`, { credentials: "include" });
       const data = await res.json();
       if (res.ok) setFines(data);
     } catch {
@@ -117,7 +117,7 @@ export default function LibrarianDashboard() {
   async function fetchOverdueLoans() {
     setLoansLoading(true);
     try {
-      const res = await fetch("http://localhost:3000/api/librarian/loans/overdue", { credentials: "include" });
+      const res = await fetch(`${API}/api/librarian/loans/overdue`, { credentials: "include" });
       const data = await res.json();
       if (res.ok) setOverdueLoans(data);
     } catch {
@@ -129,7 +129,7 @@ export default function LibrarianDashboard() {
 
   async function fetchOverviewStats() {
     try {
-      const res = await fetch("http://localhost:3000/api/librarian/overview/stats", { credentials: "include" });
+      const res = await fetch(`${API}/api/librarian/overview/stats`, { credentials: "include" });
       const data = await res.json();
       if (res.ok) setOverviewStats(data);
     } catch {
@@ -153,7 +153,7 @@ export default function LibrarianDashboard() {
 
   async function fetchUsersQuiet() {
     try {
-      const res = await fetch("http://localhost:3000/api/librarian/users", { credentials: "include" });
+      const res = await fetch(`${API}/api/librarian/users`, { credentials: "include" });
       const data = await res.json();
       if (res.ok) setUsers(data);
     } catch {
@@ -687,6 +687,7 @@ export default function LibrarianDashboard() {
   };
 
   return (
+    //RETURN 1
     <div className="librarian-dashboard" style={{ padding: "2rem" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
         <h1>Librarian Dashboard</h1>
@@ -1147,6 +1148,7 @@ export default function LibrarianDashboard() {
         </div>
       )}
 
+      
       {view === "analytics" && (() => {
         const typeOptions = {
           "1": [{ v: 1, l: "Book" }, { v: 2, l: "Textbook" }, { v: 3, l: "Magazine" }, { v: 4, l: "Audiobook" }],
