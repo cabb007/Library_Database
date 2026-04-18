@@ -3,6 +3,7 @@
 SET FOREIGN_KEY_CHECKS = 0;
 
 -- Drop in dependency order
+DROP TABLE IF EXISTS notifications;
 DROP TABLE IF EXISTS fines;
 DROP TABLE IF EXISTS holds;
 DROP TABLE IF EXISTS loans;
@@ -163,7 +164,9 @@ CREATE INDEX idx_loans_copy_active ON loans(CopyID, ReturnDate);
 
 CREATE UNIQUE INDEX uq_loans_copy_one_active ON loans(CopyID, ActiveLoan);
 
--- 8) HOLD REQUESTS
+-- =========================================================
+-- Table: Holds
+-- =========================================================
 -- HoldStatus: 0=Active, 1=Fulfilled, 2=Cancelled
 
 CREATE TABLE holds (
@@ -193,7 +196,9 @@ CREATE TABLE holds (
 CREATE INDEX idx_holds_item_fifo ON holds(ItemID, HoldStatus, CreatedAt);
 CREATE UNIQUE INDEX uq_holds_user_item_one_active ON holds(UserID, ItemID, ActiveHold);
 
--- 9) FINES
+-- =========================================================
+-- Table: Fines
+-- =========================================================
 -- PaidStatus: 0=Unpaid, 1=Paid
 
 CREATE TABLE fines (
@@ -225,5 +230,31 @@ CREATE TABLE fines (
 CREATE INDEX idx_fines_user_paid ON fines(UserID, PaidStatus);
 
 CREATE UNIQUE INDEX uq_fines_one_per_loan ON fines(LoanID);
+
+-- =========================================================
+-- Table: Notifications
+-- =========================================================
+CREATE TABLE notifications (
+    NotificationID INT AUTO_INCREMENT PRIMARY KEY,
+    UserID INT NOT NULL,
+    Message VARCHAR(255) NOT NULL,
+    IsRead TINYINT NOT NULL DEFAULT 0,
+    CreatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP(),
+    CreatedBy INT NULL,
+    UpdatedAt DATETIME NULL,
+    UpdatedBy INT NULL,
+
+    CONSTRAINT chk_notifications_isread
+        CHECK (IsRead IN (0, 1)),
+
+    CONSTRAINT fk_notifications_user
+        FOREIGN KEY (UserID) REFERENCES users(UserID),
+
+    CONSTRAINT fk_notifications_createdby
+        FOREIGN KEY (CreatedBy) REFERENCES users(UserID),
+
+    CONSTRAINT fk_notifications_updatedby
+        FOREIGN KEY (UpdatedBy) REFERENCES users(UserID)
+) ENGINE=InnoDB;
 
 SET FOREIGN_KEY_CHECKS = 1;

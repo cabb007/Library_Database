@@ -64,26 +64,149 @@ BEGIN
 
                 -- Mark hold as fulfilled
                 UPDATE holds
-                SET HoldStatus = 1 -- 1=Fulfilled
+                SET HoldStatus = 1,
+                    UpdatedAt = CURRENT_TIMESTAMP(),
+                    UpdatedBy = 1 -- Super UserID = 1 for system actions
                 WHERE HoldID = v_HoldID;
 
                 -- Create a new loan for this copy
                 INSERT INTO loans (
                     UserID,
                     CopyID,
-                    CreatedBy,
+                    DueDate,
                     CreatedAt,
-                    DueDate
+                    CreatedBy,
+                    UpdatedAt,
+                    UpdatedBy
                 ) VALUES (
                     v_HoldUserID,
                     NEW.CopyID,
-                    v_HoldUserID, -- CreatedBy is the user who is fulfilling the hold
+                    DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL v_LoanPeriodDays DAY),
                     CURRENT_TIMESTAMP(),
-                    DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL v_LoanPeriodDays DAY)
+                    v_HoldUserID,
+                    CURRENT_TIMESTAMP(),
+                    NULL
                 );
 
+                -- Send notification to the user whose hold was fulfilled
+                INSERT INTO notifications (
+                    UserID,
+                    Message,
+                    IsRead,
+                    CreatedAt,
+                    CreatedBy,
+                    UpdatedAt,
+                    UpdatedBy
+                ) VALUES (
+                    v_HoldUserID,
+                    'Your hold has been fulfilled and the item has been checked out to your account.',
+                    0,
+                    CURRENT_TIMESTAMP(),
+                    1, -- Super UserID = 1 for system actions
+                    CURRENT_TIMESTAMP(),
+                    NULL
+                );
             END IF;
         END IF;
+    END IF;
+END$$
+
+
+-- =========================================================
+-- Trigger: Return Integrity / Notification Trigger
+-- =========================================================
+DROP TRIGGER IF EXISTS ReturnIntegrityNotificationTrigger$$
+CREATE TRIGGER ReturnIntegrityNotificationTrigger
+AFTER UPDATE ON loans
+FOR EACH ROW
+BEGIN
+    DECLARE v_UpdatedByType INT DEFAULT NULL;
+    DECLARE v_CopyStatus INT DEFAULT NULL;
+    DECLARE v_ActiveLoanCount INT DEFAULT 0;
+    DECLARE v_Balance DECIMAL(7,2) DEFAULT 0.00;
+
+    -- Only run when a loan changes from active to returned
+    IF OLD.ReturnDate IS NULL AND NEW.ReturnDate IS NOT NULL THEN
+
+        -- Processor must exist and be a librarian
+        SELECT UserType
+        INTO v_UpdatedByType
+        FROM users
+        WHERE UserID = NEW.UpdatedBy;
+
+        IF v_UpdatedByType IS NULL THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Invalid UpdatedBy user on return.';
+        END IF;
+
+        IF v_UpdatedByType <> 2 THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Only librarians may process returns.';
+        END IF;
+
+        -- Associated copy must still be OnLoan at this moment
+        SELECT CopyStatus
+        INTO v_CopyStatus
+        FROM copies
+        WHERE CopyID = NEW.CopyID;
+
+        IF v_CopyStatus IS NULL THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Associated copy does not exist.';
+        END IF;
+
+        IF v_CopyStatus <> 1 THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Return invalid: copy is not currently OnLoan.';
+        END IF;
+
+        -- Ensure no duplicate active loans for this copy
+        SELECT COUNT(*)
+        INTO v_ActiveLoanCount
+        FROM loans
+        WHERE CopyID = NEW.CopyID
+          AND ReturnDate IS NULL;
+
+        IF v_ActiveLoanCount <> 0 THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Return invalid: copy still has another active loan.';
+        END IF;
+
+        --  4. Chronological validation
+        IF NEW.ReturnDate < NEW.CreatedAt THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'ReturnDate cannot be earlier than CreatedAt.';
+        END IF;
+
+        IF NEW.ReturnDate > CURRENT_TIMESTAMP() THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'ReturnDate cannot be in the future.';
+        END IF;
+
+        -- Check borrower balance using existing function
+        SET v_Balance = GetUserBalanceValue(NEW.UserID);
+
+        --  Notify borrower if unpaid balance exists
+        IF v_Balance > 0 THEN
+            INSERT INTO notifications (
+                UserID,
+                Message,
+                IsRead,
+                CreatedAt,
+                CreatedBy,
+                UpdatedAt,
+                UpdatedBy
+            ) VALUES (
+                NEW.UserID,
+                'All fines must be paid in full before new checkouts or holds can proceed',
+                0,
+                CURRENT_TIMESTAMP(),
+                1, -- System admin
+                CURRENT_TIMESTAMP(),
+                NULL
+            );
+        END IF;
+
     END IF;
 END$$
 

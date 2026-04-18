@@ -242,4 +242,41 @@ BEGIN
 END$$
 
 
+-- =================================================================================================================
+--                                               NOTIFICATION QUERIES
+-- =================================================================================================================
+
+-- =========================================================
+-- Procedure: Get notifications for a specific user (works for librarians and faculty as well)
+-- =========================================================
+DROP PROCEDURE IF EXISTS GetUserNotifications$$
+CREATE PROCEDURE GetUserNotifications(
+    IN p_UserID INT
+)
+BEGIN
+    SELECT
+        NotificationID,
+        UserID,
+        Message,
+        IsRead,
+        CreatedAt
+    FROM notifications
+    WHERE UserID = p_UserID
+    ORDER BY CreatedAt DESC, NotificationID DESC;
+END$$
+
+
+-- =========================================================
+-- Procedure: Mark a notification as read
+-- =========================================================
+DROP PROCEDURE IF EXISTS MarkNotificationRead$$
+CREATE PROCEDURE MarkNotificationRead(
+    IN p_NotificationID INT
+)
+BEGIN
+    UPDATE notifications
+    SET IsRead = 1
+    WHERE NotificationID = p_NotificationID;
+END$$
+
 DELIMITER ;

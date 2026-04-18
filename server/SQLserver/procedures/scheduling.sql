@@ -29,7 +29,7 @@ BEGIN
         CURRENT_TIMESTAMP,
         1, -- SysAdmin UserID = 1
         CURRENT_TIMESTAMP,
-        1 -- SysAdmin UserID = 1
+        NULL
     FROM loans l
     LEFT JOIN fines f ON f.LoanID = l.LoanID
     WHERE f.FineID IS NULL
