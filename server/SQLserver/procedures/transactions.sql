@@ -86,7 +86,7 @@ BEGIN
     IF v_ActiveLoanFineCount > 0 THEN
         ROLLBACK;
         SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Cannot pay fines for active loans';
+        SET MESSAGE_TEXT = 'Cannot pay fines when loans are active';
     END IF;
 
     -- Mark all unpaid fines as paid
@@ -97,6 +97,10 @@ BEGIN
         UpdatedBy = p_UserID
     WHERE UserID = p_UserID
       AND PaidStatus = 0;
+
+    UPDATE users
+        SET Status = 1
+    WHERE UserID = p_UserID;
 
     COMMIT;
 END$$
