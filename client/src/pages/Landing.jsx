@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../api";
 
+
+
 const CATEGORY_ICONS = {
   Literature: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-8 h-8">
@@ -155,19 +157,38 @@ export default function Landing() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [userType, setUserType] = useState(null);
   const featuredSectionRef = useRef(null);
+  const [notifications, setNotifications] = useState([]);
+  const [showNotif, setShowNotif] = useState(false);  
 
+
+  //modified to populate notifications and to set showNotif to true
   useEffect(() => {
     async function checkAuth() {
-      try {
-        const res = await fetch(`${API}/api/me`, { credentials: "include" });
-        const data = await res.json();
-        setLoggedIn(data.loggedIn === true);
-        setUserType(data.user?.UserType ?? null);
-      } catch {
-        setLoggedIn(false);
+  try {
+    const res = await fetch(`${API}/api/me`, { credentials: "include" });
+    const data = await res.json();
+
+    const isLoggedIn = data.loggedIn === true;
+
+    setLoggedIn(isLoggedIn);
+    setUserType(data.user?.UserType ?? null);
+    if (isLoggedIn) {
+      const notifRes = await fetch(`${API}/api/notifications`, {
+        credentials: "include",
+      });
+
+      const notifData = await notifRes.json();
+
+      if (Array.isArray(notifData) && notifData.length > 0) {
+        setNotifications(notifData);
+        setShowNotif(true);
       }
     }
-    checkAuth();
+
+  } catch {
+    setLoggedIn(false);
+  }
+}
 
     async function fetchCounts() {
       try {
@@ -399,6 +420,36 @@ export default function Landing() {
       <div className="border-t border-amber-900/30 py-4 text-center text-stone-600 text-xs tracking-widest">
         Team 7 Library &mdash; READ MORE, LEARN MORE
       </div>
+      {showNotif && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="bg-stone-900 border border-amber-700 rounded-2xl shadow-xl w-full max-w-md p-6">
+      
+        <h3 className="text-xl font-semibold text-amber-400 mb-4">
+          Notifications
+        </h3>
+
+        <div className="flex flex-col gap-3 max-h-64 overflow-y-auto">
+          {notifications.map((n, i) => (
+            <div
+              key={i}
+              className="p-3 rounded-lg bg-stone-800 border border-amber-900/30 text-sm text-stone-300"
+            >
+              {n.message || n.Message || JSON.stringify(n)}
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-5 flex justify-end">
+          <button
+            onClick={() => setShowNotif(false)}
+            className="px-4 py-2 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold rounded transition"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  )}
     </div>
   );
 }

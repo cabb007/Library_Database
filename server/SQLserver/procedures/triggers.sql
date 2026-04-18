@@ -210,4 +210,60 @@ BEGIN
     END IF;
 END$$
 
+
+
+--fine insert and update triggers
+DROP TRIGGER IF EXISTS FinesInsertTrigger$$
+
+CREATE TRIGGER FinesInsertTrigger
+AFTER INSERT ON fines
+FOR EACH ROW
+BEGIN
+    DECLARE v_UserType INT DEFAULT NULL;
+
+    SELECT UserType
+    INTO v_UserType
+    FROM users
+    WHERE UserID = NEW.UserID;
+
+    INSERT INTO notifications (
+        UserID,
+        Message,
+        IsRead,
+        CreatedAt,
+        CreatedBy,
+        UpdatedAt,
+        UpdatedBy
+    )
+    VALUES (
+        NEW.UserID,
+        'Your account has an unpaid fine. Please clear your balance before new checkouts or holds.',
+        0,
+        CURRENT_TIMESTAMP(),
+        1,
+        CURRENT_TIMESTAMP(),
+        NULL
+    );
+END$$
+
+DROP TRIGGER IF EXISTS FinesUpdateTrigger$$
+
+CREATE TRIGGER FinesUpdateTrigger
+AFTER UPDATE ON fines
+FOR EACH ROW
+BEGIN
+
+    -- If fine was just paid
+    IF OLD.PaidStatus = 0 AND NEW.PaidStatus = 1 THEN
+
+        UPDATE notifications
+        SET Message = 'Your account has an unpaid fine. Please clear your balance before new checkouts or holds.',
+            UpdatedAt = CURRENT_TIMESTAMP(),
+            UpdatedBy = 1
+        WHERE UserID = NEW.UserID;
+
+    END IF;
+
+END$$
+
 DELIMITER ;

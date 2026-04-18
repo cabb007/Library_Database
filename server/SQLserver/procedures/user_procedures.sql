@@ -261,7 +261,7 @@ BEGIN
         IsRead,
         CreatedAt
     FROM notifications
-    WHERE UserID = p_UserID
+    WHERE UserID = p_UserID AND IsRead = 0
     ORDER BY CreatedAt DESC, NotificationID DESC;
 END$$
 
