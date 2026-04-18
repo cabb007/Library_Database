@@ -31,7 +31,7 @@ BEGIN
         CURRENT_TIMESTAMP(),
         1, 
         CURRENT_TIMESTAMP(),
-        1 -- SysAdmin UserID = 1
+        NULL
     FROM loans l
     LEFT JOIN fines f ON f.LoanID = l.LoanID
     WHERE f.FineID IS NULL
@@ -58,7 +58,7 @@ CREATE PROCEDURE PayFine (
 BEGIN
     DECLARE v_UnpaidFineCount INT DEFAULT 0;
     DECLARE v_ActiveLoanFineCount INT DEFAULT 0;
-
+    
     START TRANSACTION;
 
     -- Check if the user has any unpaid fines
@@ -202,7 +202,7 @@ BEGIN
     UPDATE copies AS c
     SET c.CopyStatus = 1,
         c.UpdatedAt = CURRENT_TIMESTAMP(),
-        c.UpdatedBy = p_UserID
+        c.UpdatedBy = 1 -- Super UserID = 1 for system actions
     WHERE c.CopyID = v_CopyID;
 
     -- Create the loan record using the user's loan period
@@ -221,7 +221,7 @@ BEGIN
         p_UserID,
         CURRENT_TIMESTAMP(),
         CURRENT_TIMESTAMP(),
-        p_UserID,
+        NULL, 
         DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL v_DueDays DAY)
     );
 
@@ -355,7 +355,7 @@ BEGIN
         CURRENT_TIMESTAMP(),
         p_UserID,
         CURRENT_TIMESTAMP(),
-        p_UserID
+        NULL
     );
 
 END$$
@@ -370,14 +370,13 @@ END$$
 DROP PROCEDURE IF EXISTS ReturnLoan$$
 CREATE PROCEDURE ReturnLoan(
     IN p_LoanID INT,
-    IN p_UserID INT
+    IN p_ProcessedBy INT
 )
 BEGIN
     DECLARE v_CopyID INT DEFAULT NULL;
     DECLARE v_LoanUserID INT DEFAULT NULL;
     DECLARE v_ReturnDate DATETIME DEFAULT NULL;
     DECLARE v_ReturnUserType INT DEFAULT NULL;
-    DECLARE v_AuditUserID INT DEFAULT 1;
 
     START TRANSACTION;
 
@@ -393,12 +392,6 @@ BEGIN
         SET MESSAGE_TEXT = 'Invalid loan';
     END IF;
 
-    IF v_LoanUserID <> p_UserID THEN
-        ROLLBACK;
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'User cannot return this loan';
-    END IF;
-
     IF v_ReturnDate IS NOT NULL THEN
         ROLLBACK;
         SIGNAL SQLSTATE '45000'
@@ -408,30 +401,32 @@ BEGIN
     SELECT UserType
     INTO v_ReturnUserType
     FROM users
-    WHERE UserID = p_UserID;
+    WHERE UserID = p_ProcessedBy;
 
+    -- Check that the processing user exists
     IF v_ReturnUserType IS NULL THEN
         ROLLBACK;
         SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Invalid returning user';
+        SET MESSAGE_TEXT = 'Invalid processing user';
     END IF;
 
-    IF v_ReturnUserType = 2 THEN
-        SET v_AuditUserID = p_UserID;
-    ELSE
-        SET v_AuditUserID = 1;
+    -- Check that the processing user is a librarian
+    IF v_ReturnUserType <> 2 THEN
+        ROLLBACK;
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Only librarians can process returns';
     END IF;
 
     UPDATE loans
     SET ReturnDate = CURRENT_TIMESTAMP(),
         UpdatedAt = CURRENT_TIMESTAMP(),
-        UpdatedBy = v_AuditUserID
+        UpdatedBy = p_ProcessedBy
     WHERE LoanID = p_LoanID;
 
     UPDATE copies
     SET CopyStatus = 0,
         UpdatedAt = CURRENT_TIMESTAMP(),
-        UpdatedBy = v_AuditUserID
+        UpdatedBy = p_ProcessedBy
     WHERE CopyID = v_CopyID;
 
     COMMIT;

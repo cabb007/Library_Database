@@ -848,3 +848,87 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+// Returns a loaned copy via ReturnLoan (librarians only, requires loanId in body)
+app.post('/api/loans/return', async (req, res) => {
+  try {
+    const { loanId } = req.body;
+
+    if (!req.session || !req.session.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const processedBy = req.session.user.UserID;
+    const userType = req.session.user.UserType;
+
+    if (!loanId) {
+      return res.status(400).json({ error: 'loanId is required' });
+    }
+
+    if (userType !== 2) {
+      return res.status(403).json({ error: 'Only librarians can process returns' });
+    }
+
+    await db.promise().query('CALL ReturnLoan(?, ?)', [loanId, processedBy]);
+
+    res.json({
+      success: true,
+      message: 'Return processed successfully'
+    });
+  } catch (err) {
+    console.error('Return route error:', err);
+    res.status(500).json({
+      error: err.sqlMessage || 'Failed to process return'
+    });
+  }
+});
+
+
+// ================ NOTIFICATIONS =================
+
+// Get current user's notifications
+app.get('/api/notifications', async (req, res) => {
+  try {
+    if (!req.session || !req.session.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const userId = req.session.user.UserID;
+
+    const [rows] = await db.promise().query('CALL GetUserNotifications(?)', [userId]);
+
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('Notifications route error:', err);
+    res.status(500).json({
+      error: err.sqlMessage || 'Failed to fetch notifications'
+    });
+  }
+});
+
+// Mark notification as read
+app.post('/api/notifications/read', async (req, res) => {
+  try {
+    const { notificationId } = req.body;
+
+    if (!req.session || !req.session.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    if (!notificationId) {
+      return res.status(400).json({ error: 'notificationId is required' });
+    }
+
+    await db.promise().query('CALL MarkNotificationRead(?)', [notificationId]);
+
+    res.json({
+      success: true,
+      message: 'Notification marked as read'
+    });
+  } catch (err) {
+    console.error('Mark notification read error:', err);
+    res.status(500).json({
+      error: err.sqlMessage || 'Failed to update notification'
+    });
+  }
+});
