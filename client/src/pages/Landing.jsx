@@ -320,51 +320,62 @@ export default function Landing() {
                         No notifications
                       </div>
                     ) : (
-                      notifications.map((n, i) => (
-                        <div
-                          key={i}
-                          className="p-3 border-b border-amber-900/10 text-sm text-stone-300 flex items-center justify-between gap-3"
-                        >
-                          <span className="flex-1">
-                            {n.message || n.Message}
-                          </span>
+                      notifications.map((n, i) => {
+                        const id = n.notificationId || n.NotificationID || n.id;
 
-                          <button
-                            onClick={async () => {
-                              try {
-                                const id = n.notificationId || n.NotificationID || n.id;
-
-                                await fetch(`${API}/api/notifications/read`, {
-                                  method: "POST",
-                                  headers: {
-                                    "Content-Type": "application/json",
-                                  },
-                                  credentials: "include",
-                                  body: JSON.stringify({ notificationId: id }),
-                                });
-
-                                // remove from UI immediately (optimistic update)
-                                setNotifications(prev =>
-                                  prev.filter(item =>
-                                    (item.notificationId || item.NotificationID || item.id) !== id
-                                  )
-                                );
-                              } catch (err) {
-                                console.error("mark as read failed", err);
-                              }
-                            }}
-                            className="text-xs px-2 py-1 border border-amber-700/60 rounded hover:bg-amber-800/30 transition"
+                        return (
+                          <div
+                            key={id || i}
+                            className="p-3 border-b border-amber-900/10 text-sm text-stone-300 flex items-center justify-between gap-3"
                           >
-                            Mark as read
-                          </button>
-                        </div>
-                      ))
+                            {/* TEXT (won’t push button out) */}
+                            <span className="flex-1 truncate pr-2">
+                              {n.message || n.Message}
+                            </span>
+
+                            {/* BUTTON */}
+                            <button
+                              onClick={async () => {
+                                try {
+                                  if (!id) {
+                                    console.error("No notification ID found", n);
+                                    return;
+                                  }
+
+                                  const res = await fetch(`${API}/api/notifications/read`, {
+                                    method: "POST",
+                                    headers: {
+                                      "Content-Type": "application/json",
+                                    },
+                                    credentials: "include",
+                                    body: JSON.stringify({ notificationId: id }),
+                                  });
+
+                                  if (!res.ok) {
+                                    throw new Error("Failed to mark as read");
+                                  }
+
+                                  // remove from UI immediately
+                                  setNotifications(prev =>
+                                    prev.filter(item =>
+                                      (item.notificationId || item.NotificationID || item.id) !== id
+                                    )
+                                  );
+                                } catch (err) {
+                                  console.error("mark as read failed", err);
+                                }
+                              }}
+                              className="text-xs px-2 py-1 border border-amber-500 text-amber-200 rounded hover:bg-amber-800/30 transition shrink-0"
+                            >
+                              Read
+                            </button>
+                          </div>
+                        );
+                      })
                     )}
                   </div>
-
                 </div>
               )}
-
             </div>
           )}
 
