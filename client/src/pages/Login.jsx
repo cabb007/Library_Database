@@ -5,6 +5,8 @@ import API from "../api";
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
+  // Protected routes pass redirect/back targets through router state so login can
+  // finish the original action instead of always dropping the user on a fixed page.
   const redirectTo = location.state?.redirectTo;
   const redirectState = location.state?.redirectState;
   const backTo = location.state?.backTo;
@@ -26,6 +28,8 @@ export default function Login() {
   }
 
   function handleBack() {
+    // Prefer the explicit return target from checkout/hold flows, then fall back
+    // to browser history, and finally to home if there is no safe history entry.
     if (backTo) {
       navigate(backTo, { replace: true, state: backState });
       return;
@@ -64,6 +68,9 @@ export default function Login() {
 
       setMessage("Logged in successfully");
       console.log("Logged in as ", data);
+
+      // If login started from a protected page, resume that page with its saved
+      // item context. Otherwise, land on home and show the one-time welcome banner.
       if (redirectTo) {
         navigate(redirectTo, { replace: true, state: redirectState });
       } else {

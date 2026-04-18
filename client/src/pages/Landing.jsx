@@ -2,11 +2,15 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import API from "../api";
 
+// Featured cover/device art now loads from the client-side images folder so Vite
+// can bundle the assets after they were moved out of the server directory.
 const FEATURED_IMAGE_ASSETS = import.meta.glob("../../images/**/*.{jpeg,jpg,png,webp}", {
   eager: true,
   import: "default",
 });
 
+// Keep the confetti deterministic and dependency-free so checkout success can
+// show a polished animation without pulling in an extra library.
 const CHECKOUT_CONFETTI = Array.from({ length: 26 }, (_, index) => ({
   id: index,
   left: 2 + ((index * 3.8) % 96),
@@ -147,6 +151,8 @@ function buildAssetUrl(folder, filename) {
 }
 
 function buildFeaturedShelves(catalog) {
+  // Merge the hard-coded featured picks with live catalog rows so the landing page
+  // only renders cards that actually exist in the current database response.
   return FEATURED_SHELVES.map((section) => ({
     ...section,
     items: section.items
@@ -198,6 +204,8 @@ function FeaturedShelfRow({ section, onViewAll, onSelectItem }) {
   const stripRef = useRef(null);
 
   function scrollShelf(direction) {
+    // Scroll by roughly one shelf-width so the arrow controls feel like paging
+    // through a carousel instead of nudging by a tiny amount.
     const strip = stripRef.current;
 
     if (!strip) {
@@ -305,6 +313,8 @@ export default function Landing() {
   const featuredRef = useRef(null);
 
   useEffect(() => {
+    // Home needs both auth status for the navbar and catalog data for the hero
+    // counts plus the featured shelves at the bottom of the page.
     async function checkAuth() {
       try {
         const res = await fetch(`${API}/api/me`, { credentials: "include" });
@@ -357,6 +367,8 @@ export default function Landing() {
   }, []);
 
   useEffect(() => {
+    // Login and checkout send one-time banner data through router state. Read it,
+    // show the notification, then clear the history entry so refresh/back does not replay it.
     const checkoutState = location.state?.checkoutSuccess;
     const loginState = location.state?.loginSuccess;
 
@@ -402,6 +414,8 @@ export default function Landing() {
   ];
 
   function handleFeaturedItemSelect(item, section) {
+    // Featured cards act like shortcuts: unavailable items jump to the matching
+    // catalog shelf, while available items start the checkout confirmation flow.
     if (item.AvailableCopies <= 0) {
       navigate("/catalog", { state: { subTab: section.subTab } });
       return;
@@ -423,6 +437,7 @@ export default function Landing() {
     <div className="min-h-screen bg-stone-950 text-amber-50 flex flex-col">
       {checkoutSuccess && (
         <>
+          {/* Confetti and banner render only for the one-time post-checkout success state. */}
           <div className="pointer-events-none fixed inset-0 z-50 overflow-hidden">
             {CHECKOUT_CONFETTI.map((piece) => (
               <span
@@ -458,19 +473,23 @@ export default function Landing() {
       )}
 
       {loginSuccess && !checkoutSuccess && (
-        <div className="pointer-events-none fixed inset-x-0 top-20 z-50 flex justify-center px-4">
-          <div className="login-notification-card w-full max-w-lg rounded-[1.4rem] border border-emerald-400/30 bg-stone-900/95 px-7 py-5 text-center shadow-[0_22px_65px_rgba(0,0,0,0.42)] backdrop-blur">
-            <p className="text-xs uppercase tracking-[0.35em] text-emerald-300">
-              Logged In
-            </p>
-            <h3 className="mt-2 text-2xl font-serif text-amber-50">
-              Welcome back, {loginSuccess.name}
-            </h3>
-            <p className="mt-1 text-sm text-stone-400">
-              You are now signed in.
-            </p>
+        <>
+          {/* Keep the login banner separate so it can fade out on its own and yield
+              to the checkout celebration if both states are ever present. */}
+          <div className="pointer-events-none fixed inset-x-0 top-20 z-50 flex justify-center px-4">
+            <div className="login-notification-card w-full max-w-lg rounded-[1.4rem] border border-emerald-400/30 bg-stone-900/95 px-7 py-5 text-center shadow-[0_22px_65px_rgba(0,0,0,0.42)] backdrop-blur">
+              <p className="text-xs uppercase tracking-[0.35em] text-emerald-300">
+                Logged In
+              </p>
+              <h3 className="mt-2 text-2xl font-serif text-amber-50">
+                Welcome back, {loginSuccess.name}
+              </h3>
+              <p className="mt-1 text-sm text-stone-400">
+                You are now signed in.
+              </p>
+            </div>
           </div>
-        </div>
+        </>
       )}
 
       {/* Navbar */}

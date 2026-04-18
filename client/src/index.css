@@ -42,6 +42,7 @@ button {
     background: #fafafa;
 }
 
+/* Hide the shelf scrollbar while keeping horizontal swipe and arrow scrolling. */
 .featured-strip {
     scrollbar-width: none;
 }
@@ -50,6 +51,7 @@ button {
     display: none;
 }
 
+/* Confetti pieces start off-screen and animate down during checkout success. */
 .checkout-confetti-piece {
     position: absolute;
     top: -14vh;
@@ -64,6 +66,7 @@ button {
     animation: checkout-celebration-enter 4.2s ease forwards;
 }
 
+/* The login banner reuses the same enter/fade motion, just on a shorter timer. */
 .login-notification-card {
     animation: checkout-celebration-enter 3.2s ease forwards;
 }
@@ -84,6 +87,7 @@ button {
     }
 }
 
+/* Both top-of-page notifications ease in, hold briefly, and fade away on their own. */
 @keyframes checkout-celebration-enter {
     0% {
         opacity: 0;

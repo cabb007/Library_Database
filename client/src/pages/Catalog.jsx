@@ -84,6 +84,8 @@ export default function ItemDashboard() {
   // =========================
 
   function handleCheckout(item) {
+    // Preserve the active catalog tab so cancel/back from confirmation returns
+    // the user to the same shelf they started from.
     navigate("/confirmationpage", {
       state: {
         itemId: item.ItemID,
@@ -98,6 +100,7 @@ export default function ItemDashboard() {
   }
 
   function handleHold(item) {
+    // Holds use the same return target pattern as checkout for consistent routing.
     navigate("/confirmationpage", {
       state: {
         itemId: item.ItemID,

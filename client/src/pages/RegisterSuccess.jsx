@@ -6,6 +6,8 @@ export default function RegisterSuccess(){
     const location = useLocation();
 
     useEffect(() => {
+        // After a short pause, send the user into the login flow while preserving
+        // any protected-route state that registration inherited.
         const timer = setTimeout(() => {
             navigate("/login", { replace: true, state: location.state });
         }, 3000);

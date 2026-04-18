@@ -72,6 +72,8 @@ function handleSqlError(res, err, fallbackMessage = "Request failed") {
   return res.status(500).json({ error: fallbackMessage });
 }
 
+// Some business-rule failures are raised here in the same shape as SQL SIGNAL
+// errors so the API can keep one consistent error-handling path.
 function createSqlStateError(message) {
   const error = new Error(message);
   error.sqlState = "45000";
@@ -240,6 +242,8 @@ app.post("/api/checkout", requireLogin, async (req, res) => {
   try {
     await connection.beginTransaction();
 
+    // Lock the user row while validating checkout limits so two fast requests
+    // cannot both pass the same rules at the same time.
     const [userRows] = await connection.execute(
       `SELECT LoanPeriodDays, Status, UserType
        FROM users
@@ -298,6 +302,7 @@ app.post("/api/checkout", requireLogin, async (req, res) => {
       throw createSqlStateError("User already has an active loan for this item.");
     }
 
+    // Pick and lock the first available copy so it cannot be double-loaned.
     const [copyRows] = await connection.execute(
       `SELECT CopyID
        FROM copies
@@ -324,6 +329,8 @@ app.post("/api/checkout", requireLogin, async (req, res) => {
       [userID, copy.CopyID]
     );
 
+    // The old stored procedure was causing duplicate CreatedAt issues in the live
+    // database, so checkout is completed directly here inside the same transaction.
     const [dueDateRows] = await connection.execute(
       "SELECT DATE_ADD(CURRENT_DATE(), INTERVAL ? DAY) AS DueDate",
       [user.LoanPeriodDays]

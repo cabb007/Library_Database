@@ -6,6 +6,8 @@ export default function Register() {
 
   const navigate = useNavigate();
   const location = useLocation();
+  // Carry the same protected-route return state through registration so a user
+  // can still finish the action that originally sent them here.
   const backTo = location.state?.backTo;
   const backState = location.state?.backState;
 
@@ -26,6 +28,8 @@ export default function Register() {
   }
 
   function handleBack() {
+    // Use the preserved return target first so the back button still works even
+    // when this page was opened directly from a checkout redirect.
     if (backTo) {
       navigate(backTo, { replace: true, state: backState });
       return;
@@ -68,6 +72,8 @@ export default function Register() {
 
       setMessage("User registered successfully");
       console.log("Registered:",data);
+      // Pass any redirect state forward so the success screen and login page
+      // stay connected to the original protected action.
       navigate("/registersuccess", { state: location.state });
     } catch (err) {
       setError(err.message);

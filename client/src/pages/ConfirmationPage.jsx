@@ -9,7 +9,8 @@ export default function ConfirmationPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  // Data passed from ItemDashboard through React Router state
+  // Catalog and landing cards both open this page through router state so the
+  // confirmation view knows what item is being acted on and where to return.
   const {
     itemId,
     title = "Unknown Item",
@@ -18,6 +19,7 @@ export default function ConfirmationPage() {
   } = location.state || {};
 
   function navigateToReturnTarget(replace = false) {
+    // Return the user to the page/tab that launched this confirmation screen.
     navigate(returnTo.pathname || "/catalog", {
       replace,
       state: returnTo.state,
@@ -25,6 +27,8 @@ export default function ConfirmationPage() {
   }
 
   function redirectToLogin() {
+    // When a guest reaches a protected action, bounce them through login and keep
+    // enough state to resume this exact confirmation page afterward.
     navigate("/login", {
       replace: true,
       state: {
@@ -39,7 +43,7 @@ export default function ConfirmationPage() {
   useEffect(() => {
     async function checkAuth() {
       try {
-        // ================= AUTH CHECK =================
+        // Gate this page behind the active session check before showing the prompt.
         const meRes = await fetch(`${API}/api/me`, {
           credentials: "include",
         });
@@ -72,7 +76,8 @@ export default function ConfirmationPage() {
     try {
       setSubmitting(true);
 
-      // ================= CHECKOUT =================
+      // Checkouts now celebrate on the landing page, while other actions return
+      // to the screen that launched the confirmation flow.
       if (confirmFlag === 1) {
         const res = await fetch(`${API}/api/checkout`, {
           method: "POST",
@@ -105,7 +110,7 @@ export default function ConfirmationPage() {
         return;
       }
 
-      // ================= HOLD =================
+      // Holds still use the standard flow and then return to the originating list.
       else if (confirmFlag === 2) {
         const res = await fetch(`${API}/api/hold`, {
           method: "POST",
