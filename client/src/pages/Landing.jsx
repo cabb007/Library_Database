@@ -76,8 +76,8 @@ function FeaturedCard({ entry }) {
           </p>
           <div
             className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${isAvailable
-                ? "border border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
-                : "border border-amber-500/20 bg-amber-500/10 text-amber-200"
+              ? "border border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
+              : "border border-amber-500/20 bg-amber-500/10 text-amber-200"
               }`}
           >
             {isAvailable ? "Ready Now" : "High Demand"}
@@ -246,103 +246,134 @@ export default function Landing() {
     <div className="min-h-screen bg-stone-950 text-amber-50 flex flex-col">
       {/* Navbar */}
       <nav className="flex flex-col gap-4 border-b border-amber-900/40 px-6 py-5 md:flex-row md:items-center md:justify-between md:px-10">
-  <h1 className="text-2xl font-serif tracking-widest text-amber-400">
-    Cougar Commons
-  </h1>
+        <h1 className="text-2xl font-serif tracking-widest text-amber-400">
+          Cougar Commons
+        </h1>
 
-  <div className="flex items-center gap-4 w-full md:justify-end">
+        <div className="flex items-center gap-4 w-full md:justify-end">
 
-    {/* LEFT BUTTON GROUP */}
-    <div className="flex flex-wrap gap-3 items-center">
+          {/* LEFT BUTTON GROUP */}
+          <div className="flex flex-wrap gap-3 items-center">
 
-      {!loggedIn && (
-        <>
-          <button
-            onClick={() => navigate("/login")}
-            className="px-5 py-2 border border-amber-700 text-amber-300 hover:bg-amber-900/30 transition rounded text-sm tracking-wide"
-          >
-            Login
-          </button>
+            {!loggedIn && (
+              <>
+                <button
+                  onClick={() => navigate("/login")}
+                  className="px-5 py-2 border border-amber-700 text-amber-300 hover:bg-amber-900/30 transition rounded text-sm tracking-wide"
+                >
+                  Login
+                </button>
 
-          <button
-            onClick={() => navigate("/register")}
-            className="px-5 py-2 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold transition rounded text-sm tracking-wide"
-          >
-            Register
-          </button>
-        </>
-      )}
+                <button
+                  onClick={() => navigate("/register")}
+                  className="px-5 py-2 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold transition rounded text-sm tracking-wide"
+                >
+                  Register
+                </button>
+              </>
+            )}
 
-      {userType === 2 && (
-        <button
-          onClick={() => navigate("/librarian")}
-          className="px-5 py-2 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold transition rounded text-sm tracking-wide"
-        >
-          Librarian Dashboard
-        </button>
-      )}
+            {userType === 2 && (
+              <button
+                onClick={() => navigate("/librarian")}
+                className="px-5 py-2 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold transition rounded text-sm tracking-wide"
+              >
+                Librarian Dashboard
+              </button>
+            )}
 
-      {/* 👇 FIXED: stays next to other buttons */}
-      <button
-        onClick={() => navigate("/useraccount")}
-        className="px-5 py-2 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold transition rounded text-sm tracking-wide"
-      >
-        My Account
-      </button>
-
-    </div>
-
-    {/* RIGHT SIDE: NOTIFICATIONS */}
-    {loggedIn && (
-      <div className="relative">
-
-        <button
-          onClick={() => setNotifOpen(!notifOpen)}
-          className="relative px-4 py-2 border border-amber-700 rounded hover:bg-amber-900/30 transition"
-        >
-          🔔
-
-          {/* 🔴 RED DOT / STAR (only if unread exist) */}
-          {notifications.length > 0 && (
-            <span className="absolute -top-1 -right-1 text-red-500 text-lg leading-none">
-              *
-            </span>
-          )}
-        </button>
-
-        {/* DROPDOWN */}
-        {notifOpen && (
-          <div className="absolute right-0 mt-2 w-80 bg-stone-900 border border-amber-700 rounded-lg shadow-xl z-50">
-
-            <div className="p-3 border-b border-amber-900/30 text-amber-300">
-              Notifications
-            </div>
-
-            <div className="max-h-64 overflow-y-auto">
-              {notifications.length === 0 ? (
-                <div className="p-3 text-stone-400 text-sm">
-                  No notifications
-                </div>
-              ) : (
-                notifications.map((n, i) => (
-                  <div
-                    key={i}
-                    className="p-3 border-b border-amber-900/10 text-sm text-stone-300"
-                  >
-                    {n.message || n.Message}
-                  </div>
-                ))
-              )}
-            </div>
+            {/* 👇 FIXED: stays next to other buttons */}
+            <button
+              onClick={() => navigate("/useraccount")}
+              className="px-5 py-2 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold transition rounded text-sm tracking-wide"
+            >
+              My Account
+            </button>
 
           </div>
-        )}
 
-      </div>
-    )}
+          {/* RIGHT SIDE: NOTIFICATIONS */}
+          {loggedIn && (
+            <div className="relative">
 
-  </div>
-</nav>
+              <button
+                onClick={() => setNotifOpen(!notifOpen)}
+                className="relative px-4 py-2 border border-amber-700 rounded hover:bg-amber-900/30 transition"
+              >
+                🔔
+
+                {/* 🔴 RED DOT / STAR (only if unread exist) */}
+                {notifications.length > 0 && (
+                  <span className="absolute -top-1 -right-1 text-red-500 text-lg leading-none">
+                    *
+                  </span>
+                )}
+              </button>
+
+              {/* DROPDOWN */}
+              {notifOpen && (
+                <div className="absolute right-0 mt-2 w-80 bg-stone-900 border border-amber-700 rounded-lg shadow-xl z-50">
+
+                  <div className="p-3 border-b border-amber-900/30 text-amber-300">
+                    Notifications
+                  </div>
+
+                  <div className="max-h-64 overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <div className="p-3 text-stone-400 text-sm">
+                        No notifications
+                      </div>
+                    ) : (
+                      notifications.map((n, i) => (
+                        <div
+                          key={i}
+                          className="p-3 border-b border-amber-900/10 text-sm text-stone-300 flex items-center justify-between gap-3"
+                        >
+                          <span className="flex-1">
+                            {n.message || n.Message}
+                          </span>
+
+                          <button
+                            onClick={async () => {
+                              try {
+                                const id = n.notificationId || n.NotificationID || n.id;
+
+                                await fetch(`${API}/api/notifications/read`, {
+                                  method: "POST",
+                                  headers: {
+                                    "Content-Type": "application/json",
+                                  },
+                                  credentials: "include",
+                                  body: JSON.stringify({ notificationId: id }),
+                                });
+
+                                // remove from UI immediately (optimistic update)
+                                setNotifications(prev =>
+                                  prev.filter(item =>
+                                    (item.notificationId || item.NotificationID || item.id) !== id
+                                  )
+                                );
+                              } catch (err) {
+                                console.error("mark as read failed", err);
+                              }
+                            }}
+                            className="text-xs px-2 py-1 border border-amber-700/60 rounded hover:bg-amber-800/30 transition"
+                          >
+                            Mark as read
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                </div>
+              )}
+
+            </div>
+          )}
+
+        </div>
+      </nav>
 
       {/* Hero */}
       <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col items-center justify-center gap-16 px-6 py-16 md:flex-row md:px-10 md:py-20">
