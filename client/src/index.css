@@ -49,3 +49,54 @@ button {
 .featured-strip::-webkit-scrollbar {
     display: none;
 }
+
+.checkout-confetti-piece {
+    position: absolute;
+    top: -14vh;
+    border-radius: 999px;
+    opacity: 0;
+    animation-name: checkout-confetti-fall;
+    animation-timing-function: cubic-bezier(0.18, 0.8, 0.25, 1);
+    animation-fill-mode: forwards;
+}
+
+.checkout-celebration-card {
+    animation: checkout-celebration-enter 4.2s ease forwards;
+}
+
+.login-notification-card {
+    animation: checkout-celebration-enter 3.2s ease forwards;
+}
+
+@keyframes checkout-confetti-fall {
+    0% {
+        opacity: 0;
+        transform: translate3d(0, -10vh, 0) rotate(0deg);
+    }
+
+    10% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+        transform: translate3d(var(--drift), 110vh, 0) rotate(760deg);
+    }
+}
+
+@keyframes checkout-celebration-enter {
+    0% {
+        opacity: 0;
+        transform: translateY(-24px) scale(0.96);
+    }
+
+    12%, 84% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateY(-18px) scale(0.98);
+    }
+}

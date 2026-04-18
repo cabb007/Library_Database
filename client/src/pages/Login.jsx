@@ -66,10 +66,15 @@ export default function Login() {
       console.log("Logged in as ", data);
       if (redirectTo) {
         navigate(redirectTo, { replace: true, state: redirectState });
-      } else if (data.user?.UserType === 2) {
-        navigate("/librarian");
       } else {
-        navigate("/useraccount");
+        navigate("/", {
+          replace: true,
+          state: {
+            loginSuccess: {
+              name: data.user?.FirstName || data.user?.Email || "User",
+            },
+          },
+        });
       }
 
     } catch(err){

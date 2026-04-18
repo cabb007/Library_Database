@@ -93,6 +93,16 @@ export default function ConfirmationPage() {
 
           throw new Error(data.error || "Checkout failed");
         }
+
+        navigate("/", {
+          replace: true,
+          state: {
+            checkoutSuccess: {
+              title,
+            },
+          },
+        });
+        return;
       }
 
       // ================= HOLD =================
@@ -118,7 +128,7 @@ export default function ConfirmationPage() {
         }
       }
 
-      // Return to dashboard after successful action
+      // Return to dashboard after successful non-checkout action
       navigateToReturnTarget();
     } catch (err) {
       console.error("Confirmation failed:", err);

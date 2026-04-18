@@ -1,11 +1,22 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import API from "../api";
 
 const FEATURED_IMAGE_ASSETS = import.meta.glob("../../images/**/*.{jpeg,jpg,png,webp}", {
   eager: true,
   import: "default",
 });
+
+const CHECKOUT_CONFETTI = Array.from({ length: 26 }, (_, index) => ({
+  id: index,
+  left: 2 + ((index * 3.8) % 96),
+  size: 7 + (index % 4) * 2,
+  height: 14 + (index % 5) * 3,
+  delay: (index % 6) * 0.09,
+  duration: 2.8 + (index % 5) * 0.25,
+  drift: -70 + (index % 10) * 16,
+  color: ["#f59e0b", "#fbbf24", "#34d399", "#60a5fa", "#f472b6"][index % 5],
+}));
 
 const CATEGORY_ICONS = {
   Literature: (
@@ -284,8 +295,11 @@ function FeaturedShelfRow({ section, onViewAll, onSelectItem }) {
 
 export default function Landing() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [counts, setCounts] = useState({ Literature: "—", Media: "—", Devices: "—" });
   const [featuredShelves, setFeaturedShelves] = useState([]);
+  const [checkoutSuccess, setCheckoutSuccess] = useState(null);
+  const [loginSuccess, setLoginSuccess] = useState(null);
   const [loggedIn, setLoggedIn] = useState(false);
   const [userType, setUserType] = useState(null);
   const featuredRef = useRef(null);
@@ -342,6 +356,45 @@ export default function Landing() {
     fetchCatalogSummary();
   }, []);
 
+  useEffect(() => {
+    const checkoutState = location.state?.checkoutSuccess;
+    const loginState = location.state?.loginSuccess;
+
+    if (!checkoutState && !loginState) {
+      return;
+    }
+
+    if (checkoutState) {
+      setCheckoutSuccess(checkoutState);
+    }
+
+    if (loginState) {
+      setLoginSuccess(loginState);
+    }
+
+    navigate(location.pathname, { replace: true, state: null });
+
+    const timers = [];
+
+    if (checkoutState) {
+      timers.push(
+        setTimeout(() => {
+          setCheckoutSuccess(null);
+        }, 4200)
+      );
+    }
+
+    if (loginState) {
+      timers.push(
+        setTimeout(() => {
+          setLoginSuccess(null);
+        }, 3200)
+      );
+    }
+
+    return () => timers.forEach((timer) => clearTimeout(timer));
+  }, [location.pathname, location.state, navigate]);
+
   const CATEGORIES = [
     { label: "Literature", subTab: "books",   count: counts.Literature, icon: CATEGORY_ICONS.Literature },
     { label: "Media",      subTab: "media",   count: counts.Media,      icon: CATEGORY_ICONS.Media      },
@@ -368,6 +421,58 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-stone-950 text-amber-50 flex flex-col">
+      {checkoutSuccess && (
+        <>
+          <div className="pointer-events-none fixed inset-0 z-50 overflow-hidden">
+            {CHECKOUT_CONFETTI.map((piece) => (
+              <span
+                key={piece.id}
+                className="checkout-confetti-piece"
+                style={{
+                  left: `${piece.left}%`,
+                  width: `${piece.size}px`,
+                  height: `${piece.height}px`,
+                  backgroundColor: piece.color,
+                  animationDelay: `${piece.delay}s`,
+                  animationDuration: `${piece.duration}s`,
+                  "--drift": `${piece.drift}px`,
+                }}
+              />
+            ))}
+          </div>
+
+          <div className="pointer-events-none fixed inset-x-0 top-20 z-50 flex justify-center px-4">
+            <div className="checkout-celebration-card w-full max-w-xl rounded-[1.75rem] border border-amber-500/30 bg-stone-900/95 px-8 py-6 text-center shadow-[0_24px_70px_rgba(0,0,0,0.45)] backdrop-blur">
+              <p className="text-xs uppercase tracking-[0.35em] text-amber-500">
+                Successfully checked out
+              </p>
+              <h3 className="mt-3 text-2xl font-serif text-amber-50 md:text-3xl">
+                {checkoutSuccess.title}
+              </h3>
+              <p className="mt-2 text-sm text-stone-400 md:text-base">
+                It is now waiting for you in your account.
+              </p>
+            </div>
+          </div>
+        </>
+      )}
+
+      {loginSuccess && !checkoutSuccess && (
+        <div className="pointer-events-none fixed inset-x-0 top-20 z-50 flex justify-center px-4">
+          <div className="login-notification-card w-full max-w-lg rounded-[1.4rem] border border-emerald-400/30 bg-stone-900/95 px-7 py-5 text-center shadow-[0_22px_65px_rgba(0,0,0,0.42)] backdrop-blur">
+            <p className="text-xs uppercase tracking-[0.35em] text-emerald-300">
+              Logged In
+            </p>
+            <h3 className="mt-2 text-2xl font-serif text-amber-50">
+              Welcome back, {loginSuccess.name}
+            </h3>
+            <p className="mt-1 text-sm text-stone-400">
+              You are now signed in.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Navbar */}
       <nav className="flex items-center justify-between px-10 py-5 border-b border-amber-900/40">
         <h1 className="text-2xl font-serif tracking-widest text-amber-400">

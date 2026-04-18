@@ -72,6 +72,13 @@ function handleSqlError(res, err, fallbackMessage = "Request failed") {
   return res.status(500).json({ error: fallbackMessage });
 }
 
+function createSqlStateError(message) {
+  const error = new Error(message);
+  error.sqlState = "45000";
+  error.sqlMessage = message;
+  return error;
+}
+
 function requireLogin(req, res, next) {
   if (!req.session.user) {
     return res.status(401).json({ error: "Not logged in" });
@@ -221,22 +228,137 @@ app.post("/api/logout", (req, res) => {
 /* ================= CHECKOUT AND HOLD ================= */
 
 app.post("/api/checkout", requireLogin, async (req, res) => {
-  try {
-    const userID = req.session.user.UserID;
-    const { itemId } = req.body;
+  const userID = req.session.user.UserID;
+  const { itemId } = req.body;
 
-    if (!itemId) {
-      return res.status(400).json({ error: "No item selected" });
+  if (!itemId) {
+    return res.status(400).json({ error: "No item selected" });
+  }
+
+  const connection = await db.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    const [userRows] = await connection.execute(
+      `SELECT LoanPeriodDays, Status, UserType
+       FROM users
+       WHERE UserID = ?
+       FOR UPDATE`,
+      [userID]
+    );
+
+    const user = userRows[0];
+
+    if (!user) {
+      throw createSqlStateError("Invalid user");
     }
 
-    await db.execute("CALL CheckoutItem(?, ?)", [userID, itemId]);
+    if (user.Status !== 1) {
+      throw createSqlStateError("User is not active.");
+    }
+
+    const [balanceRows] = await connection.execute(
+      `SELECT COALESCE(SUM(FineAmount), 0.00) AS Balance
+       FROM fines
+       WHERE UserID = ?
+         AND PaidStatus = 0`,
+      [userID]
+    );
+
+    if (Number(balanceRows[0]?.Balance ?? 0) !== 0) {
+      throw createSqlStateError("User has an unpaid balance.");
+    }
+
+    const maxLoans = user.UserType === 0 ? 3 : 5;
+
+    const [loanCountRows] = await connection.execute(
+      `SELECT COUNT(*) AS Count
+       FROM loans
+       WHERE UserID = ?
+         AND ReturnDate IS NULL`,
+      [userID]
+    );
+
+    if (Number(loanCountRows[0]?.Count ?? 0) >= maxLoans) {
+      throw createSqlStateError("Borrowing limit exceeded for this user.");
+    }
+
+    const [existingLoanRows] = await connection.execute(
+      `SELECT COUNT(*) AS Count
+       FROM loans AS l
+       JOIN copies AS c ON l.CopyID = c.CopyID
+       WHERE l.UserID = ?
+         AND l.ReturnDate IS NULL
+         AND c.ItemID = ?`,
+      [userID, itemId]
+    );
+
+    if (Number(existingLoanRows[0]?.Count ?? 0) > 0) {
+      throw createSqlStateError("User already has an active loan for this item.");
+    }
+
+    const [copyRows] = await connection.execute(
+      `SELECT CopyID
+       FROM copies
+       WHERE ItemID = ?
+         AND CopyStatus = 0
+       ORDER BY CopyID
+       LIMIT 1
+       FOR UPDATE`,
+      [itemId]
+    );
+
+    const copy = copyRows[0];
+
+    if (!copy) {
+      throw createSqlStateError("No available copy");
+    }
+
+    await connection.execute(
+      `UPDATE copies
+       SET CopyStatus = 1,
+           UpdatedAt = CURRENT_TIMESTAMP(),
+           UpdatedBy = ?
+       WHERE CopyID = ?`,
+      [userID, copy.CopyID]
+    );
+
+    const [dueDateRows] = await connection.execute(
+      "SELECT DATE_ADD(CURRENT_DATE(), INTERVAL ? DAY) AS DueDate",
+      [user.LoanPeriodDays]
+    );
+
+    await connection.execute(
+      `INSERT INTO loans (
+         UserID,
+         CopyID,
+         DueDate,
+         CreatedAt,
+         CreatedBy,
+         UpdatedAt,
+         UpdatedBy
+       )
+       VALUES (?, ?, ?, CURRENT_TIMESTAMP(), ?, CURRENT_TIMESTAMP(), ?)`,
+      [userID, copy.CopyID, dueDateRows[0].DueDate, userID, userID]
+    );
+
+    await connection.commit();
 
     res.json({
       success: true,
       message: "Item checked out",
     });
   } catch (err) {
+    try {
+      await connection.rollback();
+    } catch {
+      // Ignore rollback failures after a checkout error.
+    }
+
     handleSqlError(res, err, err.sqlMessage || "Checkout failed");
+  } finally {
+    connection.release();
   }
 });
 
