@@ -1557,7 +1557,7 @@ export default function LibrarianDashboard() {
             })()}
 
             {analyticsTab === "audit" && (() => {
-              const auditTables = ["copies", "fines", "holds", "items", "loans", "users"].filter(tbl =>
+              const auditTables = ["copies", "items", "loans", "users"].filter(tbl =>
                 !auditFilters.tableName || auditFilters.tableName === tbl
               );
 
@@ -1665,9 +1665,7 @@ export default function LibrarianDashboard() {
                         <option value="users">users</option>
                         <option value="items">items</option>
                         <option value="copies">copies</option>
-                        <option value="holds">holds</option>
                         <option value="loans">loans</option>
-                        <option value="fines">fines</option>
                       </select>
                     </div>
                     <div>
