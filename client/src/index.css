@@ -387,3 +387,10 @@ only works if we add more items that don't fit on the horizontal row*/
 .librarian-dashboard tbody tr:hover {
   background: rgba(200, 16, 46, 0.04);
 }
+
+.librarian-dashboard thead th {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 1;
+}
