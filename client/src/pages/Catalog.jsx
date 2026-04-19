@@ -5,6 +5,12 @@ import API from "../api";
 export default function ItemDashboard() {
   const navigate = useNavigate();
   const location = useLocation();
+  // Keep the tab values lowercase for existing state checks, but show title-case labels in the UI.
+  const catalogTabs = [
+    { value: "books", label: "Books" },
+    { value: "media", label: "Media" },
+    { value: "devices", label: "Devices" },
+  ];
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -189,17 +195,18 @@ export default function ItemDashboard() {
       </nav>
 
       <div className="flex justify-center gap-4 mt-8">
-          {["books", "media", "devices"].map((sub) => (
+          {catalogTabs.map((tab) => (
             <button
-              key={sub}
-              onClick={() => setActiveSubTab(sub)}
+              key={tab.value}
+              onClick={() => setActiveSubTab(tab.value)}
               className={`px-4 py-1 rounded ${
-                activeSubTab === sub
+                activeSubTab === tab.value
                   ? "bg-amber-700 text-stone-950"
                   : "border border-amber-700 text-amber-300"
               }`}
             >
-              {sub}
+              {/* Render the title-case label so the tab text matches the requested button styling. */}
+              {tab.label}
             </button>
           ))}
         </div>
