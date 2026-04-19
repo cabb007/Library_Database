@@ -889,6 +889,44 @@ app.get("/api/librarian/analytics/most-checked-out", requireLibrarian, async (re
   }
 });
 
+app.get("/api/librarian/analytics/top-librarian", requireLibrarian, async (_req, res) => {
+  try {
+    const [data] = await db.execute("CALL GetTopLibrarian()");
+    res.json(data[0][0]);
+  } catch (err) {
+    console.error("Failed to fetch top librarian:", err);
+    res.status(500).json({ error: "Failed to fetch top librarian" });
+  }
+});
+
+app.get("/api/librarian/analytics/transactions/summary", requireLibrarian, async (_req, res) => {
+  try {
+    const [data] = await db.execute("CALL GetTransactionSummary()");
+    res.json(data[0][0]);
+  } catch (err) {
+    console.error("Failed to fetch transaction summary:", err);
+    res.status(500).json({ error: "Failed to fetch transaction summary" });
+  }
+});
+
+app.get("/api/librarian/analytics/transactions/report", requireLibrarian, async (req, res) => {
+  const { startDate, endDate, userId, type } = req.query;
+
+  try {
+    const [data] = await db.execute("CALL GetTransactionReport(?, ?, ?, ?)", [
+      startDate || null,
+      endDate || null,
+      userId ? Number(userId) : null,
+      type || null
+    ]);
+
+    res.json(data[0]);
+  } catch (err) {
+    console.error("Failed to fetch transaction report:", err);
+    res.status(500).json({ error: "Failed to fetch transaction report" });
+  }
+});
+
 
 /* ================= LIBRARIAN: FINES ================= */
 
