@@ -94,7 +94,15 @@ BEGIN
 
         (SELECT ROUND(AVG(DATEDIFF(ReturnDate, CreatedAt)), 1)
          FROM loans
-         WHERE ReturnDate IS NOT NULL) AS AvgLoanDays;
+         WHERE ReturnDate IS NOT NULL) AS AvgLoanDays,
+
+        (SELECT COUNT(*) FROM loans
+         WHERE DATE(CreatedAt) >= DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY)
+           AND DATE(CreatedAt) <= CURDATE()) AS CheckoutsThisWeek,
+
+        (SELECT COUNT(*) FROM loans
+         WHERE DATE(CreatedAt) >= DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) + 7 DAY)
+           AND DATE(CreatedAt) <  DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY)) AS CheckoutsLastWeek;
 END$$
 
 -- =========================================================
@@ -200,7 +208,6 @@ BEGIN
         (SELECT COUNT(*) FROM holds) AS TotalHolds,
         (SELECT COUNT(*) FROM holds WHERE HoldStatus = 0) AS ActiveHolds,
         (SELECT COUNT(*) FROM holds WHERE HoldStatus = 1) AS FulfilledHolds,
-        (SELECT COUNT(*) FROM holds WHERE HoldStatus = 2) AS CancelledHolds,
         (SELECT COUNT(*) FROM fines) AS TotalFines,
         (SELECT COUNT(*) FROM fines WHERE PaidStatus = 0) AS UnpaidFines,
         (SELECT COUNT(*) FROM fines WHERE PaidStatus = 1) AS PaidFines,
@@ -245,12 +252,15 @@ BEGIN
         CASE
             WHEN lo.ReturnDate IS NULL AND lo.DueDate < CURDATE()
                 THEN DATEDIFF(CURDATE(), lo.DueDate)
+            WHEN lo.ReturnDate IS NOT NULL AND lo.ReturnDate > lo.DueDate
+                THEN DATEDIFF(lo.ReturnDate, lo.DueDate)
             ELSE 0
         END AS DaysOverdue,
         CASE
             WHEN lo.ReturnDate IS NULL AND lo.DueDate < CURDATE() THEN 1
             ELSE 0
-        END AS NeedsAttention
+        END AS NeedsAttention,
+        NULL AS DaysToPayFine
     FROM loans lo
     JOIN users u ON lo.UserID = u.UserID
     JOIN copies c ON lo.CopyID = c.CopyID
@@ -287,7 +297,8 @@ BEGIN
         CASE
             WHEN h.HoldStatus = 0 AND DATEDIFF(CURDATE(), h.CreatedAt) > 7 THEN 1
             ELSE 0
-        END AS NeedsAttention
+        END AS NeedsAttention,
+        NULL AS DaysToPayFine
     FROM holds h
     JOIN users u ON h.UserID = u.UserID
     JOIN items i ON h.ItemID = i.ItemID
@@ -316,12 +327,13 @@ BEGIN
             WHEN f.PaidStatus = 1 THEN 'Paid'
             ELSE 'Unpaid'
         END AS StatusLabel,
-        DATEDIFF(COALESCE(f.PaidAt, CURDATE()), f.CreatedAt) AS AgeDays,
+        GREATEST(0, DATEDIFF(COALESCE(lo.ReturnDate, CURDATE()), lo.DueDate)) AS AgeDays,
         0 AS DaysOverdue,
         CASE
             WHEN f.PaidStatus = 0 THEN 1
             ELSE 0
-        END AS NeedsAttention
+        END AS NeedsAttention,
+        DATEDIFF(f.PaidAt, f.CreatedAt) AS DaysToPayFine
     FROM fines f
     JOIN users u ON f.UserID = u.UserID
     JOIN loans lo ON f.LoanID = lo.LoanID
@@ -332,6 +344,7 @@ BEGIN
         AND (p_end_date IS NULL OR DATE(f.CreatedAt) <= p_end_date)
         AND (p_user_id IS NULL OR f.UserID = p_user_id)
         AND (p_transaction_type IS NULL OR p_transaction_type = 'Fine')
+        AND f.FineAmount > 0
 
     ORDER BY TransactionDate DESC, TransactionType;
 END$$
