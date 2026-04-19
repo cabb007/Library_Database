@@ -36,13 +36,16 @@ BEGIN
       AND l.DueDate < CURDATE();
 
     -- Update all existing unpaid fines
-    UPDATE fines f
+   UPDATE fines f
     JOIN loans l ON f.LoanID = l.LoanID
-    SET f.FineAmount = GREATEST(DATEDIFF(COALESCE(l.ReturnDate, CURDATE()), l.DueDate), 0) * 2.00,
-        f.UpdatedAt = CURRENT_TIMESTAMP,
-        f.UpdatedBy = 1 -- SysAdmin UserID = 1
-    WHERE f.PaidStatus = 0
-      AND l.DueDate < CURDATE();
+    SET f.FineAmount = LEAST(
+        GREATEST(DATEDIFF(COALESCE(l.ReturnDate, CURDATE()), l.DueDate), 0) * 2.00,
+        50
+    ),
+    f.UpdatedAt = CURRENT_TIMESTAMP,
+    f.UpdatedBy = 1
+WHERE f.PaidStatus = 0
+  AND l.DueDate < CURDATE();
 END$$
 
 -- =========================================================
