@@ -6,6 +6,53 @@ import {
   PieChart, Pie, Legend
 } from "recharts";
 
+const LITERATURE_GENRES = [
+  { value: 0, label: "Unspecified / Other" },
+  { value: 1, label: "Classic" },
+  { value: 2, label: "Historical Fiction" },
+  { value: 3, label: "Fantasy" },
+  { value: 4, label: "Science Fiction / Dystopian" },
+  { value: 5, label: "Mystery / Thriller" },
+  { value: 6, label: "Romance" },
+  { value: 7, label: "Literary / Contemporary" },
+  { value: 8, label: "Philosophy / Existential" },
+  { value: 9, label: "Adventure" },
+  { value: 10, label: "Science / Technology" },
+  { value: 11, label: "Business / Economics" },
+  { value: 12, label: "Politics / Current Affairs" },
+  { value: 13, label: "Biography / Memoir" },
+  { value: 14, label: "Arts / Culture" },
+  { value: 15, label: "Horror / Gothic" },
+];
+
+const MEDIA_GENRES = [
+  { value: 0, label: "Unspecified / Other" },
+  { value: 1, label: "Drama" },
+  { value: 2, label: "Crime / Noir" },
+  { value: 3, label: "Action / Adventure" },
+  { value: 4, label: "Science Fiction / Fantasy" },
+  { value: 5, label: "Thriller / Mystery" },
+  { value: 6, label: "Comedy" },
+  { value: 7, label: "Romance" },
+  { value: 8, label: "Documentary / Biography" },
+  { value: 9, label: "Horror" },
+  { value: 10, label: "Rock / Alternative" },
+  { value: 11, label: "Pop" },
+  { value: 12, label: "Hip-Hop / Rap" },
+  { value: 13, label: "R&B / Soul / Funk" },
+  { value: 14, label: "Folk / Country" },
+  { value: 15, label: "Jazz / Blues" },
+  { value: 16, label: "Classical / Soundtrack" },
+];
+
+function getGenreLabel(options, value, fallback) {
+  return (
+    options.find((option) => option.value === Number(value))?.label ||
+    fallback ||
+    "Unspecified / Other"
+  );
+}
+
 export default function LibrarianDashboard() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
@@ -70,10 +117,10 @@ export default function LibrarianDashboard() {
   const [showMediaForm, setShowMediaForm] = useState(false);
   const [showDeviceForm, setShowDeviceForm] = useState(false);
   const [litForm, setLitForm] = useState({
-    ItemID: "", Title: "", ItemType: 1, Author: "", Publisher: "", PublicationYear: "", Copies: 1
+    ItemID: "", Title: "", ItemType: 1, Genre: 0, Author: "", Publisher: "", PublicationYear: "", Copies: 1
   });
   const [mediaForm, setMediaForm] = useState({
-    Title: "", ItemType: 1, Producer: "", DurationMinutes: "", Copies: 1
+    Title: "", ItemType: 1, Genre: 0, Producer: "", DurationMinutes: "", Copies: 1
   });
   const [deviceForm, setDeviceForm] = useState({
     Title: "", ItemType: 1, Manufacturer: "", Model: "", Copies: 1
@@ -292,6 +339,7 @@ export default function LibrarianDashboard() {
     setEditLitForm({
       Title: item.Title,
       ItemType: item.ItemType ?? 1,
+      Genre: item.Genre ?? 0,
       Author: item.Author,
       Publisher: item.Publisher || "",
       PublicationYear: item.PublicationYear || ""
@@ -311,6 +359,7 @@ export default function LibrarianDashboard() {
         body: JSON.stringify({
           Title: editLitForm.Title,
           ItemType: Number(editLitForm.ItemType),
+          Genre: Number(editLitForm.Genre) || 0,
           Author: editLitForm.Author,
           Publisher: editLitForm.Publisher,
           PublicationYear: editLitForm.PublicationYear ? Number(editLitForm.PublicationYear) : null
@@ -338,13 +387,14 @@ export default function LibrarianDashboard() {
           ...litForm,
           ItemID: Number(litForm.ItemID),
           ItemType: Number(litForm.ItemType),
+          Genre: Number(litForm.Genre) || 0,
           PublicationYear: litForm.PublicationYear ? Number(litForm.PublicationYear) : null,
           Copies: Number(litForm.Copies)
         })
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error); return; }
-      setLitForm({ ItemID: "", Title: "", ItemType: 1, Author: "", Publisher: "", PublicationYear: "", Copies: 1 });
+      setLitForm({ ItemID: "", Title: "", ItemType: 1, Genre: 0, Author: "", Publisher: "", PublicationYear: "", Copies: 1 });
       setShowLitForm(false);
       fetchCatalog();
     } catch {
@@ -475,6 +525,7 @@ export default function LibrarianDashboard() {
     setEditMediaForm({
       Title: item.Title,
       ItemType: item.ItemType ?? 1,
+      Genre: item.Genre ?? 0,
       Producer: item.Producer || "",
       DurationMinutes: item.DurationMinutes || ""
     });
@@ -493,6 +544,7 @@ export default function LibrarianDashboard() {
         body: JSON.stringify({
           Title: editMediaForm.Title,
           ItemType: Number(editMediaForm.ItemType),
+          Genre: Number(editMediaForm.Genre) || 0,
           Producer: editMediaForm.Producer,
           DurationMinutes: editMediaForm.DurationMinutes ? Number(editMediaForm.DurationMinutes) : null
         })
@@ -560,13 +612,14 @@ export default function LibrarianDashboard() {
         body: JSON.stringify({
           ...mediaForm,
           ItemType: Number(mediaForm.ItemType),
+          Genre: Number(mediaForm.Genre) || 0,
           DurationMinutes: mediaForm.DurationMinutes ? Number(mediaForm.DurationMinutes) : null,
           Copies: Number(mediaForm.Copies)
         })
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error); return; }
-      setMediaForm({ Title: "", ItemType: 1, Producer: "", DurationMinutes: "", Copies: 1 });
+      setMediaForm({ Title: "", ItemType: 1, Genre: 0, Producer: "", DurationMinutes: "", Copies: 1 });
       setShowMediaForm(false);
       fetchMedia();
     } catch {
@@ -828,6 +881,11 @@ export default function LibrarianDashboard() {
                     <option value={3}>Magazine</option>
                     <option value={4}>Audiobook</option>
                   </select>
+                  <select value={litForm.Genre} onChange={e => setLitForm({ ...litForm, Genre: Number(e.target.value) })}>
+                    {LITERATURE_GENRES.map((genre) => (
+                      <option key={genre.value} value={genre.value}>{genre.label}</option>
+                    ))}
+                  </select>
                   <input placeholder="Author *" value={litForm.Author} onChange={e => setLitForm({ ...litForm, Author: e.target.value })} />
                   <input placeholder="Publisher" value={litForm.Publisher} onChange={e => setLitForm({ ...litForm, Publisher: e.target.value })} />
                   <input placeholder="Publication Year" type="number" value={litForm.PublicationYear} onChange={e => setLitForm({ ...litForm, PublicationYear: e.target.value })} />
@@ -837,7 +895,7 @@ export default function LibrarianDashboard() {
               )}
 
               <input
-                placeholder="Search by title or author..."
+                placeholder="Search by title, author, or genre..."
                 value={bookSearch}
                 onChange={e => setBookSearch(e.target.value)}
                 style={{ marginBottom: "0.5rem", padding: "0.4rem", width: "100%" }}
@@ -846,18 +904,19 @@ export default function LibrarianDashboard() {
                 <table border="1" cellPadding="8" style={{ borderCollapse: "collapse", width: "100%" }}>
         <thead>
           <tr>
-            <th>ISBN</th><th>Title</th><th>Type</th><th>Publisher</th>
+            <th>ISBN</th><th>Title</th><th>Type</th><th>Genre</th><th>Publisher</th>
             <th>Author</th><th>Year</th><th>Available</th><th>Actions</th>
           </tr>
         </thead>
         <tbody>
           {literature.filter(l =>
-            `${l.Title} ${l.Author}`.toLowerCase().includes(bookSearch.toLowerCase())
+            `${l.Title} ${l.Author} ${l.GenreName ?? ""}`.toLowerCase().includes(bookSearch.toLowerCase())
           ).map(item => (
             <tr key={item.ItemID}>
               <td>{item.ItemID}</td>
               <td>{item.Title}</td>
               <td>{["", "Book", "Textbook", "Magazine", "Audiobook"][item.ItemType] ?? "—"}</td>
+              <td>{item.GenreName ?? getGenreLabel(LITERATURE_GENRES, item.Genre)}</td>
               <td>{item.Publisher}</td>
               <td>{item.Author}</td>
               <td>{item.PublicationYear}</td>
@@ -893,6 +952,14 @@ export default function LibrarianDashboard() {
                   <option value={2}>Textbook</option>
                   <option value={3}>Magazine</option>
                   <option value={4}>Audiobook</option>
+                </select>
+                <select
+                  value={editLitForm.Genre}
+                  onChange={e => setEditLitForm({ ...editLitForm, Genre: Number(e.target.value) })}
+                >
+                  {LITERATURE_GENRES.map((genre) => (
+                    <option key={genre.value} value={genre.value}>{genre.label}</option>
+                  ))}
                 </select>
                 <input
                   placeholder="Author *"
@@ -967,6 +1034,11 @@ export default function LibrarianDashboard() {
                     <option value={2}>Blu-ray</option>
                     <option value={3}>Vinyl</option>
                   </select>
+                  <select value={mediaForm.Genre} onChange={e => setMediaForm({ ...mediaForm, Genre: Number(e.target.value) })}>
+                    {MEDIA_GENRES.map((genre) => (
+                      <option key={genre.value} value={genre.value}>{genre.label}</option>
+                    ))}
+                  </select>
                   <input placeholder="Producer" value={mediaForm.Producer} onChange={e => setMediaForm({ ...mediaForm, Producer: e.target.value })} />
                   <input placeholder="Duration (minutes)" type="number" min="1" value={mediaForm.DurationMinutes} onChange={e => setMediaForm({ ...mediaForm, DurationMinutes: e.target.value })} />
                   <input placeholder="Copies *" type="number" min="1" value={mediaForm.Copies} onChange={e => setMediaForm({ ...mediaForm, Copies: e.target.value })} />
@@ -975,7 +1047,7 @@ export default function LibrarianDashboard() {
               )}
 
               <input
-                placeholder="Search by ID or Name..."
+                placeholder="Search by ID, name, or genre..."
                 value={mediaSearch}
                 onChange={e => setMediaSearch(e.target.value)}
                 style={{ marginBottom: "0.5rem", padding: "0.4rem", width: "100%" }}
@@ -984,18 +1056,19 @@ export default function LibrarianDashboard() {
                 <table border="1" cellPadding="8" style={{ borderCollapse: "collapse", width: "100%" }}>
         <thead>
           <tr>
-            <th>Device ID</th><th>Name</th><th>Type</th><th>Producer</th><th>Duration</th>
+            <th>Device ID</th><th>Name</th><th>Type</th><th>Genre</th><th>Producer</th><th>Duration</th>
             <th>Available</th><th>Actions</th>
           </tr>
         </thead>
         <tbody>
           {media.filter(m =>
-            `${m.ItemID} ${m.Title}`.toLowerCase().includes(mediaSearch.toLowerCase())
+            `${m.ItemID} ${m.Title} ${m.GenreName ?? ""}`.toLowerCase().includes(mediaSearch.toLowerCase())
           ).map(item => (
             <tr key={item.ItemID}>
               <td>{item.ItemID}</td>
               <td>{item.Title}</td>
               <td>{["", "DVD/CD", "Blu-ray", "Vinyl"][item.ItemType] ?? "—"}</td>
+              <td>{item.GenreName ?? getGenreLabel(MEDIA_GENRES, item.Genre)}</td>
               <td>{item.Producer}</td>
               <td>{item.DurationMinutes}</td>
               <td>{item.AvailableCopies}</td>
@@ -1029,6 +1102,14 @@ export default function LibrarianDashboard() {
                   <option value={1}>DVD / CD</option>
                   <option value={2}>Blu-ray</option>
                   <option value={3}>Vinyl</option>
+                </select>
+                <select
+                  value={editMediaForm.Genre}
+                  onChange={e => setEditMediaForm({ ...editMediaForm, Genre: Number(e.target.value) })}
+                >
+                  {MEDIA_GENRES.map((genre) => (
+                    <option key={genre.value} value={genre.value}>{genre.label}</option>
+                  ))}
                 </select>
                 <input
                   placeholder="Producer"

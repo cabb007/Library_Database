@@ -155,6 +155,7 @@ CREATE PROCEDURE UpdateLiterature(
     IN p_ItemID BIGINT,
     IN p_Title VARCHAR(100),
     IN p_ItemType SMALLINT,
+    IN p_Genre SMALLINT,
     IN p_Author VARCHAR(100),
     IN p_Publisher VARCHAR(100),
     IN p_PublicationYear INT,
@@ -164,6 +165,11 @@ BEGIN
     IF p_ItemType NOT IN (1, 2, 3, 4) THEN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Invalid literature type. Must be 1=Book, 2=Textbook, 3=Magazine, 4=Audiobook.';
+    END IF;
+
+    IF p_Genre NOT IN (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Invalid literature genre.';
     END IF;
 
     IF p_PublicationYear IS NOT NULL AND p_PublicationYear <= 0 THEN
@@ -186,6 +192,7 @@ BEGIN
     UPDATE literature
     SET
         ItemType = p_ItemType,
+        Genre = p_Genre,
         Author = p_Author,
         Publisher = p_Publisher,
         PublicationYear = p_PublicationYear
@@ -204,6 +211,7 @@ CREATE PROCEDURE UpdateMedia(
     IN p_ItemID BIGINT,
     IN p_Title VARCHAR(100),
     IN p_ItemType SMALLINT,
+    IN p_Genre SMALLINT,
     IN p_Producer VARCHAR(100),
     IN p_DurationMinutes INT,
     IN p_UpdatedBy INT
@@ -212,6 +220,11 @@ BEGIN
     IF p_ItemType NOT IN (1, 2, 3) THEN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Invalid media type. Must be 1=DVD/CD, 2=Blu-ray, 3=Vinyl.';
+    END IF;
+
+    IF p_Genre NOT IN (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Invalid media genre.';
     END IF;
 
     IF p_DurationMinutes IS NOT NULL AND p_DurationMinutes <= 0 THEN
@@ -234,6 +247,7 @@ BEGIN
     UPDATE media
     SET
         ItemType = p_ItemType,
+        Genre = p_Genre,
         Producer = p_Producer,
         DurationMinutes = p_DurationMinutes
     WHERE ItemID = p_ItemID;

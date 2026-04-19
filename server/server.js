@@ -699,12 +699,13 @@ app.put(
   async (req, res) => {
     try {
       const id = Number(req.params.id);
-      const { Title, ItemType, Producer, DurationMinutes } = req.body;
+      const { Title, ItemType, Genre, Producer, DurationMinutes } = req.body;
 
-      await db.execute("CALL UpdateMedia(?, ?, ?, ?, ?, ?)", [
+      await db.execute("CALL UpdateMedia(?, ?, ?, ?, ?, ?, ?)", [
         id,
         Title,
         Number(ItemType),
+        Number(Genre) || 0,
         Producer,
         DurationMinutes ? Number(DurationMinutes) : null,
         req.session.user.UserID,
@@ -750,6 +751,7 @@ app.post(
       const {
         Title,
         ItemType,
+        Genre,
         Producer,
         DurationMinutes,
         Copies,
@@ -761,10 +763,11 @@ app.post(
 
       const nextID = row.nextID;
 
-      await db.execute("CALL AddMedia(?, ?, ?, ?, ?, ?, ?)", [
+      await db.execute("CALL AddMedia(?, ?, ?, ?, ?, ?, ?, ?)", [
         nextID,
         Title,
         Number(ItemType),
+        Number(Genre) || 0,
         Producer,
         DurationMinutes ? Number(DurationMinutes) : null,
         Number(Copies) || 0,
@@ -795,16 +798,18 @@ app.post(
         ItemID,
         Title,
         ItemType,
+        Genre,
         Author,
         Publisher,
         PublicationYear,
         Copies,
       } = req.body;
 
-      await db.execute("CALL AddLiterature(?, ?, ?, ?, ?, ?, ?, ?)", [
+      await db.execute("CALL AddLiterature(?, ?, ?, ?, ?, ?, ?, ?, ?)", [
         ItemID,
         Title,
         Number(ItemType),
+        Number(Genre) || 0,
         Author,
         Publisher,
         PublicationYear ? Number(PublicationYear) : null,
@@ -821,6 +826,64 @@ app.post(
       }
 
       res.status(500).json({ error: "Failed to add literature" });
+    }
+  }
+);
+
+app.put(
+  "/api/librarian/catalog/literature/:id",
+  requireLibrarian,
+  async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const {
+        Title,
+        ItemType,
+        Genre,
+        Author,
+        Publisher,
+        PublicationYear,
+      } = req.body;
+
+      await db.execute("CALL UpdateLiterature(?, ?, ?, ?, ?, ?, ?, ?)", [
+        id,
+        Title,
+        Number(ItemType),
+        Number(Genre) || 0,
+        Author,
+        Publisher,
+        PublicationYear ? Number(PublicationYear) : null,
+        req.session.user.UserID,
+      ]);
+
+      res.json({ message: "Literature updated" });
+    } catch (err) {
+      console.error(err);
+
+      if (err.sqlState === "45000") {
+        return res.status(400).json({ error: err.sqlMessage });
+      }
+
+      res.status(500).json({ error: "Failed to update literature" });
+    }
+  }
+);
+
+app.delete(
+  "/api/librarian/catalog/literature/:id",
+  requireLibrarian,
+  async (req, res) => {
+    try {
+      await db.execute("CALL DeleteLiterature(?)", [Number(req.params.id)]);
+      res.json({ message: "Literature deleted" });
+    } catch (err) {
+      console.error(err);
+
+      if (err.sqlState === "45000") {
+        return res.status(400).json({ error: err.sqlMessage });
+      }
+
+      res.status(500).json({ error: "Failed to delete literature" });
     }
   }
 );

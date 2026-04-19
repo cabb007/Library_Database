@@ -59,31 +59,47 @@ CREATE TABLE items (
         ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
--- 3) LITERATURE subtype (ItemType: 1=Book,2=Textbook,3=Magazine,4=Audiobook)
+-- 3) LITERATURE subtype
+--    ItemType: 1=Book,2=Textbook,3=Magazine,4=Audiobook
+--    Genre: 0=Unspecified/Other,1=Classic,2=Historical Fiction,3=Fantasy,
+--           4=Science Fiction/Dystopian,5=Mystery/Thriller,6=Romance,
+--           7=Literary/Contemporary,8=Philosophy/Existential,9=Adventure,
+--           10=Science/Technology,11=Business/Economics,12=Politics/Current Affairs,
+--           13=Biography/Memoir,14=Arts/Culture,15=Horror/Gothic
 
 CREATE TABLE literature (
     ItemID BIGINT PRIMARY KEY,
     ItemType SMALLINT NOT NULL,
+    Genre SMALLINT NOT NULL DEFAULT 0,
     Author VARCHAR(100) NOT NULL,
     Publisher VARCHAR(100) NULL,
     PublicationYear INT NULL,
 
     CHECK (ItemType IN (1,2,3,4)),
+    CHECK (Genre IN (0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15)),
     CHECK (PublicationYear IS NULL OR PublicationYear > 0),
 
     CONSTRAINT fk_lit_item FOREIGN KEY (ItemID) REFERENCES items(ItemID)
         ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- 4) MEDIA subtype (ItemType: 1=DVD/CD,2=BluRay,3=Vinyl)
+-- 4) MEDIA subtype
+--    ItemType: 1=DVD/CD,2=BluRay,3=Vinyl
+--    Genre: 0=Unspecified/Other,1=Drama,2=Crime/Noir,3=Action/Adventure,
+--           4=Science Fiction/Fantasy,5=Thriller/Mystery,6=Comedy,7=Romance,
+--           8=Documentary/Biography,9=Horror,10=Rock/Alternative,11=Pop,
+--           12=Hip-Hop/Rap,13=R&B/Soul/Funk,14=Folk/Country,15=Jazz/Blues,
+--           16=Classical/Soundtrack
 
 CREATE TABLE media (
     ItemID BIGINT PRIMARY KEY,
     ItemType SMALLINT NOT NULL,
+    Genre SMALLINT NOT NULL DEFAULT 0,
     Producer VARCHAR(100) NULL,
     DurationMinutes INT NULL,
 
     CHECK (ItemType IN (1,2,3)),
+    CHECK (Genre IN (0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16)),
     CHECK (DurationMinutes IS NULL OR DurationMinutes > 0),
 
     CONSTRAINT fk_media_item FOREIGN KEY (ItemID) REFERENCES items(ItemID)

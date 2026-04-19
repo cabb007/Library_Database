@@ -86,6 +86,26 @@ BEGIN
         i.ItemID,
         i.Title,
         m.ItemType,
+        m.Genre,
+        CASE m.Genre
+            WHEN 1 THEN 'Drama'
+            WHEN 2 THEN 'Crime / Noir'
+            WHEN 3 THEN 'Action / Adventure'
+            WHEN 4 THEN 'Science Fiction / Fantasy'
+            WHEN 5 THEN 'Thriller / Mystery'
+            WHEN 6 THEN 'Comedy'
+            WHEN 7 THEN 'Romance'
+            WHEN 8 THEN 'Documentary / Biography'
+            WHEN 9 THEN 'Horror'
+            WHEN 10 THEN 'Rock / Alternative'
+            WHEN 11 THEN 'Pop'
+            WHEN 12 THEN 'Hip-Hop / Rap'
+            WHEN 13 THEN 'R&B / Soul / Funk'
+            WHEN 14 THEN 'Folk / Country'
+            WHEN 15 THEN 'Jazz / Blues'
+            WHEN 16 THEN 'Classical / Soundtrack'
+            ELSE 'Unspecified / Other'
+        END AS GenreName,
         m.Producer,
         m.DurationMinutes,
         GetAvailableCopies(i.ItemID) AS AvailableCopies,
@@ -154,6 +174,7 @@ CREATE PROCEDURE AddMedia(
     IN p_ItemID BIGINT,
     IN p_Title VARCHAR(100),
     IN p_ItemType SMALLINT,
+    IN p_Genre SMALLINT,
     IN p_Producer VARCHAR(100),
     IN p_DurationMinutes INT,
     IN p_Copies INT,
@@ -174,6 +195,11 @@ BEGIN
 
     -- Check that the media type is valid
     IF p_ItemType NOT IN (1,2,3) THEN
+        SET Flag = 1;
+    END IF;
+
+    -- Check that the media genre is valid
+    IF p_Genre NOT IN (0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16) THEN
         SET Flag = 1;
     END IF;
 
@@ -206,11 +232,13 @@ BEGIN
         INSERT INTO media (
             ItemID, 
             ItemType, 
+            Genre,
             Producer, 
             DurationMinutes
         ) VALUES (
             p_ItemID, 
             p_ItemType, 
+            p_Genre,
             p_Producer, 
             p_DurationMinutes
         );
@@ -234,7 +262,7 @@ BEGIN
 
     ELSE
         SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Unable to add media. Check ItemID, ItemType, DurationMinutes, or Copies.';
+        SET MESSAGE_TEXT = 'Unable to add media. Check ItemID, ItemType, Genre, DurationMinutes, or Copies.';
     END IF;
 
 END$$
@@ -396,6 +424,25 @@ BEGIN
         i.ItemID,
         i.Title,
         l.ItemType,
+        l.Genre,
+        CASE l.Genre
+            WHEN 1 THEN 'Classic'
+            WHEN 2 THEN 'Historical Fiction'
+            WHEN 3 THEN 'Fantasy'
+            WHEN 4 THEN 'Science Fiction / Dystopian'
+            WHEN 5 THEN 'Mystery / Thriller'
+            WHEN 6 THEN 'Romance'
+            WHEN 7 THEN 'Literary / Contemporary'
+            WHEN 8 THEN 'Philosophy / Existential'
+            WHEN 9 THEN 'Adventure'
+            WHEN 10 THEN 'Science / Technology'
+            WHEN 11 THEN 'Business / Economics'
+            WHEN 12 THEN 'Politics / Current Affairs'
+            WHEN 13 THEN 'Biography / Memoir'
+            WHEN 14 THEN 'Arts / Culture'
+            WHEN 15 THEN 'Horror / Gothic'
+            ELSE 'Unspecified / Other'
+        END AS GenreName,
         l.Author,
         l.Publisher,
         l.PublicationYear,
@@ -418,6 +465,7 @@ CREATE PROCEDURE AddLiterature(
     IN p_ItemID BIGINT,
     IN p_Title VARCHAR(100),
     IN p_ItemType SMALLINT,
+    IN p_Genre SMALLINT,
     IN p_Author VARCHAR(100),
     IN p_Publisher VARCHAR(100),
     IN p_PublicationYear INT,
@@ -439,6 +487,11 @@ BEGIN
 
     -- Check that the literature type is valid
     IF p_ItemType NOT IN (1,2,3,4) THEN
+        SET Flag = 1;
+    END IF;
+
+    -- Check that the literature genre is valid
+    IF p_Genre NOT IN (0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15) THEN
         SET Flag = 1;
     END IF;
 
@@ -472,6 +525,7 @@ BEGIN
         INSERT INTO literature (
             ItemID,
             ItemType,
+            Genre,
             Author,
             Publisher,
             PublicationYear
@@ -479,6 +533,7 @@ BEGIN
         VALUES (
             p_ItemID,
             p_ItemType,
+            p_Genre,
             p_Author,
             p_Publisher,
             p_PublicationYear
@@ -503,7 +558,7 @@ BEGIN
 
     ELSE
         SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Unable to add literature. Check ItemID, ItemType, PublicationYear, or Copies.';
+        SET MESSAGE_TEXT = 'Unable to add literature. Check ItemID, ItemType, Genre, PublicationYear, or Copies.';
     END IF;
 
 END$$
