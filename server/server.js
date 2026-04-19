@@ -1144,3 +1144,23 @@ app.get("/api/librarian/employee-audit/summary", requireLibrarian, async (_req, 
     res.status(500).json({ error: "Failed to fetch employee audit summary" });
   }
 });
+
+// Audit report route
+app.get("/api/librarian/employee-audit/report", requireLibrarian, async (req, res) => {
+  const { startDate, endDate, librarianId, tableName, actionType } = req.query;
+
+  try {
+    const [data] = await db.execute("CALL GetEmployeeAuditReport(?, ?, ?, ?, ?)", [
+      startDate || null,
+      endDate || null,
+      librarianId ? Number(librarianId) : null,
+      tableName || null,
+      actionType || null,
+    ]);
+
+    res.json(data[0]);
+  } catch (err) {
+    console.error("Failed to fetch employee audit report:", err);
+    res.status(500).json({ error: "Failed to fetch employee audit report" });
+  }
+});
