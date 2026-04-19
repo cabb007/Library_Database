@@ -29,6 +29,35 @@ function matchRoute(routePath, actualPath) {
   return params;
 }
 
+function isPromiseLike(value) {
+  return value && typeof value.then === "function";
+}
+
+function normalizeHandlers(handlers, label) {
+  const normalized = [];
+
+  const visit = (handler) => {
+    if (Array.isArray(handler)) {
+      handler.forEach(visit);
+      return;
+    }
+
+    if (typeof handler !== "function") {
+      throw new TypeError(`${label} must be a function`);
+    }
+
+    normalized.push(handler);
+  };
+
+  handlers.forEach(visit);
+
+  if (normalized.length === 0) {
+    throw new TypeError(`${label} requires at least one handler`);
+  }
+
+  return normalized;
+}
+
 /* ================= SESSION HANDLER ================= */
 
 function getSession(req, res) {
@@ -113,55 +142,113 @@ export function createApp() {
 
       /* ---------- MIDDLEWARE CHAIN ---------- */
 
-      let i = 0;
-
-      const runRoute = () => {
+      const matchRequestRoute = () => {
         for (const r of routes) {
           const params = matchRoute(r.path, req.pathname);
 
           if (r.method === req.method && params) {
-            req.params = params;
-            return r.handler(req, res);
+            return { route: r, params };
           }
         }
 
-        res.status(404).json({ error: "Not found" });
+        return null;
       };
 
-      const next = () => {
-        const mw = middlewares[i++];
+      const matched = matchRequestRoute();
+      req.params = matched?.params || {};
 
-        if (!mw) return runRoute();
+      const stack = [
+        ...middlewares,
+        ...(matched?.route.handlers || []),
+      ];
 
-        // Express-style middleware (req, res, next)
-        if (mw.length === 3) {
-          return mw(req, res, next);
+      const finish = (err) => {
+        if (res.writableEnded || res.destroyed) return;
+
+        if (err) {
+          console.error(err);
+
+          const statusCode =
+            Number.isInteger(err?.statusCode) ? err.statusCode
+            : Number.isInteger(err?.status) ? err.status
+            : 500;
+
+          return res
+            .status(statusCode)
+            .json({ error: err?.message || "Internal Server Error" });
         }
 
-        // simple middleware (req, res)
-        mw(req, res);
-        return next();
+        return res.status(404).json({ error: "Not found" });
       };
 
-      next();
+      let index = 0;
+
+      const dispatch = (err) => {
+        if (res.writableEnded || res.destroyed) return;
+
+        const handler = stack[index++];
+
+        if (!handler) {
+          return finish(err);
+        }
+
+        const isErrorHandler = handler.length === 4;
+
+        if (err && !isErrorHandler) {
+          return dispatch(err);
+        }
+
+        if (!err && isErrorHandler) {
+          return dispatch();
+        }
+
+        let called = false;
+
+        const next = (nextErr) => {
+          if (called) return;
+          called = true;
+          dispatch(nextErr);
+        };
+
+        try {
+          const result = err
+            ? handler(err, req, res, next)
+            : handler(req, res, next);
+
+          if (isPromiseLike(result)) {
+            result.catch(next);
+          }
+        } catch (caughtErr) {
+          next(caughtErr);
+        }
+      };
+
+      dispatch();
     });
   };
 
   /* ================= ROUTES ================= */
 
-  function register(method, path, handler) {
-    routes.push({ method, path, handler });
+  function register(method, path, ...handlers) {
+    routes.push({
+      method,
+      path,
+      handlers: normalizeHandlers(
+        handlers,
+        `Route handlers for ${method} ${path}`
+      ),
+    });
   }
 
-  app.get = (p, h) => register("GET", p, h);
-  app.post = (p, h) => register("POST", p, h);
-  app.put = (p, h) => register("PUT", p, h);
-  app.delete = (p, h) => register("DELETE", p, h);
+  app.get = (p, ...h) => register("GET", p, ...h);
+  app.post = (p, ...h) => register("POST", p, ...h);
+  app.put = (p, ...h) => register("PUT", p, ...h);
+  app.delete = (p, ...h) => register("DELETE", p, ...h);
 
   /* ================= MIDDLEWARE ================= */
 
-  app.use = (fn) => {
-    middlewares.push(fn);
+  app.use = (...handlers) => {
+    middlewares.push(...normalizeHandlers(handlers, "Middleware"));
   };
 
   /* ================= EXPRESS COMPATIBILITY NO-OPS ================= */
