@@ -2,14 +2,10 @@ import express from "express";
 import fs from "fs";
 import mysql from "mysql2/promise";
 import cors from "cors";
-import path from "path";
 import session from "express-session";
 import "dotenv/config";
 import path from "path"; // current folder
 import { fileURLToPath } from "url"; // current file
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
@@ -1075,17 +1071,17 @@ app.get("/api/notifications", requireLogin, async (req, res) => {
 // Mark notification as read
 app.post('/api/notifications/read', async (req, res) => {
   try {
-    const { notificationId } = req.body;
+    const { NotificationID } = req.body;
 
     if (!req.session || !req.session.user) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
 
-    if (!notificationId) {
-      return res.status(400).json({ error: 'notificationId is required' });
+    if (!NotificationID) {
+      return res.status(400).json({ error: 'NotificationID is required' });
     }
 
-    await db.promise().query('CALL MarkNotificationRead(?)', [notificationId]);
+    await db.promise().query('CALL MarkNotificationRead(?)', [NotificationID]);
 
     res.json({
       success: true,

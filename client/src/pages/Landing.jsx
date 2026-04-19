@@ -350,43 +350,81 @@ export default function Landing() {
 
           {/* 🔴 RED DOT / STAR (only if unread exist) */}
           {notifications.length > 0 && (
-            <span className="absolute -top-1 -right-1 text-red-500 text-lg leading-none">
-              *
-            </span>
-          )}
+            <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 shadow-lg ring-2 ring-stone-950" />          )}
         </button>
 
         {/* DROPDOWN */}
-        {notifOpen && (
-          <div className="absolute right-0 mt-2 w-80 bg-stone-900 border border-amber-700 rounded-lg shadow-xl z-50">
+              {notifOpen && (
+                <div className="absolute right-0 mt-2 w-80 bg-stone-900 border border-amber-700 rounded-lg shadow-xl z-50">
 
-            <div className="p-3 border-b border-amber-900/30 text-amber-300">
-              Notifications
-            </div>
-
-            <div className="max-h-64 overflow-y-auto">
-              {notifications.length === 0 ? (
-                <div className="p-3 text-stone-400 text-sm">
-                  No notifications
-                </div>
-              ) : (
-                notifications.map((n, i) => (
-                  <div
-                    key={i}
-                    className="p-3 border-b border-amber-900/10 text-sm text-stone-300"
-                  >
-                    {n.message || n.Message}
+                  <div className="p-3 border-b border-amber-900/30 text-amber-300">
+                    Notifications
                   </div>
-                ))
+
+                  <div className="max-h-64 overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <div className="p-3 text-stone-400 text-sm">
+                        No notifications
+                      </div>
+                    ) : (
+                      notifications.map((n, i) => {
+                        const id = n.NotificationID;
+
+                        return (
+                          <div
+                            key={id || i}
+                            className="p-3 border-b border-amber-900/10 text-sm text-stone-300 flex items-center justify-between gap-3"
+                          >
+                            {/* TEXT (won’t push button out) */}
+                            <span className="flex-1 truncate pr-2">
+                              {n.header || n.Header}
+                            </span>
+
+                            {/* BUTTON */}
+                            <button
+                              onClick={async () => {
+                                try {
+                                  if (!id) {
+                                    console.error("No notification ID found", n);
+                                    return;
+                                  }
+
+                                  const res = await fetch(`${API}/api/notifications/read`, {
+                                    method: "POST",
+                                    headers: {
+                                      "Content-Type": "application/json",
+                                    },
+                                    credentials: "include",
+                                    body: JSON.stringify({ NotificationID: id }),
+                                  });
+
+                                  if (!res.ok) {
+                                    throw new Error("Failed to mark as read");
+                                  }
+
+                                  // remove from UI immediately
+                                  setNotifications(prev =>
+                                    prev.filter(item =>
+                                      (item.NotificationID) !== id
+                                    )
+                                  );
+                                } catch (err) {
+                                  console.error("mark as read failed", err);
+                                }
+                              }}
+                              className="text-xs px-2 py-1 border border-amber-500 text-amber-200 rounded hover:bg-amber-800/30 transition shrink-0"
+                            >
+                              Read
+                            </button>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
               )}
             </div>
-
-          </div>
-        )}
-
-      </div>
-    )}
-
+          )}
   </div>
 </nav>
 

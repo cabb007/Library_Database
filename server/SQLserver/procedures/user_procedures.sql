@@ -257,14 +257,14 @@ BEGIN
     SELECT
         NotificationID,
         UserID,
-        Message,
+        Header,
+        Body,
         IsRead,
         CreatedAt
     FROM notifications
     WHERE UserID = p_UserID AND IsRead = 0
     ORDER BY CreatedAt DESC, NotificationID DESC;
 END$$
-
 
 -- =========================================================
 -- Procedure: Mark a notification as read
