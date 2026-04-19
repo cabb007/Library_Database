@@ -29,10 +29,8 @@ body,
    theme feels academic and branded instead of dark and game-like. */
 body {
   margin: 0;
+  background-color: #f7f3e8;
   color: var(--uh-slate);
-  background:
-    radial-gradient(circle at top, rgba(200, 16, 46, 0.08), transparent 28rem),
-    linear-gradient(180deg, var(--uh-cream-soft) 0%, var(--uh-cream) 100%);
   font-family: "Source Sans 3", "Segoe UI", sans-serif;
 }
 
@@ -53,10 +51,9 @@ button {
    as a UH-friendly cream, white, slate, and red palette. That lets the current
    JSX stay mostly intact while the whole app picks up the new theme. */
 .bg-stone-950 {
-  background:
-    radial-gradient(circle at top, rgba(200, 16, 46, 0.07), transparent 22rem),
-    linear-gradient(180deg, var(--uh-cream-soft) 0%, var(--uh-cream) 100%) !important;
+  background-color: #f7f3e8 !important;
 }
+
 
 .bg-stone-950\/75 {
   background-color: rgba(255, 253, 244, 0.96) !important;
