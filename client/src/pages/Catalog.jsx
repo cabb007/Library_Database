@@ -159,14 +159,29 @@ export default function ItemDashboard() {
   }
 
   function applySearchFilter(items) {
-    if (!searchQuery.trim()) return items;
+  if (!searchQuery.trim()) return items;
 
-    const q = searchQuery.toLowerCase();
+  const q = searchQuery.toLowerCase().trim();
 
-    return items.filter((item) =>
-      (item.Title ?? "").toLowerCase().includes(q)
-    );
-  }
+  return items.filter((item) => {
+    const haystack = [
+      item.ItemID,
+      item.Title,
+      item.Author,
+      item.Publisher,
+      item.Producer,
+      item.Manufacturer,
+      item.Model,
+      item.PublicationYear,
+      item.DurationMinutes,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+
+    return haystack.includes(q);
+  });
+}
 
   // Build the visible rows before rendering so the JSX stays focused on layout instead of filter logic.
   const filteredLiterature = applySearchFilter(
