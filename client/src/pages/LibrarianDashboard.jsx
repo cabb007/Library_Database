@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import API from "../api";
 
 export default function LibrarianDashboard() {
   const navigate = useNavigate();
@@ -11,6 +12,7 @@ export default function LibrarianDashboard() {
   const [bookSearch, setBookSearch] = useState("");
   const [mediaSearch, setMediaSearch] = useState("");
   const [deviceSearch, setDeviceSearch] = useState("");
+  const [loanSearch, setloanSearch] = useState("");
   const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [literature, setLiterature] = useState([]);
@@ -50,6 +52,7 @@ export default function LibrarianDashboard() {
   const [fines, setFines] = useState([]);
   const [fineSearch, setFineSearch] = useState("");
   const [finesFilter, setFinesFilter] = useState("all");
+  const [returnError, setReturnError] = useState("");
 
   const [showLitForm, setShowLitForm] = useState(false);
   const [showMediaForm, setShowMediaForm] = useState(false);
@@ -659,19 +662,27 @@ export default function LibrarianDashboard() {
   }
 
   async function handleReturn(loanId) {
-        setReturnError("");
-        try {
-            const response = await fetch(`${API}/api/user/loans/${loanId}/return`, {
-                method: "POST",
-                credentials: "include"
-            });
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.error || "Failed to return item");
-            await fetchLoans();
-        } catch (err) {
-            setReturnError(err.message);
-        }
+    const isOverdue = loansTab === "overdue";
+    const msg = isOverdue
+      ? `Return loan #${loanId}? This item is overdue — fine accrual will stop once returned.`
+      : `Return loan #${loanId}?`;
+    if (!confirm(msg)) return;
+    setReturnError("");
+    try {
+      const res = await fetch(`${API}/api/loans/return`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ loanId })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to return item");
+      if (loansTab === "active") await fetchActiveLoans();
+      else await fetchOverdueLoans();
+    } catch (err) {
+      setReturnError(err.message);
     }
+  }
 
   async function handleLogout() {
     try {
@@ -1360,6 +1371,13 @@ export default function LibrarianDashboard() {
       {view === "loans" && (
         <div>
           <h2>Loans</h2>
+          <input
+                placeholder="Search by LoanID, UserID, Name or Title..."
+                value={loanSearch}
+                onChange={e => setloanSearch(e.target.value)}
+                style={{ marginBottom: "0.5rem", padding: "0.4rem", width: "100%" }}
+              />
+          {returnError && <p style={{ color: "red", marginBottom: "0.5rem" }}>{returnError}</p>}
           <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
             <button
               onClick={() => { setLoansTab("active"); fetchActiveLoans(); }}
@@ -1395,10 +1413,13 @@ export default function LibrarianDashboard() {
                     <th>Created By</th>
                     <th>Updated At</th>
                     <th>Updated By</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {activeLoans.map(loan => (
+                  {activeLoans.filter(l =>
+                    `${l.LoanID} ${l.UserID} ${l.UserName} ${l.Title}`.toLowerCase().includes(loanSearch.toLowerCase())
+                  ).map(loan => (
                     <tr key={loan.LoanID}>
                       <td>{loan.LoanID}</td>
                       <td>{loan.UserID}</td>
@@ -1411,6 +1432,9 @@ export default function LibrarianDashboard() {
                       <td>{userNameById(loan.CreatedBy)}</td>
                       <td>{loan.UpdatedAt ? new Date(loan.UpdatedAt).toLocaleString() : "—"}</td>
                       <td>{userNameById(loan.UpdatedBy)}</td>
+                      <td>
+                        <button onClick={() => handleReturn(loan.LoanID)}>Return</button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -1438,6 +1462,7 @@ export default function LibrarianDashboard() {
                     <th>Created By</th>
                     <th>Updated At</th>
                     <th>Updated By</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1454,6 +1479,9 @@ export default function LibrarianDashboard() {
                       <td>{userNameById(loan.CreatedBy)}</td>
                       <td>{loan.UpdatedAt ? new Date(loan.UpdatedAt).toLocaleString() : "—"}</td>
                       <td>{userNameById(loan.UpdatedBy)}</td>
+                      <td>
+                        <button onClick={() => handleReturn(loan.LoanID)}>Return</button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -1575,7 +1603,7 @@ export default function LibrarianDashboard() {
             </thead>
             <tbody>
               {users.filter(u =>
-                `${u.FirstName} ${u.LastName} ${u.Email} ${u.UserType}`.toLowerCase().includes(userSearch.toLowerCase())
+                `${u.FirstName} ${u.LastName} ${u.Email} ${userTypeLabel(u.UserType)}`.toLowerCase().includes(userSearch.toLowerCase())
               ).map(u => (
                 <tr key={u.UserID}>
                   <td>{u.UserID}</td>
