@@ -5,16 +5,48 @@ import API from "../api";
 export default function ItemDashboard() {
   const navigate = useNavigate();
   const location = useLocation();
+  // Keep the tab values lowercase for existing state checks, but show title-case labels in the UI.
+  const catalogTabs = [
+    { value: "books", label: "Books" },
+    { value: "media", label: "Media" },
+    { value: "devices", label: "Devices" },
+  ];
+  // Match each top-level catalog tab to the ItemType values used by that category in the database.
+  const itemTypeFilters = {
+    books: [
+      { value: 1, label: "Book" },
+      { value: 2, label: "Textbook" },
+      { value: 3, label: "Magazine" },
+      { value: 4, label: "Audiobook" },
+    ],
+    media: [
+      { value: 1, label: "DVD / CD" },
+      { value: 2, label: "Blu-ray" },
+      { value: 3, label: "Vinyl" },
+    ],
+    devices: [
+      { value: 1, label: "Laptop" },
+      { value: 2, label: "Tablet" },
+      { value: 3, label: "Equipment" },
+    ],
+  };
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeSubTab, setActiveSubTab] = useState(location.state?.subTab ?? "books");
+  // Store one selected ItemType per category so switching tabs does not wipe out the user's last subfilter choice.
+  const [activeTypeFilters, setActiveTypeFilters] = useState({
+    books: "all",
+    media: "all",
+    devices: "all",
+  });
   const highlightId = location.state?.highlightId ?? null; // highlight item from featured navigation
   const [highlightedId, setHighlightedId] = useState(null);
 
   const [literature, setLiterature] = useState([]);
   const [media, setMedia] = useState([]);
   const [devices, setDevices] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // =========================
   // FETCH DATA
@@ -83,7 +115,7 @@ export default function ItemDashboard() {
 
   // scrolls to specific item when highlightID is set, briefly highlights it, 
   // then removes the highlight after 2 seconds
-  useEffect(() => { 
+  useEffect(() => {
     if (!highlightId) return;
     const el = document.getElementById(`row-${highlightId}`);
     if (!el) return;
@@ -117,6 +149,53 @@ export default function ItemDashboard() {
     });
   }
 
+  // Reuse one filter helper so each table only renders items that match the currently selected ItemType button.
+  function getFilteredItems(items, categoryKey) {
+    const selectedType = activeTypeFilters[categoryKey];
+
+    if (selectedType === "all") return items;
+
+    return items.filter((item) => Number(item.ItemType) === selectedType);
+  }
+
+  function applySearchFilter(items) {
+  if (!searchQuery.trim()) return items;
+
+  const q = searchQuery.toLowerCase().trim();
+
+  return items.filter((item) => {
+    const haystack = [
+      item.ItemID,
+      item.Title,
+      item.Author,
+      item.Publisher,
+      item.Producer,
+      item.Manufacturer,
+      item.Model,
+      item.PublicationYear,
+      item.DurationMinutes,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+
+    return haystack.includes(q);
+  });
+}
+
+  // Build the visible rows before rendering so the JSX stays focused on layout instead of filter logic.
+  const filteredLiterature = applySearchFilter(
+    getFilteredItems(literature, "books")
+  );
+
+  const filteredMedia = applySearchFilter(
+    getFilteredItems(media, "media")
+  );
+
+  const filteredDevices = applySearchFilter(
+    getFilteredItems(devices, "devices")
+  );
+
   // =========================
   // TABLE RENDER
   // =========================
@@ -143,11 +222,10 @@ export default function ItemDashboard() {
               onClick={() =>
                 isAvailable ? handleCheckout(item) : handleHold(item)
               }
-              className={`px-4 py-1 rounded text-stone-950 ${
-                isAvailable
+              className={`px-4 py-1 rounded text-stone-950 ${isAvailable
                   ? "bg-amber-700 hover:bg-amber-600"
                   : "bg-stone-600 hover:bg-stone-500"
-              }`}
+                }`}
             >
               {isAvailable ? "Checkout" : "Hold"}
             </button>
@@ -187,52 +265,102 @@ export default function ItemDashboard() {
           Home
         </button>
       </nav>
-
+      <div className="flex justify-center mt-6 px-6">
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search items by title..."
+          className="w-full max-w-md px-4 py-2 rounded border border-amber-700 bg-stone-900 text-amber-50 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-amber-600"
+        />
+      </div>
       <div className="flex justify-center gap-4 mt-8">
-          {["books", "media", "devices"].map((sub) => (
-            <button
-              key={sub}
-              onClick={() => setActiveSubTab(sub)}
-              className={`px-4 py-1 rounded ${
-                activeSubTab === sub
-                  ? "bg-amber-700 text-stone-950"
-                  : "border border-amber-700 text-amber-300"
+        {catalogTabs.map((tab) => (
+          <button
+            key={tab.value}
+            onClick={() => setActiveSubTab(tab.value)}
+            className={`px-4 py-1 rounded ${activeSubTab === tab.value
+                ? "bg-amber-700 text-stone-950"
+                : "border border-amber-700 text-amber-300"
               }`}
-            >
-              {sub}
-            </button>
-          ))}
-        </div>
+          >
+            {/* Render the title-case label so the tab text matches the requested button styling. */}
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Show ItemType subfilters directly below the main category tabs so users can narrow the active catalog view. */}
+      <div className="flex flex-wrap justify-center gap-3 mt-4 px-6">
+        <button
+          onClick={() =>
+            setActiveTypeFilters((currentFilters) => ({
+              ...currentFilters,
+              [activeSubTab]: "all",
+            }))
+          }
+          className={`px-4 py-1 rounded ${activeTypeFilters[activeSubTab] === "all"
+              ? "bg-amber-700 text-stone-950"
+              : "border border-amber-700 text-amber-300"
+            }`}
+        >
+          All
+        </button>
+
+        {itemTypeFilters[activeSubTab].map((filter) => (
+          <button
+            key={`${activeSubTab}-${filter.value}`}
+            onClick={() =>
+              setActiveTypeFilters((currentFilters) => ({
+                ...currentFilters,
+                [activeSubTab]: filter.value,
+              }))
+            }
+            className={`px-4 py-1 rounded ${activeTypeFilters[activeSubTab] === filter.value
+                ? "bg-amber-700 text-stone-950"
+                : "border border-amber-700 text-amber-300"
+              }`}
+          >
+            {/* Use the database-backed ItemType label so each subfilter button matches its category's real subtype. */}
+            {filter.label}
+          </button>
+        ))}
+      </div>
 
       <div className="p-10 max-w-5xl mx-auto w-full">
         {activeSubTab === "books" && (
-          <table className="w-full border border-amber-900/30">
-            <thead>
-              <tr className="bg-stone-900">
-                <th className="p-3">ISBN</th>
-                <th className="p-3">Title</th>
-                <th className="p-3">Publisher</th>
-                <th className="p-3">Author</th>
-                <th className="p-3">Year</th>
-                <th className="p-3">Avail</th>
-                <th className="p-3">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {renderTableRows(literature, [
-                { key: "ItemID" },
-                { key: "Title" },
-                { key: "Publisher" },
-                { key: "Author" },
-                { key: "PublicationYear" },
-                { key: "AvailableCopies" },
-              ])}
-            </tbody>
-          </table>
+          <>
+            {/* The shared `uh-catalog-table` class keeps the light UH palette
+                readable by giving the table headers a subtle branded tint. */}
+            <table className="uh-catalog-table w-full border border-amber-900/30">
+              <thead>
+                <tr className="bg-stone-900">
+                  <th className="p-3">ISBN</th>
+                  <th className="p-3">Title</th>
+                  <th className="p-3">Publisher</th>
+                  <th className="p-3">Author</th>
+                  <th className="p-3">Year</th>
+                  <th className="p-3">Avail</th>
+                  <th className="p-3">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {/* Pass the already-filtered literature rows so the subfilter buttons immediately affect the books table. */}
+                {renderTableRows(filteredLiterature, [
+                  { key: "ItemID" },
+                  { key: "Title" },
+                  { key: "Publisher" },
+                  { key: "Author" },
+                  { key: "PublicationYear" },
+                  { key: "AvailableCopies" },
+                ])}
+              </tbody>
+            </table>
+          </>
         )}
 
         {activeSubTab === "media" && (
-          <table className="w-full border border-amber-900/30">
+          <table className="uh-catalog-table w-full border border-amber-900/30">
             <thead>
               <tr className="bg-stone-900">
                 <th className="p-3">Name</th>
@@ -243,7 +371,8 @@ export default function ItemDashboard() {
               </tr>
             </thead>
             <tbody>
-              {renderTableRows(media, [
+              {/* Pass the filtered media rows so only the selected media type stays visible. */}
+              {renderTableRows(filteredMedia, [
                 { key: "Title" },
                 { key: "Producer" },
                 { key: "DurationMinutes" },
@@ -254,7 +383,7 @@ export default function ItemDashboard() {
         )}
 
         {activeSubTab === "devices" && (
-          <table className="w-full border border-amber-900/30">
+          <table className="uh-catalog-table w-full border border-amber-900/30">
             <thead>
               <tr className="bg-stone-900">
                 <th className="p-3">Name</th>
@@ -265,7 +394,8 @@ export default function ItemDashboard() {
               </tr>
             </thead>
             <tbody>
-              {renderTableRows(devices, [
+              {/* Pass the filtered device rows so the device subfilter buttons control this table. */}
+              {renderTableRows(filteredDevices, [
                 { key: "Title" },
                 { key: "Manufacturer" },
                 { key: "Model" },

@@ -9,6 +9,8 @@ export default function UserAccount() {
     const [holds, setHolds] = useState([]);
     const [error, setError] = useState("");
     const [returnError, setReturnError] = useState("");
+    const [notifications, setNotifications] = useState([]);
+    const [notifOpen, setNotifOpen] = useState(false);
 
     const navigate = useNavigate();
 
@@ -19,7 +21,12 @@ export default function UserAccount() {
                 const data = await response.json();
                 if (response.ok) {
                     setUser(data.user);
-                    await Promise.all([fetchBalance(), fetchLoans(), fetchHolds()]);
+                    await Promise.all([
+                        fetchBalance(),
+                        fetchLoans(),
+                        fetchHolds(),
+                        fetchNotifications()
+                    ]);
                 } else {
                     setUser(null);
                     setBalance(0);
@@ -62,6 +69,21 @@ export default function UserAccount() {
         }
     }
 
+    async function fetchNotifications() {
+        try {
+            const response = await fetch(`${API}/api/notifications`, {
+                credentials: "include"
+            });
+
+            if (!response.ok) return;
+
+            const data = await response.json();
+            setNotifications(Array.isArray(data) ? data : []);
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
     async function handleReturn(loanId) {
         setReturnError("");
         try {
@@ -97,6 +119,15 @@ export default function UserAccount() {
     const initials = user
         ? `${user.FirstName?.[0] ?? ""}${user.LastName?.[0] ?? ""}`.toUpperCase()
         : "";
+    // Translate the numeric UserType from the logged-in user record into the plain label shown on the account page.
+    const userTypeLabel = user?.UserType === 1
+        ? "Faculty"
+        : user?.UserType === 2
+            ? "Librarian"
+            : "Student";
+    // Match the balance-based account rule used in the SQL procedures: any unpaid balance means the account is not active.
+    const accountStatusLabel = Number(balance) > 0 ? "Inactive" : "Active";
+    const accountStatusClassName = Number(balance) > 0 ? "text-red-400" : "text-green-400";
 
     const activeLoans = loans.filter(l => !l.ReturnDate);
     const pastLoans = loans.filter(l => l.ReturnDate);
@@ -121,6 +152,85 @@ export default function UserAccount() {
                 >
                     ← Home
                 </button>
+                {/* HEADER ROW: Home + Notifications */}
+                <div className="flex items-center justify-between mb-6">
+
+                    {/* LEFT SIDE: Home (keeps original button behavior) */}
+                    <div />
+
+                    {/* RIGHT SIDE: Notifications */}
+                    <div className="relative">
+
+                        <button
+                            onClick={() => setNotifOpen(prev => !prev)}
+                            className="relative px-3 py-2 border border-amber-700 rounded hover:bg-amber-900/30 transition"
+                        >
+                            🔔
+
+                            {(notifications?.length ?? 0) > 0 && (
+                                <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full" />
+                            )}
+                        </button>
+
+                        {notifOpen && (
+                            <div className="absolute right-0 mt-2 w-72 bg-stone-900 border border-amber-700 rounded shadow-xl z-50">
+
+                                <div className="p-2 border-b border-amber-900/30 text-amber-300 text-sm">
+                                    Notifications
+                                </div>
+
+                                <div className="max-h-64 overflow-y-auto">
+                                    {(notifications?.length ?? 0) === 0 ? (
+                                        <div className="p-3 text-stone-400 text-sm">
+                                            No notifications
+                                        </div>
+                                    ) : (
+                                        notifications.map((n, i) => (
+                                            <div
+                                                key={n.NotificationID || i}
+                                                className="p-3 border-b border-amber-900/10 flex items-start justify-between gap-3"
+                                            >
+                                                <div className="flex flex-col min-w-0 pr-2">
+                                                    <div className="text-amber-200 text-sm font-semibold">
+                                                        {n.header || n.Header}
+                                                    </div>
+                                                    <div className="text-stone-400 text-xs">
+                                                        {n.body || n.Body}
+                                                    </div>
+                                                </div>
+
+                                                <button
+                                                    onClick={async () => {
+                                                        try {
+                                                            await fetch(`${API}/api/notifications/read`, {
+                                                                method: "POST",
+                                                                headers: { "Content-Type": "application/json" },
+                                                                credentials: "include",
+                                                                body: JSON.stringify({
+                                                                    NotificationID: n.NotificationID
+                                                                })
+                                                            });
+
+                                                            setNotifications(prev =>
+                                                                prev.filter(x => x.NotificationID !== n.NotificationID)
+                                                            );
+                                                        } catch (err) {
+                                                            console.error(err);
+                                                        }
+                                                    }}
+                                                    className="text-xs px-2 py-1 border border-amber-500 text-amber-200 rounded hover:bg-amber-800/30 transition shrink-0"
+                                                >
+                                                    Read
+                                                </button>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
 
                 {/* Profile Card */}
                 <div className="bg-stone-900 border border-stone-700 rounded-2xl overflow-hidden shadow-xl mb-8">
@@ -149,11 +259,16 @@ export default function UserAccount() {
                                 <span className="text-stone-400 text-sm tracking-widest uppercase">User ID</span>
                                 <span className="text-amber-100 font-mono">{user.UserID}</span>
                             </div>
+                            {/* Show the account type directly under User ID so the profile makes it clear which kind of user is signed in. */}
+                            <div className="flex justify-between items-center border-b border-stone-800 pb-4">
+                                <span className="text-stone-400 text-sm tracking-widest uppercase">User Type</span>
+                                <span className="text-amber-100">{userTypeLabel}</span>
+                            </div>
                             <div className="flex justify-between items-center border-b border-stone-800 pb-4">
                                 <span className="text-stone-400 text-sm tracking-widest uppercase">Email</span>
                                 <span className="text-amber-100">{user.Email}</span>
                             </div>
-                            <div className="flex justify-between items-center">
+                            <div className="flex justify-between items-center border-b border-stone-800 pb-4">
                                 <span className="text-stone-400 text-sm tracking-widest uppercase">Balance</span>
                                 <div className="flex items-center gap-3">
                                     <span className={`font-semibold text-lg ${balance > 0 ? "text-red-400" : "text-green-400"}`}>
@@ -168,6 +283,11 @@ export default function UserAccount() {
                                         </button>
                                     )}
                                 </div>
+                            </div>
+                            {/* Show the user-facing account status directly under Balance so it reflects whether unpaid fines currently block the account. */}
+                            <div className="flex justify-between items-center">
+                                <span className="text-stone-400 text-sm tracking-widest uppercase">Account Status</span>
+                                <span className={`font-semibold ${accountStatusClassName}`}>{accountStatusLabel}</span>
                             </div>
                         </div>
                     )}
@@ -188,10 +308,6 @@ export default function UserAccount() {
                 {/* Loans Section */}
                 {user && (
                     <>
-                        {returnError && (
-                            <p className="text-red-400 text-sm mb-4">{returnError}</p>
-                        )}
-
                         {/* Active Loans */}
                         <div className="mb-6">
                             <h2 className="text-lg font-semibold tracking-widest uppercase text-amber-500 mb-3">
@@ -201,10 +317,11 @@ export default function UserAccount() {
                                 <p className="text-stone-500 text-sm">No active loans.</p>
                             ) : (
                                 <div className="flex flex-col gap-3">
+                                    {/* Keep active loan cards informational on the user side; returns are no longer started from this page. */}
                                     {activeLoans.map(loan => (
                                         <div
                                             key={loan.LoanID}
-                                            className="bg-stone-900 border border-stone-700 rounded-xl px-5 py-4 flex items-center justify-between gap-4"
+                                            className="bg-stone-900 border border-stone-700 rounded-xl px-5 py-4"
                                         >
                                             <div className="flex flex-col gap-0.5 min-w-0">
                                                 <span className="font-medium truncate">{loan.Title}</span>
@@ -214,12 +331,6 @@ export default function UserAccount() {
                                                     {isOverdue(loan.DueDate) && " — Overdue"}
                                                 </span>
                                             </div>
-                                            <button
-                                                onClick={() => handleReturn(loan.LoanID)}
-                                                className="shrink-0 px-4 py-2 bg-amber-700 hover:bg-amber-600 text-stone-950 text-sm font-semibold rounded-lg transition"
-                                            >
-                                                Return
-                                            </button>
                                         </div>
                                     ))}
                                 </div>

@@ -43,4 +43,5 @@ SOURCE procedures/transactions.sql;
 SOURCE procedures/update_procedures.sql;
 SOURCE procedures/scheduling.sql;
 SOURCE procedures/triggers.sql;
+SOURCE procedures/reports.sql;
 SOURCE load_all.sql;
