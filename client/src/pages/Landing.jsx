@@ -83,9 +83,11 @@ function FeaturedCard({ entry }) {
   const isAvailable = entry.availableCopies > 0;
 
   return (
-    <article className="group overflow-hidden rounded-[1.75rem] border border-amber-900/30 bg-stone-900/80 shadow-lg shadow-amber-950/20 transition hover:-translate-y-1 hover:border-amber-700/50">
-      <div className="relative aspect-[4/5] overflow-hidden border-b border-amber-900/20 bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.22),_transparent_52%),linear-gradient(180deg,rgba(68,64,60,0.18),rgba(12,10,9,0.95))]">
-        <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/25 to-transparent z-10" />
+    <article className="uh-featured-card group overflow-hidden rounded-[1.75rem] border border-amber-900/30 bg-stone-900/80 shadow-lg shadow-amber-950/20 transition hover:-translate-y-1 hover:border-amber-700/50">
+      {/* These custom UH classes replace the old hard-coded dark amber gradient
+          with a lighter red-and-cream treatment that matches the new palette. */}
+      <div className="uh-featured-card-media relative aspect-[4/5] overflow-hidden border-b border-amber-900/20">
+        <div className="uh-featured-card-overlay absolute inset-0 z-10" />
         <div className="absolute left-4 top-4 z-20 inline-flex items-center rounded-full border border-amber-100/15 bg-stone-950/70 px-3 py-1 text-[0.65rem] uppercase tracking-[0.25em] text-amber-100/80 backdrop-blur">
           {entry.category}
         </div>
@@ -276,10 +278,12 @@ export default function Landing() {
     fetchFeatured();
   }, []);
 
+  // Each hero card now carries its matching catalog sub-tab so the landing page
+  // routes users straight into the correct section after they click a category.
   const CATEGORIES = [
-    { label: "Literature", count: counts.Literature, icon: CATEGORY_ICONS.Literature },
-    { label: "Media", count: counts.Media, icon: CATEGORY_ICONS.Media },
-    { label: "Devices", count: counts.Devices, icon: CATEGORY_ICONS.Devices },
+    { label: "Literature", count: counts.Literature, icon: CATEGORY_ICONS.Literature, subTab: "books" },
+    { label: "Media", count: counts.Media, icon: CATEGORY_ICONS.Media, subTab: "media" },
+    { label: "Devices", count: counts.Devices, icon: CATEGORY_ICONS.Devices, subTab: "devices" },
   ];
 
   function scrollToFeatured() {

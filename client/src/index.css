@@ -1,49 +1,389 @@
 @import "tailwindcss";
 
-button {
-    cursor: pointer;
+/* Centralized University of Houston color tokens keep the brand colors in one
+   place so the rest of the app can inherit the palette consistently. */
+:root {
+  --uh-red: #c8102e;
+  --uh-red-dark: #960c22;
+  --uh-red-soft: rgba(200, 16, 46, 0.08);
+  --uh-cream: #fff9d9;
+  --uh-cream-soft: #fffdf4;
+  --uh-white: #ffffff;
+  --uh-slate: #54585a;
+  --uh-slate-soft: #707476;
+  --uh-slate-faint: #8b8f92;
+  --uh-panel: #f6eee9;
+  --uh-border: rgba(200, 16, 46, 0.18);
+  --uh-border-strong: rgba(150, 12, 34, 0.28);
+  --uh-shadow: rgba(100, 8, 23, 0.12);
+  --uh-success: #00866c;
 }
 
-/* hides the scrollbar on a horizontally scrollable 
-image row so users can scroll through images without seeing the scrollbar. 
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+/* The site background uses a light cream field with a faint red glow so the
+   theme feels academic and branded instead of dark and game-like. */
+body {
+  margin: 0;
+  color: var(--uh-slate);
+  background:
+    radial-gradient(circle at top, rgba(200, 16, 46, 0.08), transparent 28rem),
+    linear-gradient(180deg, var(--uh-cream-soft) 0%, var(--uh-cream) 100%);
+  font-family: "Source Sans 3", "Segoe UI", sans-serif;
+}
+
+/* Headings keep a more traditional serif stack so the library feels scholarly. */
+.font-serif,
+h1,
+h2,
+h3,
+h4 {
+  font-family: "Crimson Text", Georgia, serif;
+}
+
+button {
+  cursor: pointer;
+}
+
+/* These overrides reinterpret the existing dark stone / amber Tailwind classes
+   as a UH-friendly cream, white, slate, and red palette. That lets the current
+   JSX stay mostly intact while the whole app picks up the new theme. */
+.bg-stone-950 {
+  background:
+    radial-gradient(circle at top, rgba(200, 16, 46, 0.07), transparent 22rem),
+    linear-gradient(180deg, var(--uh-cream-soft) 0%, var(--uh-cream) 100%) !important;
+}
+
+.bg-stone-950\/75 {
+  background-color: rgba(255, 253, 244, 0.96) !important;
+}
+
+.bg-stone-950\/70 {
+  background-color: rgba(255, 253, 244, 0.93) !important;
+}
+
+.bg-stone-950\/60 {
+  background-color: rgba(255, 253, 244, 0.88) !important;
+}
+
+.bg-stone-950\/40 {
+  background-color: rgba(255, 253, 244, 0.78) !important;
+}
+
+.bg-stone-900 {
+  background-color: rgba(255, 255, 255, 0.96) !important;
+}
+
+.bg-stone-900\/80 {
+  background-color: rgba(255, 255, 255, 0.94) !important;
+}
+
+.bg-stone-900\/60 {
+  background-color: rgba(255, 255, 255, 0.88) !important;
+}
+
+.bg-stone-900\/45 {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.bg-stone-800 {
+  background-color: var(--uh-panel) !important;
+}
+
+.bg-stone-800\/80 {
+  background-color: rgba(246, 238, 233, 0.88) !important;
+}
+
+.bg-stone-600 {
+  background-color: var(--uh-slate) !important;
+}
+
+.hover\:bg-stone-800:hover {
+  background-color: #f2e7e1 !important;
+}
+
+.hover\:bg-stone-500:hover {
+  background-color: #6a6f71 !important;
+}
+
+.bg-amber-700 {
+  background-color: var(--uh-red) !important;
+}
+
+.hover\:bg-amber-600:hover {
+  background-color: var(--uh-red-dark) !important;
+}
+
+.bg-amber-500\/10 {
+  background-color: rgba(200, 16, 46, 0.1) !important;
+}
+
+.bg-amber-800\/30,
+.hover\:bg-amber-800\/30:hover,
+.bg-amber-900\/30,
+.hover\:bg-amber-900\/30:hover {
+  background-color: rgba(200, 16, 46, 0.12) !important;
+}
+
+.bg-amber-900\/40 {
+  background-color: rgba(150, 12, 34, 0.2) !important;
+}
+
+.bg-amber-800\/60 {
+  background-color: rgba(150, 12, 34, 0.58) !important;
+}
+
+.bg-amber-800\/50 {
+  background-color: rgba(150, 12, 34, 0.48) !important;
+}
+
+.bg-amber-800\/40 {
+  background-color: rgba(150, 12, 34, 0.38) !important;
+}
+
+.bg-amber-700\/60 {
+  background-color: rgba(200, 16, 46, 0.56) !important;
+}
+
+.bg-amber-700\/50 {
+  background-color: rgba(200, 16, 46, 0.46) !important;
+}
+
+.bg-amber-700\/40 {
+  background-color: rgba(200, 16, 46, 0.36) !important;
+}
+
+.bg-amber-900\/70 {
+  background-color: rgba(100, 8, 23, 0.62) !important;
+}
+
+.bg-amber-900\/60 {
+  background-color: rgba(100, 8, 23, 0.52) !important;
+}
+
+.bg-amber-900\/50 {
+  background-color: rgba(100, 8, 23, 0.42) !important;
+}
+
+.text-amber-50 {
+  color: var(--uh-slate) !important;
+}
+
+.hover\:text-amber-50:hover,
+.text-amber-100,
+.text-amber-100\/75,
+.text-amber-100\/80,
+.text-amber-200,
+.text-amber-300 {
+  color: var(--uh-red-dark) !important;
+}
+
+.text-amber-400,
+.text-amber-500,
+.text-amber-500\/80,
+.text-amber-600,
+.text-amber-700 {
+  color: var(--uh-red) !important;
+}
+
+.hover\:text-amber-300:hover,
+.hover\:text-amber-400:hover,
+.hover\:text-amber-500:hover {
+  color: var(--uh-red-dark) !important;
+}
+
+.text-stone-300 {
+  color: #616668 !important;
+}
+
+.text-stone-400 {
+  color: var(--uh-slate-soft) !important;
+}
+
+.text-stone-500 {
+  color: var(--uh-slate-faint) !important;
+}
+
+.text-stone-600 {
+  color: var(--uh-slate) !important;
+}
+
+/* Primary buttons still use the old text-stone-950 utility, so we remap it to
+   white to preserve contrast after changing the button background to UH red. */
+.text-stone-950 {
+  color: var(--uh-white) !important;
+}
+
+.text-emerald-300,
+.text-green-400,
+.text-green-600 {
+  color: var(--uh-success) !important;
+}
+
+.text-red-400 {
+  color: var(--uh-red) !important;
+}
+
+.border-amber-900\/40,
+.border-amber-900\/30,
+.border-amber-900\/25,
+.border-amber-900\/20,
+.border-amber-900\/10,
+.border-amber-700,
+.border-amber-700\/60,
+.border-amber-700\/50,
+.border-amber-500,
+.border-amber-500\/20,
+.border-amber-200\/15,
+.border-amber-100\/15 {
+  border-color: var(--uh-border) !important;
+}
+
+.hover\:border-amber-700:hover,
+.hover\:border-amber-700\/50:hover,
+.hover\:border-amber-500:hover {
+  border-color: var(--uh-border-strong) !important;
+}
+
+.border-stone-800,
+.border-stone-700,
+.border-stone-600 {
+  border-color: rgba(84, 88, 90, 0.18) !important;
+}
+
+.focus\:border-amber-700:focus {
+  border-color: var(--uh-red) !important;
+}
+
+.placeholder-stone-600::placeholder {
+  color: #9ba0a2 !important;
+}
+
+.shadow-amber-950\/50,
+.shadow-amber-950\/30,
+.shadow-amber-950\/20 {
+  --tw-shadow-color: var(--uh-shadow) !important;
+}
+
+/* hides the scrollbar on a horizontally scrollable
+image row so users can scroll through images without seeing the scrollbar.
 only works if we add more items that don't fit on the horizontal row*/
-.scrollbar-hide::-webkit-scrollbar { display: none; }
-.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* The featured cards use custom classes because the original component relied
+   on long hard-coded dark gradients that do not respond to the global remap. */
+.uh-featured-card {
+  box-shadow: 0 20px 45px rgba(100, 8, 23, 0.08);
+}
+
+.uh-featured-card-media {
+  background:
+    radial-gradient(circle at top, rgba(200, 16, 46, 0.18), transparent 52%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.4), rgba(84, 88, 90, 0.14));
+}
+
+.uh-featured-card-overlay {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0), rgba(100, 8, 23, 0.18));
+}
+
+/* Catalog tables get a tinted header so the light theme still has strong
+   section hierarchy without falling back to the old dark chrome. */
+.uh-catalog-table thead tr {
+  background-color: rgba(200, 16, 46, 0.08) !important;
+}
+
+.uh-catalog-table th {
+  color: var(--uh-red-dark);
+  font-weight: 700;
+}
+
+.uh-catalog-table tbody tr:hover {
+  background-color: rgba(200, 16, 46, 0.05);
+}
+
+/* The librarian dashboard mostly uses plain HTML, so these element-level rules
+   carry the UH palette into that screen without rewriting the whole file. */
+.librarian-dashboard {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top, rgba(200, 16, 46, 0.07), transparent 24rem),
+    linear-gradient(180deg, var(--uh-cream-soft) 0%, var(--uh-cream) 100%);
+  color: var(--uh-slate);
+  font-family: "Source Sans 3", "Segoe UI", sans-serif;
+}
+
+.librarian-dashboard h1,
+.librarian-dashboard h2,
+.librarian-dashboard h3,
+.librarian-dashboard h4 {
+  color: var(--uh-red-dark);
+}
 
 .librarian-dashboard button {
-    border: 1px solid #aaa;
-    padding: 0.3rem 0.75rem;
-    border-radius: 3px;
-    background: #fff;
+  border: 1px solid var(--uh-border-strong);
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  background: var(--uh-white);
+  color: var(--uh-red-dark);
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 
 .librarian-dashboard button:hover:not(:disabled) {
-    background: #f0f0f0;
+  background: rgba(200, 16, 46, 0.08);
+  border-color: var(--uh-red);
 }
 
 .librarian-dashboard button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.librarian-dashboard input,
+.librarian-dashboard select {
+  border: 1px solid rgba(84, 88, 90, 0.2);
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--uh-slate);
+  padding: 0.5rem 0.75rem;
+}
+
+.librarian-dashboard input:focus,
+.librarian-dashboard select:focus {
+  outline: 2px solid rgba(200, 16, 46, 0.18);
+  border-color: var(--uh-red);
 }
 
 .librarian-dashboard table {
-    border-collapse: collapse;
-    width: 100%;
+  border-collapse: collapse;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.92);
 }
 
 .librarian-dashboard th,
 .librarian-dashboard td {
-    border: 1px solid #ddd;
-    padding: 0.5rem 0.75rem;
-    text-align: left;
+  border: 1px solid rgba(84, 88, 90, 0.14);
+  padding: 0.7rem 0.8rem;
+  text-align: left;
 }
 
 .librarian-dashboard th {
-    background: #f5f5f5;
-    text-align: center;
-    font-weight: 600;
+  background: rgba(200, 16, 46, 0.08);
+  color: var(--uh-red-dark);
+  text-align: center;
+  font-weight: 700;
 }
 
 .librarian-dashboard tbody tr:hover {
-    background: #fafafa;
+  background: rgba(200, 16, 46, 0.04);
 }

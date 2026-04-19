@@ -206,33 +206,37 @@ export default function ItemDashboard() {
 
       <div className="p-10 max-w-5xl mx-auto w-full">
         {activeSubTab === "books" && (
-          <table className="w-full border border-amber-900/30">
-            <thead>
-              <tr className="bg-stone-900">
-                <th className="p-3">ISBN</th>
-                <th className="p-3">Title</th>
-                <th className="p-3">Publisher</th>
-                <th className="p-3">Author</th>
-                <th className="p-3">Year</th>
-                <th className="p-3">Avail</th>
-                <th className="p-3">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {renderTableRows(literature, [
-                { key: "ItemID" },
-                { key: "Title" },
-                { key: "Publisher" },
-                { key: "Author" },
-                { key: "PublicationYear" },
-                { key: "AvailableCopies" },
-              ])}
-            </tbody>
-          </table>
+          <>
+            {/* The shared `uh-catalog-table` class keeps the light UH palette
+                readable by giving the table headers a subtle branded tint. */}
+            <table className="uh-catalog-table w-full border border-amber-900/30">
+              <thead>
+                <tr className="bg-stone-900">
+                  <th className="p-3">ISBN</th>
+                  <th className="p-3">Title</th>
+                  <th className="p-3">Publisher</th>
+                  <th className="p-3">Author</th>
+                  <th className="p-3">Year</th>
+                  <th className="p-3">Avail</th>
+                  <th className="p-3">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {renderTableRows(literature, [
+                  { key: "ItemID" },
+                  { key: "Title" },
+                  { key: "Publisher" },
+                  { key: "Author" },
+                  { key: "PublicationYear" },
+                  { key: "AvailableCopies" },
+                ])}
+              </tbody>
+            </table>
+          </>
         )}
 
         {activeSubTab === "media" && (
-          <table className="w-full border border-amber-900/30">
+          <table className="uh-catalog-table w-full border border-amber-900/30">
             <thead>
               <tr className="bg-stone-900">
                 <th className="p-3">Name</th>
@@ -254,7 +258,7 @@ export default function ItemDashboard() {
         )}
 
         {activeSubTab === "devices" && (
-          <table className="w-full border border-amber-900/30">
+          <table className="uh-catalog-table w-full border border-amber-900/30">
             <thead>
               <tr className="bg-stone-900">
                 <th className="p-3">Name</th>
