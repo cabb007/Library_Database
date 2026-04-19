@@ -20,6 +20,8 @@ BEGIN
     DECLARE v_UserType INT;
     DECLARE v_CurrentLoans INT DEFAULT 0;
     DECLARE v_MaxLoans INT DEFAULT 0;
+    DECLARE v_ItemTitle VARCHAR(255) DEFAULT NULL;
+    DECLARE v_ItemTypeLabel VARCHAR(50) DEFAULT NULL;
 
     -- Only run when a copy becomes Available (CopyStatus changes from 1 to 0)
     IF OLD.CopyStatus = 1 AND NEW.CopyStatus = 0 THEN
@@ -88,29 +90,53 @@ BEGIN
                     NULL
                 );
 
+                -- Get item title and determine type via subtype tables
+                SELECT 
+                    i.Title,
+                    CASE
+                        WHEN l.ItemID IS NOT NULL THEN 'Literature'
+                        WHEN m.ItemID IS NOT NULL THEN 'Media'
+                        WHEN d.ItemID IS NOT NULL THEN 'Device'
+                        ELSE 'Item'
+                    END
+                INTO v_ItemTitle, v_ItemTypeLabel
+                FROM items i
+                LEFT JOIN literature l ON i.ItemID = l.ItemID
+                LEFT JOIN media m ON i.ItemID = m.ItemID
+                LEFT JOIN devices d ON i.ItemID = d.ItemID
+                WHERE i.ItemID = NEW.ItemID;
+
                 -- Send notification to the user whose hold was fulfilled
                 INSERT INTO notifications (
                     UserID,
-                    Message,
+                    Header,
+                    Body,
                     IsRead,
                     CreatedAt,
                     CreatedBy,
                     UpdatedAt,
                     UpdatedBy
-                ) VALUES (
+                )
+                VALUES (
                     v_HoldUserID,
-                    'Your hold has been fulfilled and the item has been checked out to your account.',
+                    'Hold Fulfilled',
+                    CONCAT(
+                        'Your hold for ',
+                        v_ItemTypeLabel,
+                        ': "',
+                        v_ItemTitle,
+                        '" has been fulfilled.'
+                    ),
                     0,
                     CURRENT_TIMESTAMP(),
-                    1, -- Super UserID = 1 for system actions
+                    1,
                     CURRENT_TIMESTAMP(),
                     NULL
-                );
+                );            
             END IF;
         END IF;
     END IF;
 END$$
-
 
 -- =========================================================
 -- Trigger: Return Integrity / Notification Trigger
@@ -190,7 +216,8 @@ BEGIN
         IF v_Balance > 0 THEN
             INSERT INTO notifications (
                 UserID,
-                Message,
+                Header,
+                Body,
                 IsRead,
                 CreatedAt,
                 CreatedBy,
@@ -198,7 +225,13 @@ BEGIN
                 UpdatedBy
             ) VALUES (
                 NEW.UserID,
-                'All fines must be paid in full before new checkouts or holds can proceed',
+                'Outstanding Fine Balance',
+                CONCAT(
+                    'Your item has been successfully returned. ',
+                    'However, your current unpaid fine balance is $',
+                    FORMAT(v_Balance, 2),
+                    '. All fines must be paid in full before new checkouts or holds can proceed.'
+                ),
                 0,
                 CURRENT_TIMESTAMP(),
                 1, -- System admin
@@ -206,29 +239,26 @@ BEGIN
                 NULL
             );
         END IF;
-
     END IF;
 END$$
 
 
-
---fine insert and update triggers
+-- =========================================================
+-- Trigger: Fine Insert Notification Trigger
+-- =========================================================
 DROP TRIGGER IF EXISTS FinesInsertTrigger$$
-
 CREATE TRIGGER FinesInsertTrigger
 AFTER INSERT ON fines
 FOR EACH ROW
 BEGIN
-    DECLARE v_UserType INT DEFAULT NULL;
+    DECLARE v_CurrentBalance DECIMAL(7,2) DEFAULT 0.00;
 
-    SELECT UserType
-    INTO v_UserType
-    FROM users
-    WHERE UserID = NEW.UserID;
+    SET v_CurrentBalance = GetUserBalanceValue(NEW.UserID);
 
     INSERT INTO notifications (
         UserID,
-        Message,
+        Header,
+        Body,
         IsRead,
         CreatedAt,
         CreatedBy,
@@ -237,7 +267,13 @@ BEGIN
     )
     VALUES (
         NEW.UserID,
-        'Your account has an unpaid fine. Please clear your balance before new checkouts or holds.',
+        'A fine was issued to your account.',
+        CONCAT(
+            'A fine has been added to your account. ',
+            'Your current total outstanding fine balance is $',
+            FORMAT(v_CurrentBalance, 2),
+            '. Please clear your balance before new checkouts or holds.'
+        ),
         0,
         CURRENT_TIMESTAMP(),
         1,
@@ -246,24 +282,56 @@ BEGIN
     );
 END$$
 
+-- =========================================================
+-- Trigger: Fine Update Notification Trigger
+-- =========================================================
 DROP TRIGGER IF EXISTS FinesUpdateTrigger$$
-
 CREATE TRIGGER FinesUpdateTrigger
 AFTER UPDATE ON fines
 FOR EACH ROW
 BEGIN
+    DECLARE v_CurrentBalance DECIMAL(7,2) DEFAULT 0.00;
 
-    -- If fine was just paid
-    IF OLD.PaidStatus = 0 AND NEW.PaidStatus = 1 THEN
+    IF OLD.FineAmount <> NEW.FineAmount
+       OR OLD.PaidStatus <> NEW.PaidStatus THEN
 
-        UPDATE notifications
-        SET Message = 'Your account has an unpaid fine. Please clear your balance before new checkouts or holds.',
-            UpdatedAt = CURRENT_TIMESTAMP(),
-            UpdatedBy = 1
-        WHERE UserID = NEW.UserID;
+        SET v_CurrentBalance = GetUserBalanceValue(NEW.UserID);
 
+        INSERT INTO notifications (
+            UserID,
+            Header,
+            Body,
+            IsRead,
+            CreatedAt,
+            CreatedBy,
+            UpdatedAt,
+            UpdatedBy
+        )
+        VALUES (
+            NEW.UserID,
+            CASE
+                WHEN NEW.PaidStatus = 1 AND v_CurrentBalance = 0 THEN 'Your fines have been paid.'
+                WHEN NEW.PaidStatus = 1 THEN 'Your balance has been updated.'
+                ELSE 'Your balance has been updated'
+            END,
+            CASE
+                WHEN v_CurrentBalance = 0 THEN
+                    'Your outstanding fine balance is now $0.00. All fines on your account are fully cleared.'
+                ELSE
+                    CONCAT(
+                        'Your fine record was updated. ',
+                        'Your current total outstanding fine balance is $',
+                        FORMAT(v_CurrentBalance, 2),
+                        '. Please clear your balance before new checkouts or holds.'
+                    )
+            END,
+            0,
+            CURRENT_TIMESTAMP(),
+            1,
+            CURRENT_TIMESTAMP(),
+            NULL
+        );
     END IF;
-
 END$$
 
 DELIMITER ;

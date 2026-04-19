@@ -234,16 +234,18 @@ CREATE UNIQUE INDEX uq_fines_one_per_loan ON fines(LoanID);
 -- =========================================================
 -- Table: Notifications
 -- =========================================================
+
 CREATE TABLE notifications (
     NotificationID INT AUTO_INCREMENT PRIMARY KEY,
     UserID INT NOT NULL,
-    Message VARCHAR(255) NOT NULL,
-    IsRead TINYINT NOT NULL DEFAULT 0,
-    CreatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP(),
+    Header VARCHAR(100) NOT NULL,
+    Body TEXT NOT NULL,
+    IsRead SMALLINT NOT NULL DEFAULT 0,
+    CreatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CreatedBy INT NULL,
     UpdatedAt DATETIME NULL,
     UpdatedBy INT NULL,
-
+    
     CONSTRAINT chk_notifications_isread
         CHECK (IsRead IN (0, 1)),
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import API from "../api";
 
@@ -9,6 +9,8 @@ export default function ItemDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeSubTab, setActiveSubTab] = useState(location.state?.subTab ?? "books");
+  const highlightId = location.state?.highlightId ?? null; // highlight item from featured navigation
+  const [highlightedId, setHighlightedId] = useState(null);
 
   const [literature, setLiterature] = useState([]);
   const [media, setMedia] = useState([]);
@@ -79,6 +81,18 @@ export default function ItemDashboard() {
     getDevices();
   }, []);
 
+  // scrolls to specific item when highlightID is set, briefly highlights it, 
+  // then removes the highlight after 2 seconds
+  useEffect(() => { 
+    if (!highlightId) return;
+    const el = document.getElementById(`row-${highlightId}`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    setHighlightedId(highlightId);
+    const t = setTimeout(() => setHighlightedId(null), 2000);
+    return () => clearTimeout(t);
+  }, [literature, media, devices, highlightId]);
+
   // =========================
   // ACTION HANDLERS
   // =========================
@@ -110,9 +124,14 @@ export default function ItemDashboard() {
   const renderTableRows = (items, columns) =>
     items.map((item) => {
       const isAvailable = item.AvailableCopies > 0;
+      const isHighlighted = highlightedId === item.ItemID; // checks if current row should be highlighted
 
       return (
-        <tr key={item.ItemID} className="border-t border-amber-900/20">
+        <tr
+          key={item.ItemID}
+          id={`row-${item.ItemID}`}
+          className={`border-t border-amber-900/20 transition-colors duration-700 ${isHighlighted ? "bg-amber-800/30" : ""}`}
+        >
           {columns.map((col) => (
             <td className="p-3" key={col.key}>
               {item[col.key] ?? 0}
