@@ -1,4 +1,4 @@
-import express from "express";
+import { createApp } from "./routing.js";
 import fs from "fs";
 import mysql from "mysql2/promise";
 import cors from "cors";
@@ -7,7 +7,7 @@ import "dotenv/config";
 import path from "path"; // current folder
 import { fileURLToPath } from "url"; // current file
 
-const app = express();
+const app = createApp();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const imageRoot = path.join(__dirname, "SQLserver", "data", "images");
