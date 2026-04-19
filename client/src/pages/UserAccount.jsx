@@ -84,21 +84,6 @@ export default function UserAccount() {
         }
     }
 
-    async function handleReturn(loanId) {
-        setReturnError("");
-        try {
-            const response = await fetch(`${API}/api/user/loans/${loanId}/return`, {
-                method: "POST",
-                credentials: "include"
-            });
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.error || "Failed to return item");
-            await fetchLoans();
-        } catch (err) {
-            setReturnError(err.message);
-        }
-    }
-
     async function handleLogout() {
         setError("");
         try {
