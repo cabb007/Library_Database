@@ -978,17 +978,6 @@ app.get("/api/user/holds", requireLogin, async (req, res) => {
   }
 });
 
-app.post("/api/user/loans/:loanId/return", requireLogin, async (req, res) => {
-  try {
-    const userId = req.session.user.UserID;
-    const loanId = parseInt(req.params.loanId);
-    await db.execute("CALL ReturnLoan(?, ?)", [loanId, userId]);
-    res.json({ success: true });
-  } catch (err) {
-    handleSqlError(res, err, err.sqlMessage || "Failed to return loan");
-  }
-});
-
 // ================ LOANS =================
 app.get("/api/librarian/loans/active", requireLibrarian, async (req, res) => {
   try {
