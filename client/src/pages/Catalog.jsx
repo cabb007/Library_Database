@@ -5,10 +5,41 @@ import API from "../api";
 export default function ItemDashboard() {
   const navigate = useNavigate();
   const location = useLocation();
+  // Keep the tab values lowercase for existing state checks, but show title-case labels in the UI.
+  const catalogTabs = [
+    { value: "books", label: "Books" },
+    { value: "media", label: "Media" },
+    { value: "devices", label: "Devices" },
+  ];
+  // Match each top-level catalog tab to the ItemType values used by that category in the database.
+  const itemTypeFilters = {
+    books: [
+      { value: 1, label: "Book" },
+      { value: 2, label: "Textbook" },
+      { value: 3, label: "Magazine" },
+      { value: 4, label: "Audiobook" },
+    ],
+    media: [
+      { value: 1, label: "DVD / CD" },
+      { value: 2, label: "Blu-ray" },
+      { value: 3, label: "Vinyl" },
+    ],
+    devices: [
+      { value: 1, label: "Laptop" },
+      { value: 2, label: "Tablet" },
+      { value: 3, label: "Equipment" },
+    ],
+  };
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeSubTab, setActiveSubTab] = useState(location.state?.subTab ?? "books");
+  // Store one selected ItemType per category so switching tabs does not wipe out the user's last subfilter choice.
+  const [activeTypeFilters, setActiveTypeFilters] = useState({
+    books: "all",
+    media: "all",
+    devices: "all",
+  });
   const highlightId = location.state?.highlightId ?? null; // highlight item from featured navigation
   const [highlightedId, setHighlightedId] = useState(null);
 
@@ -117,6 +148,20 @@ export default function ItemDashboard() {
     });
   }
 
+  // Reuse one filter helper so each table only renders items that match the currently selected ItemType button.
+  function getFilteredItems(items, categoryKey) {
+    const selectedType = activeTypeFilters[categoryKey];
+
+    if (selectedType === "all") return items;
+
+    return items.filter((item) => Number(item.ItemType) === selectedType);
+  }
+
+  // Build the visible rows before rendering so the JSX stays focused on layout instead of filter logic.
+  const filteredLiterature = getFilteredItems(literature, "books");
+  const filteredMedia = getFilteredItems(media, "media");
+  const filteredDevices = getFilteredItems(devices, "devices");
+
   // =========================
   // TABLE RENDER
   // =========================
@@ -189,20 +234,60 @@ export default function ItemDashboard() {
       </nav>
 
       <div className="flex justify-center gap-4 mt-8">
-          {["books", "media", "devices"].map((sub) => (
+          {catalogTabs.map((tab) => (
             <button
-              key={sub}
-              onClick={() => setActiveSubTab(sub)}
+              key={tab.value}
+              onClick={() => setActiveSubTab(tab.value)}
               className={`px-4 py-1 rounded ${
-                activeSubTab === sub
+                activeSubTab === tab.value
                   ? "bg-amber-700 text-stone-950"
                   : "border border-amber-700 text-amber-300"
               }`}
             >
-              {sub}
+              {/* Render the title-case label so the tab text matches the requested button styling. */}
+              {tab.label}
             </button>
           ))}
         </div>
+
+      {/* Show ItemType subfilters directly below the main category tabs so users can narrow the active catalog view. */}
+      <div className="flex flex-wrap justify-center gap-3 mt-4 px-6">
+        <button
+          onClick={() =>
+            setActiveTypeFilters((currentFilters) => ({
+              ...currentFilters,
+              [activeSubTab]: "all",
+            }))
+          }
+          className={`px-4 py-1 rounded ${
+            activeTypeFilters[activeSubTab] === "all"
+              ? "bg-amber-700 text-stone-950"
+              : "border border-amber-700 text-amber-300"
+          }`}
+        >
+          All
+        </button>
+
+        {itemTypeFilters[activeSubTab].map((filter) => (
+          <button
+            key={`${activeSubTab}-${filter.value}`}
+            onClick={() =>
+              setActiveTypeFilters((currentFilters) => ({
+                ...currentFilters,
+                [activeSubTab]: filter.value,
+              }))
+            }
+            className={`px-4 py-1 rounded ${
+              activeTypeFilters[activeSubTab] === filter.value
+                ? "bg-amber-700 text-stone-950"
+                : "border border-amber-700 text-amber-300"
+            }`}
+          >
+            {/* Use the database-backed ItemType label so each subfilter button matches its category's real subtype. */}
+            {filter.label}
+          </button>
+        ))}
+      </div>
 
       <div className="p-10 max-w-5xl mx-auto w-full">
         {activeSubTab === "books" && (
@@ -222,7 +307,8 @@ export default function ItemDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {renderTableRows(literature, [
+                {/* Pass the already-filtered literature rows so the subfilter buttons immediately affect the books table. */}
+                {renderTableRows(filteredLiterature, [
                   { key: "ItemID" },
                   { key: "Title" },
                   { key: "Publisher" },
@@ -247,7 +333,8 @@ export default function ItemDashboard() {
               </tr>
             </thead>
             <tbody>
-              {renderTableRows(media, [
+              {/* Pass the filtered media rows so only the selected media type stays visible. */}
+              {renderTableRows(filteredMedia, [
                 { key: "Title" },
                 { key: "Producer" },
                 { key: "DurationMinutes" },
@@ -269,7 +356,8 @@ export default function ItemDashboard() {
               </tr>
             </thead>
             <tbody>
-              {renderTableRows(devices, [
+              {/* Pass the filtered device rows so the device subfilter buttons control this table. */}
+              {renderTableRows(filteredDevices, [
                 { key: "Title" },
                 { key: "Manufacturer" },
                 { key: "Model" },
