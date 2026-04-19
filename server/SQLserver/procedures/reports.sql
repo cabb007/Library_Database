@@ -1,33 +1,284 @@
 DELIMITER $$
 
+-- =================================================================================================================
+--                                              EMPLOYEE REPORT
+-- =================================================================================================================
+
+-- =========================================================
+-- Procedure: Get Employee Audit Report with filters
+-- =========================================================
+DROP PROCEDURE IF EXISTS GetEmployeeAuditReport$$
+CREATE PROCEDURE GetEmployeeAuditReport(
+    IN p_start_date DATE,
+    IN p_end_date DATE,
+    IN p_librarian_id INT,
+    IN p_table_name VARCHAR(30),
+    IN p_action_type VARCHAR(10) -- 'Created', 'Updated', NULL = all
+)
+BEGIN
+    SELECT
+        a.ActionUserID AS UserID,
+        CONCAT(u.FirstName, ' ', u.LastName) AS UserName,
+        u.Email,
+        a.TableName,
+        a.ActionType,
+        COUNT(*) AS ActionCount,
+        MIN(a.ActionTimestamp) AS FirstActionAt,
+        MAX(a.ActionTimestamp) AS LastActionAt
+    FROM (
+        SELECT 'users' AS TableName, 'Created' AS ActionType, CreatedBy AS ActionUserID, CreatedAt AS ActionTimestamp
+        FROM users WHERE CreatedBy IS NOT NULL AND CreatedBy > 1
+        UNION ALL
+        SELECT 'users', 'Updated', UpdatedBy, UpdatedAt
+        FROM users WHERE UpdatedBy IS NOT NULL AND UpdatedBy > 1 AND UpdatedAt IS NOT NULL
+
+        UNION ALL
+        SELECT 'items', 'Created', CreatedBy, CreatedAt
+        FROM items WHERE CreatedBy IS NOT NULL AND CreatedBy > 1
+        UNION ALL
+        SELECT 'items', 'Updated', UpdatedBy, UpdatedAt
+        FROM items WHERE UpdatedBy IS NOT NULL AND UpdatedBy > 1 AND UpdatedAt IS NOT NULL
+
+        UNION ALL
+        SELECT 'copies', 'Created', CreatedBy, CreatedAt
+        FROM copies WHERE CreatedBy IS NOT NULL AND CreatedBy > 1
+        UNION ALL
+        SELECT 'copies', 'Updated', UpdatedBy, UpdatedAt
+        FROM copies WHERE UpdatedBy IS NOT NULL AND UpdatedBy > 1 AND UpdatedAt IS NOT NULL
+
+        UNION ALL
+        SELECT 'holds', 'Created', CreatedBy, CreatedAt
+        FROM holds WHERE CreatedBy IS NOT NULL AND CreatedBy > 1
+        UNION ALL
+        SELECT 'holds', 'Updated', UpdatedBy, UpdatedAt
+        FROM holds WHERE UpdatedBy IS NOT NULL AND UpdatedBy > 1 AND UpdatedAt IS NOT NULL
+
+        UNION ALL
+        SELECT 'loans', 'Created', CreatedBy, CreatedAt
+        FROM loans WHERE CreatedBy IS NOT NULL AND CreatedBy > 1
+        UNION ALL
+        SELECT 'loans', 'Updated', UpdatedBy, UpdatedAt
+        FROM loans WHERE UpdatedBy IS NOT NULL AND UpdatedBy > 1 AND UpdatedAt IS NOT NULL
+
+        UNION ALL
+        SELECT 'fines', 'Created', CreatedBy, CreatedAt
+        FROM fines WHERE CreatedBy IS NOT NULL AND CreatedBy > 1
+        UNION ALL
+        SELECT 'fines', 'Updated', UpdatedBy, UpdatedAt
+        FROM fines WHERE UpdatedBy IS NOT NULL AND UpdatedBy > 1 AND UpdatedAt IS NOT NULL
+    ) AS a
+    JOIN users u ON u.UserID = a.ActionUserID
+    WHERE
+        (p_start_date IS NULL OR DATE(a.ActionTimestamp) >= p_start_date)
+        AND (p_end_date IS NULL OR DATE(a.ActionTimestamp) <= p_end_date)
+        AND (p_librarian_id IS NULL OR a.ActionUserID = p_librarian_id)
+        AND (p_table_name IS NULL OR a.TableName = p_table_name)
+        AND (p_action_type IS NULL OR a.ActionType = p_action_type)
+    GROUP BY
+        a.ActionUserID, u.FirstName, u.LastName, u.Email,
+        a.TableName, a.ActionType
+    ORDER BY LastActionAt DESC, ActionCount DESC;
+END$$
+
+-- =========================================================
+-- Procedure: Employee audit overview (total actions, distinct librarians, date range)
+-- =========================================================
+DROP PROCEDURE IF EXISTS GetEmployeeAuditOverview$$
+CREATE PROCEDURE GetEmployeeAuditOverview()
+BEGIN
+    SELECT
+        COUNT(*) AS TotalAuditActions,
+        COUNT(DISTINCT ActionUserID) AS DistinctActiveLibrarians,
+        MIN(ActionTimestamp) AS EarliestAction,
+        MAX(ActionTimestamp) AS LatestAction
+    FROM (
+        SELECT CreatedBy AS ActionUserID, CreatedAt AS ActionTimestamp
+        FROM users WHERE CreatedBy IS NOT NULL AND CreatedBy > 1
+
+        UNION ALL
+        SELECT UpdatedBy, UpdatedAt
+        FROM users WHERE UpdatedBy IS NOT NULL AND UpdatedBy > 1 AND UpdatedAt IS NOT NULL
+
+        UNION ALL
+        SELECT CreatedBy, CreatedAt
+        FROM items WHERE CreatedBy IS NOT NULL AND CreatedBy > 1
+
+        UNION ALL
+        SELECT UpdatedBy, UpdatedAt
+        FROM items WHERE UpdatedBy IS NOT NULL AND UpdatedBy > 1 AND UpdatedAt IS NOT NULL
+
+        UNION ALL
+        SELECT CreatedBy, CreatedAt
+        FROM copies WHERE CreatedBy IS NOT NULL AND CreatedBy > 1
+
+        UNION ALL
+        SELECT UpdatedBy, UpdatedAt
+        FROM copies WHERE UpdatedBy IS NOT NULL AND UpdatedBy > 1 AND UpdatedAt IS NOT NULL
+
+        UNION ALL
+        SELECT CreatedBy, CreatedAt
+        FROM holds WHERE CreatedBy IS NOT NULL AND CreatedBy > 1
+
+        UNION ALL
+        SELECT UpdatedBy, UpdatedAt
+        FROM holds WHERE UpdatedBy IS NOT NULL AND UpdatedBy > 1 AND UpdatedAt IS NOT NULL
+
+        UNION ALL
+        SELECT CreatedBy, CreatedAt
+        FROM loans WHERE CreatedBy IS NOT NULL AND CreatedBy > 1
+
+        UNION ALL
+        SELECT UpdatedBy, UpdatedAt
+        FROM loans WHERE UpdatedBy IS NOT NULL AND UpdatedBy > 1 AND UpdatedAt IS NOT NULL
+
+        UNION ALL
+        SELECT CreatedBy, CreatedAt
+        FROM fines WHERE CreatedBy IS NOT NULL AND CreatedBy > 1
+
+        UNION ALL
+        SELECT UpdatedBy, UpdatedAt
+        FROM fines WHERE UpdatedBy IS NOT NULL AND UpdatedBy > 1 AND UpdatedAt IS NOT NULL
+    ) AS audit_stream;
+END$$
+
+-- =========================================================
+-- Procedure: Get Employee Audit Summary (total actions, average actions per librarian, most touched table)
+-- =========================================================
+DROP PROCEDURE IF EXISTS GetEmployeeAuditSummary$$
+CREATE PROCEDURE GetEmployeeAuditSummary()
+BEGIN
+    SELECT
+        COUNT(*) AS TotalAuditActions,
+        SUM(CASE WHEN ActionType = 'Created' THEN 1 ELSE 0 END) AS TotalCreates,
+        SUM(CASE WHEN ActionType = 'Updated' THEN 1 ELSE 0 END) AS TotalUpdates,
+        COUNT(DISTINCT ActionUserID) AS DistinctLibrarians,
+        ROUND(COUNT(*) / NULLIF(COUNT(DISTINCT ActionUserID), 0), 1) AS AvgActionsPerLibrarian,
+        (
+            SELECT TableName
+            FROM (
+                SELECT 'users' AS TableName FROM users WHERE CreatedBy IS NOT NULL AND CreatedBy > 1
+                UNION ALL SELECT 'users' FROM users WHERE UpdatedBy IS NOT NULL AND UpdatedBy > 1
+                UNION ALL SELECT 'items' FROM items WHERE CreatedBy IS NOT NULL AND CreatedBy > 1
+                UNION ALL SELECT 'items' FROM items WHERE UpdatedBy IS NOT NULL AND UpdatedBy > 1
+                UNION ALL SELECT 'copies' FROM copies WHERE CreatedBy IS NOT NULL AND CreatedBy > 1
+                UNION ALL SELECT 'copies' FROM copies WHERE UpdatedBy IS NOT NULL AND UpdatedBy > 1
+                UNION ALL SELECT 'holds' FROM holds WHERE CreatedBy IS NOT NULL AND CreatedBy > 1
+                UNION ALL SELECT 'holds' FROM holds WHERE UpdatedBy IS NOT NULL AND UpdatedBy > 1
+                UNION ALL SELECT 'loans' FROM loans WHERE CreatedBy IS NOT NULL AND CreatedBy > 1
+                UNION ALL SELECT 'loans' FROM loans WHERE UpdatedBy IS NOT NULL AND UpdatedBy > 1
+                UNION ALL SELECT 'fines' FROM fines WHERE CreatedBy IS NOT NULL AND CreatedBy > 1
+                UNION ALL SELECT 'fines' FROM fines WHERE UpdatedBy IS NOT NULL AND UpdatedBy > 1
+            ) x
+            GROUP BY TableName
+            ORDER BY COUNT(*) DESC
+            LIMIT 1
+        ) AS TopTouchedTable,
+        MAX(ActionTimestamp) AS LatestAuditAction
+    FROM (
+        SELECT 'Created' AS ActionType, CreatedBy AS ActionUserID, CreatedAt AS ActionTimestamp
+        FROM users WHERE CreatedBy IS NOT NULL AND CreatedBy > 1
+        UNION ALL
+        SELECT 'Updated', UpdatedBy, UpdatedAt
+        FROM users WHERE UpdatedBy IS NOT NULL AND UpdatedBy > 1 AND UpdatedAt IS NOT NULL
+
+        UNION ALL
+        SELECT 'Created', CreatedBy, CreatedAt
+        FROM items WHERE CreatedBy IS NOT NULL AND CreatedBy > 1
+        UNION ALL
+        SELECT 'Updated', UpdatedBy, UpdatedAt
+        FROM items WHERE UpdatedBy IS NOT NULL AND UpdatedBy > 1 AND UpdatedAt IS NOT NULL
+
+        UNION ALL
+        SELECT 'Created', CreatedBy, CreatedAt
+        FROM copies WHERE CreatedBy IS NOT NULL AND CreatedBy > 1
+        UNION ALL
+        SELECT 'Updated', UpdatedBy, UpdatedAt
+        FROM copies WHERE UpdatedBy IS NOT NULL AND UpdatedBy > 1 AND UpdatedAt IS NOT NULL
+
+        UNION ALL
+        SELECT 'Created', CreatedBy, CreatedAt
+        FROM holds WHERE CreatedBy IS NOT NULL AND CreatedBy > 1
+        UNION ALL
+        SELECT 'Updated', UpdatedBy, UpdatedAt
+        FROM holds WHERE UpdatedBy IS NOT NULL AND UpdatedBy > 1 AND UpdatedAt IS NOT NULL
+
+        UNION ALL
+        SELECT 'Created', CreatedBy, CreatedAt
+        FROM loans WHERE CreatedBy IS NOT NULL AND CreatedBy > 1
+        UNION ALL
+        SELECT 'Updated', UpdatedBy, UpdatedAt
+        FROM loans WHERE UpdatedBy IS NOT NULL AND UpdatedBy > 1 AND UpdatedAt IS NOT NULL
+
+        UNION ALL
+        SELECT 'Created', CreatedBy, CreatedAt
+        FROM fines WHERE CreatedBy IS NOT NULL AND CreatedBy > 1
+        UNION ALL
+        SELECT 'Updated', UpdatedBy, UpdatedAt
+        FROM fines WHERE UpdatedBy IS NOT NULL AND UpdatedBy > 1 AND UpdatedAt IS NOT NULL
+    ) AS audit_stream;
+END$$
+
 -- =========================================================
 -- Procedure: Get top librarian
 -- =========================================================
-DROP PROCEDURE IF EXISTS GetTopLibrarian $$
+DROP PROCEDURE IF EXISTS GetTopLibrarian$$
 CREATE PROCEDURE GetTopLibrarian()
 BEGIN
-    SELECT u.UserID, u.FirstName, u.LastName, COUNT(*) AS actions
+    SELECT
+        u.UserID,
+        u.FirstName,
+        u.LastName,
+        COUNT(*) AS TotalActions
     FROM (
-        SELECT CreatedBy FROM users  WHERE CreatedBy IS NOT NULL AND CreatedBy > 1
+        SELECT CreatedBy AS ActionUserID
+        FROM users WHERE CreatedBy IS NOT NULL AND CreatedBy > 1
         UNION ALL
-        SELECT CreatedBy FROM items  WHERE CreatedBy IS NOT NULL AND CreatedBy > 1
+        SELECT UpdatedBy
+        FROM users WHERE UpdatedBy IS NOT NULL AND UpdatedBy > 1
+
         UNION ALL
-        SELECT CreatedBy FROM copies WHERE CreatedBy IS NOT NULL AND CreatedBy > 1
+        SELECT CreatedBy
+        FROM items WHERE CreatedBy IS NOT NULL AND CreatedBy > 1
         UNION ALL
-        SELECT CreatedBy FROM holds  WHERE CreatedBy IS NOT NULL AND CreatedBy > 1
+        SELECT UpdatedBy
+        FROM items WHERE UpdatedBy IS NOT NULL AND UpdatedBy > 1
+
         UNION ALL
-        SELECT CreatedBy FROM loans  WHERE CreatedBy IS NOT NULL AND CreatedBy > 1
+        SELECT CreatedBy
+        FROM copies WHERE CreatedBy IS NOT NULL AND CreatedBy > 1
         UNION ALL
-        SELECT CreatedBy FROM fines  WHERE CreatedBy IS NOT NULL AND CreatedBy > 1
+        SELECT UpdatedBy
+        FROM copies WHERE UpdatedBy IS NOT NULL AND UpdatedBy > 1
+
+        UNION ALL
+        SELECT CreatedBy
+        FROM holds WHERE CreatedBy IS NOT NULL AND CreatedBy > 1
+        UNION ALL
+        SELECT UpdatedBy
+        FROM holds WHERE UpdatedBy IS NOT NULL AND UpdatedBy > 1
+
+        UNION ALL
+        SELECT CreatedBy
+        FROM loans WHERE CreatedBy IS NOT NULL AND CreatedBy > 1
+        UNION ALL
+        SELECT UpdatedBy
+        FROM loans WHERE UpdatedBy IS NOT NULL AND UpdatedBy > 1
+
+        UNION ALL
+        SELECT CreatedBy
+        FROM fines WHERE CreatedBy IS NOT NULL AND CreatedBy > 1
+        UNION ALL
+        SELECT UpdatedBy
+        FROM fines WHERE UpdatedBy IS NOT NULL AND UpdatedBy > 1
     ) AS activity
-    JOIN users u ON u.UserID = activity.CreatedBy
+    JOIN users u ON u.UserID = activity.ActionUserID
     GROUP BY u.UserID, u.FirstName, u.LastName
-    ORDER BY actions DESC
+    ORDER BY TotalActions DESC
     LIMIT 1;
-END $$
+END$$
 
 -- =================================================================================================================
---                                              ITEM ANALYTICS QUERIES
+--                                              CHECKOUT ANALYTICS REPORT
 -- =================================================================================================================
 
 -- =========================================================
@@ -181,7 +432,7 @@ BEGIN
 END$$
 
 -- =================================================================================================================
---                                              TRANSACTION ANALYTICS QUERIES
+--                                              TRANSACTION ANALYTICS REPORT
 -- =================================================================================================================
 
 -- =========================================================

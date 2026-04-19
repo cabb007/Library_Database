@@ -1121,3 +1121,26 @@ app.post('/api/notifications/read', async (req, res) => {
     });
   }
 });
+
+// ================ EMPLOYEE AUDIT REPORT =================
+// Audit overview route
+app.get("/api/librarian/employee-audit/overview", requireLibrarian, async (_req, res) => {
+  try {
+    const [data] = await db.execute("CALL GetEmployeeAuditOverview()");
+    res.json(data[0][0]);
+  } catch (err) {
+    console.error("Failed to fetch employee audit overview:", err);
+    res.status(500).json({ error: "Failed to fetch employee audit overview" });
+  }
+});
+
+// Audit summary route
+app.get("/api/librarian/employee-audit/summary", requireLibrarian, async (_req, res) => {
+  try {
+    const [data] = await db.execute("CALL GetEmployeeAuditSummary()");
+    res.json(data[0][0]);
+  } catch (err) {
+    console.error("Failed to fetch employee audit summary:", err);
+    res.status(500).json({ error: "Failed to fetch employee audit summary" });
+  }
+});
