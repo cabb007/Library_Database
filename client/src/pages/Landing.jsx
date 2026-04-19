@@ -398,8 +398,12 @@ export default function Landing() {
                                     body: JSON.stringify({ NotificationID: id }),
                                   });
 
+                                  const data = await res.json();
+                                  console.log("mark read response:", data);
+
                                   if (!res.ok) {
-                                    throw new Error("Failed to mark as read");
+                                    console.error("SERVER ERROR:", data);
+                                    throw new Error(data.error || "Failed to mark as read");
                                   }
 
                                   // remove from UI immediately
