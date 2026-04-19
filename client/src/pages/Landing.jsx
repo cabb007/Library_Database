@@ -346,13 +346,14 @@ export default function Landing() {
                                       "Content-Type": "application/json",
                                     },
                                     credentials: "include",
-                                    body: JSON.stringify({ notificationId: id }),
+                                    body: JSON.stringify({ NotificationId: id }),
                                   });
 
                                   const data = await res.json();
                                   console.log("mark read response:", data);
 
                                   if (!res.ok) {
+                                    console.error("SERVER ERROR:", data);
                                     throw new Error(data.error || "Failed to mark as read");
                                   }
 
