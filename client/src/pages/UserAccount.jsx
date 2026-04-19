@@ -9,6 +9,8 @@ export default function UserAccount() {
     const [holds, setHolds] = useState([]);
     const [error, setError] = useState("");
     const [returnError, setReturnError] = useState("");
+    const [notifications, setNotifications] = useState([]);
+    const [notifOpen, setNotifOpen] = useState(false);
 
     const navigate = useNavigate();
 
@@ -19,7 +21,12 @@ export default function UserAccount() {
                 const data = await response.json();
                 if (response.ok) {
                     setUser(data.user);
-                    await Promise.all([fetchBalance(), fetchLoans(), fetchHolds()]);
+                    await Promise.all([
+                        fetchBalance(),
+                        fetchLoans(),
+                        fetchHolds(),
+                        fetchNotifications()
+                    ]);
                 } else {
                     setUser(null);
                     setBalance(0);
@@ -57,6 +64,21 @@ export default function UserAccount() {
             const response = await fetch(`${API}/api/user/holds`, { credentials: "include" });
             const data = await response.json();
             setHolds(response.ok ? data : []);
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    async function fetchNotifications() {
+        try {
+            const response = await fetch(`${API}/api/notifications`, {
+                credentials: "include"
+            });
+
+            if (!response.ok) return;
+
+            const data = await response.json();
+            setNotifications(Array.isArray(data) ? data : []);
         } catch (err) {
             console.error(err);
         }
@@ -121,6 +143,85 @@ export default function UserAccount() {
                 >
                     ← Home
                 </button>
+                {/* HEADER ROW: Home + Notifications */}
+                <div className="flex items-center justify-between mb-6">
+
+                    {/* LEFT SIDE: Home (keeps original button behavior) */}
+                    <div />
+
+                    {/* RIGHT SIDE: Notifications */}
+                    <div className="relative">
+
+                        <button
+                            onClick={() => setNotifOpen(prev => !prev)}
+                            className="relative px-3 py-2 border border-amber-700 rounded hover:bg-amber-900/30 transition"
+                        >
+                            🔔
+
+                            {(notifications?.length ?? 0) > 0 && (
+                                <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full" />
+                            )}
+                        </button>
+
+                        {notifOpen && (
+                            <div className="absolute right-0 mt-2 w-72 bg-stone-900 border border-amber-700 rounded shadow-xl z-50">
+
+                                <div className="p-2 border-b border-amber-900/30 text-amber-300 text-sm">
+                                    Notifications
+                                </div>
+
+                                <div className="max-h-64 overflow-y-auto">
+                                    {(notifications?.length ?? 0) === 0 ? (
+                                        <div className="p-3 text-stone-400 text-sm">
+                                            No notifications
+                                        </div>
+                                    ) : (
+                                        notifications.map((n, i) => (
+                                            <div
+                                                key={n.NotificationID || i}
+                                                className="p-3 border-b border-amber-900/10 flex items-start justify-between gap-3"
+                                            >
+                                                <div className="flex flex-col min-w-0 pr-2">
+                                                    <div className="text-amber-200 text-sm font-semibold">
+                                                        {n.header || n.Header}
+                                                    </div>
+                                                    <div className="text-stone-400 text-xs">
+                                                        {n.body || n.Body}
+                                                    </div>
+                                                </div>
+
+                                                <button
+                                                    onClick={async () => {
+                                                        try {
+                                                            await fetch(`${API}/api/notifications/read`, {
+                                                                method: "POST",
+                                                                headers: { "Content-Type": "application/json" },
+                                                                credentials: "include",
+                                                                body: JSON.stringify({
+                                                                    NotificationID: n.NotificationID
+                                                                })
+                                                            });
+
+                                                            setNotifications(prev =>
+                                                                prev.filter(x => x.NotificationID !== n.NotificationID)
+                                                            );
+                                                        } catch (err) {
+                                                            console.error(err);
+                                                        }
+                                                    }}
+                                                    className="text-xs px-2 py-1 border border-amber-500 text-amber-200 rounded hover:bg-amber-800/30 transition shrink-0"
+                                                >
+                                                    Read
+                                                </button>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
 
                 {/* Profile Card */}
                 <div className="bg-stone-900 border border-stone-700 rounded-2xl overflow-hidden shadow-xl mb-8">
