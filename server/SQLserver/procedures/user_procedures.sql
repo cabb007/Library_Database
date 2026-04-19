@@ -266,17 +266,4 @@ BEGIN
     ORDER BY CreatedAt DESC, NotificationID DESC;
 END$$
 
--- =========================================================
--- Procedure: Mark a notification as read
--- =========================================================
-DROP PROCEDURE IF EXISTS MarkNotificationRead$$
-CREATE PROCEDURE MarkNotificationRead(
-    IN p_NotificationID INT
-)
-BEGIN
-    UPDATE notifications
-    SET IsRead = 1
-    WHERE NotificationID = p_NotificationID;
-END$$
-
 DELIMITER ;
