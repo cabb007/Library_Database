@@ -11,6 +11,18 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const imageRoot = path.join(__dirname, "SQLserver", "data", "images");
+const IMAGE_FOLDERS = new Set([
+  "devices",
+  "items",
+  "literature",
+  "media",
+]);
+const IMAGE_CONTENT_TYPES = {
+  ".jpeg": "image/jpeg",
+  ".jpg": "image/jpeg",
+  ".png": "image/png",
+  ".webp": "image/webp",
+};
 
 const FEATURED_LIMIT = 6;
 
@@ -81,6 +93,49 @@ app.get("/", (req, res) => {
 app.get("/health", (req, res) => {
   setCorsHeaders(res);
   res.status(200).send("ok");
+});
+
+app.get("/library-images/:folder/:fileName", (req, res) => {
+  const { folder, fileName } = req.params;
+
+  if (!IMAGE_FOLDERS.has(folder)) {
+    return res.status(404).json({ error: "Image not found" });
+  }
+
+  let decodedFileName;
+
+  try {
+    decodedFileName = decodeURIComponent(fileName);
+  } catch {
+    return res.status(400).json({ error: "Invalid image path" });
+  }
+
+  if (
+    decodedFileName.includes("/") ||
+    decodedFileName.includes("\\")
+  ) {
+    return res.status(400).json({ error: "Invalid image path" });
+  }
+
+  const folderPath = path.resolve(imageRoot, folder);
+  const filePath = path.resolve(folderPath, decodedFileName);
+  const relativePath = path.relative(folderPath, filePath);
+
+  if (
+    relativePath.startsWith("..") ||
+    path.isAbsolute(relativePath) ||
+    !fs.existsSync(filePath) ||
+    !fs.statSync(filePath).isFile()
+  ) {
+    return res.status(404).json({ error: "Image not found" });
+  }
+
+  const contentType =
+    IMAGE_CONTENT_TYPES[path.extname(filePath).toLowerCase()] ||
+    "application/octet-stream";
+
+  res.setHeader("Content-Type", contentType);
+  fs.createReadStream(filePath).pipe(res);
 });
 
 /* ================= DB ================= */

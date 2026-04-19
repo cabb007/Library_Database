@@ -2,6 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../api";
 
+function buildShelfImageUrl(folderName, fileName) {
+  return `${API}/library-images/${folderName}/${encodeURIComponent(fileName)}`;
+}
+
 // ─── CONFIGURE FEATURED ITEMS  ──────────────────────────────────────
 // Replace each `id` with the actual ItemID from database to change navigation.
 // Image paths match filenames in server/SQLserver/data/images/
@@ -11,12 +15,12 @@ const SHELVES = [
     subtitle: "Curated picks from our book collection",
     subTab: "books",
     items: [
-      { id: 9780061965487, title: "1984", credit: "George Orwell", badge: "BOOK", image: `${API}/images/literature/1984.jpeg` },
-      { id: 9780385490818, title: "The Great Gatsby", credit: "F. Scott Fitzgerald", badge: "BOOK", image: `${API}/images/literature/The Great Gatsby.jpeg` },
-      { id: 9780062315007, title: "The Hobbit", credit: "J.R.R. Tolkien", badge: "BOOK", image: `${API}/images/literature/The Hobbit.jpeg` },
-      { id: 9780743273565, title: "To Kill a Mockingbird", credit: "Harper Lee", badge: "BOOK", image: `${API}/images/literature/To Kill a Mockingbird.jpeg` },
-      { id: 9780316769174, title: "Pride and Prejudice", credit: "Jane Austen", badge: "BOOK", image: `${API}/images/literature/Pride and Prejudice.jpeg` },
-      { id: 9780062409867, title: "Crime and Punishment", credit: "Fyodor Dostoevsky", badge: "BOOK", image: `${API}/images/literature/Crime and Punishment.jpeg` },
+      { id: 9780061965487, title: "1984", credit: "George Orwell", badge: "BOOK", image: buildShelfImageUrl("literature", "1984.jpeg") },
+      { id: 9780385490818, title: "The Great Gatsby", credit: "F. Scott Fitzgerald", badge: "BOOK", image: buildShelfImageUrl("literature", "The Great Gatsby.jpeg") },
+      { id: 9780062315007, title: "The Hobbit", credit: "J.R.R. Tolkien", badge: "BOOK", image: buildShelfImageUrl("literature", "The Hobbit.jpeg") },
+      { id: 9780743273565, title: "To Kill a Mockingbird", credit: "Harper Lee", badge: "BOOK", image: buildShelfImageUrl("literature", "To Kill a Mockingbird.jpeg") },
+      { id: 9780316769174, title: "Pride and Prejudice", credit: "Jane Austen", badge: "BOOK", image: buildShelfImageUrl("literature", "Pride and Prejudice.jpeg") },
+      { id: 9780062409867, title: "Crime and Punishment", credit: "Fyodor Dostoevsky", badge: "BOOK", image: buildShelfImageUrl("literature", "Crime and Punishment.jpeg") },
     ],
   },
   {
@@ -24,12 +28,12 @@ const SHELVES = [
     subtitle: "Featured films and recordings",
     subTab: "media",
     items: [
-      { id: 43396519466, title: "Inception", credit: "Christopher Nolan", badge: "DVD/CD", image: `${API}/images/media/Inception.jpeg` },
-      { id: 883929318513, title: "The Godfather", credit: "Francis Ford Coppola", badge: "DVD/CD", image: `${API}/images/media/The Godfather.jpeg` },
-      { id: 31398282068, title: "The Dark Knight", credit: "Christopher Nolan", badge: "DVD/CD", image: `${API}/images/media/The Dark Knight.jpeg` },
-      { id: 715515159227, title: "The Shawshank Redemption", credit: "Frank Darabont", badge: "DVD/CD", image: `${API}/images/media/The Shawshank Redemption.jpeg` },
-      { id: 24543153788, title: "Pulp Fiction", credit: "Quentin Tarantino", badge: "DVD/CD", image: `${API}/images/media/Pulp Fiction.jpeg` },
-      { id: 786936847543, title: "Goodfellas", credit: "Martin Scorsese", badge: "DVD/CD", image: `${API}/images/media/Goodfellas.jpeg` },
+      { id: 43396519466, title: "Inception", credit: "Christopher Nolan", badge: "DVD/CD", image: buildShelfImageUrl("media", "Inception.jpeg") },
+      { id: 883929318513, title: "The Godfather", credit: "Francis Ford Coppola", badge: "DVD/CD", image: buildShelfImageUrl("media", "The Godfather.jpeg") },
+      { id: 31398282068, title: "The Dark Knight", credit: "Christopher Nolan", badge: "DVD/CD", image: buildShelfImageUrl("media", "The Dark Knight.jpeg") },
+      { id: 715515159227, title: "The Shawshank Redemption", credit: "Frank Darabont", badge: "DVD/CD", image: buildShelfImageUrl("media", "The Shawshank Redemption.jpeg") },
+      { id: 24543153788, title: "Pulp Fiction", credit: "Quentin Tarantino", badge: "DVD/CD", image: buildShelfImageUrl("media", "Pulp Fiction.jpeg") },
+      { id: 786936847543, title: "Goodfellas", credit: "Martin Scorsese", badge: "DVD/CD", image: buildShelfImageUrl("media", "Goodfellas.jpeg") },
     ],
   },
   {
@@ -37,12 +41,12 @@ const SHELVES = [
     subtitle: "Technology available for loan",
     subTab: "devices",
     items: [
-      { id: 1767950141, title: "MacBook Air M2", credit: "Apple", badge: "LAPTOP", image: `${API}/images/devices/Apple,MacBook Air M2.jpeg` },
-      { id: 4326338643, title: 'iPad Pro 12.9" M2', credit: "Apple", badge: "TABLET", image: `${API}/images/devices/Apple,iPad Pro 12.9-inch M2.jpeg` },
-      { id: 2067004398, title: "XPS 15 9530", credit: "Dell", badge: "LAPTOP", image: `${API}/images/devices/Dell,XPS 15 9530.jpeg` },
-      { id: 6170128796, title: "Surface Pro 9", credit: "Microsoft", badge: "TABLET", image: `${API}/images/devices/Microsoft,Surface Pro 9.jpeg` },
-      { id: 3930751749, title: "ThinkPad X1 Carbon Gen 11", credit: "Lenovo", badge: "LAPTOP", image: `${API}/images/devices/Lenovo,ThinkPad X1 Carbon Gen 11.jpeg` },
-      { id: 2729251472, title: "Galaxy Tab S9 Ultra", credit: "Samsung", badge: "TABLET", image: `${API}/images/devices/Samsung,Galaxy Tab S9 Ultra.jpeg` },
+      { id: 1767950141, title: "MacBook Air M2", credit: "Apple", badge: "LAPTOP", image: buildShelfImageUrl("devices", "Apple,MacBook Air M2.jpeg") },
+      { id: 4326338643, title: 'iPad Pro 12.9" M2', credit: "Apple", badge: "TABLET", image: buildShelfImageUrl("devices", "Apple,iPad Pro 12.9-inch M2.jpeg") },
+      { id: 2067004398, title: "XPS 15 9530", credit: "Dell", badge: "LAPTOP", image: buildShelfImageUrl("devices", "Dell,XPS 15 9530.jpeg") },
+      { id: 6170128796, title: "Surface Pro 9", credit: "Microsoft", badge: "TABLET", image: buildShelfImageUrl("devices", "Microsoft,Surface Pro 9.jpeg") },
+      { id: 3930751749, title: "ThinkPad X1 Carbon Gen 11", credit: "Lenovo", badge: "LAPTOP", image: buildShelfImageUrl("devices", "Lenovo,ThinkPad X1 Carbon Gen 11.jpeg") },
+      { id: 2729251472, title: "Galaxy Tab S9 Ultra", credit: "Samsung", badge: "TABLET", image: buildShelfImageUrl("devices", "Samsung,Galaxy Tab S9 Ultra.jpeg") },
     ],
   },
 ];
@@ -197,14 +201,14 @@ export default function Landing() {
   const navigate = useNavigate();
   const featuredRef = useRef(null);
   const [counts, setCounts] = useState({ Literature: "—", Media: "—", Devices: "—" });
-  const [featured, setFeatured] = useState({ items: [], devices: [] });
-  const [featuredLoading, setFeaturedLoading] = useState(true);
+  const [_featured, setFeatured] = useState({ items: [], devices: [] });
+  const [_featuredLoading, setFeaturedLoading] = useState(true);
   const [loggedIn, setLoggedIn] = useState(false);
   const [userType, setUserType] = useState(null);
   const featuredSectionRef = useRef(null);
   const [notifications, setNotifications] = useState([]);
   const [notifOpen, setNotifOpen] = useState(false);
-  const notifRef = useRef(null);
+  const _notifRef = useRef(null);
   const [popupNotif, setPopupNotif] = useState(null);
 
   useEffect(() => {
@@ -286,7 +290,7 @@ export default function Landing() {
     { label: "Devices", count: counts.Devices, icon: CATEGORY_ICONS.Devices, subTab: "devices" },
   ];
 
-  function scrollToFeatured() {
+  function _scrollToFeatured() {
     featuredSectionRef.current?.scrollIntoView({
       behavior: "smooth",
       block: "start",
