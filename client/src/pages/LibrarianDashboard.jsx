@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../api";
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
+  PieChart, Pie, Legend
+} from "recharts";
 
 export default function LibrarianDashboard() {
   const navigate = useNavigate();
@@ -44,6 +48,14 @@ export default function LibrarianDashboard() {
   const [analyticsHasRun, setAnalyticsHasRun] = useState(false);
   const [analyticsAppliedFilters, setAnalyticsAppliedFilters] = useState(null);
   const [analyticsSummary, setAnalyticsSummary] = useState(null);
+  const [analyticsTab, setAnalyticsTab] = useState("checkouts");
+  const [txFilters, setTxFilters] = useState({ startDate: "", endDate: "", userId: "", type: "" });
+  const [txResults, setTxResults] = useState([]);
+  const [txLoading, setTxLoading] = useState(false);
+  const [txHasRun, setTxHasRun] = useState(false);
+  const [txSummary, setTxSummary] = useState(null);
+  const [txSort, setTxSort] = useState({ key: "TransactionDate", dir: "desc" });
+  const [txAppliedType, setTxAppliedType] = useState(null);
   const [overviewStats, setOverviewStats] = useState(null);
   const [loansTab, setLoansTab] = useState("active");
   const [activeLoans, setActiveLoans] = useState([]);
@@ -84,6 +96,12 @@ export default function LibrarianDashboard() {
         fetch("http://localhost:3000/api/librarian/analytics/summary", { credentials: "include" })
           .then(r => r.json())
           .then(data => { if (!data.error) setAnalyticsSummary(data); })
+          .catch(() => {});
+      }
+      if (!txSummary) {
+        fetch("http://localhost:3000/api/librarian/analytics/transactions/summary", { credentials: "include" })
+          .then(r => r.json())
+          .then(data => { if (!data.error) setTxSummary(data); })
           .catch(() => {});
       }
       if (!analyticsHasRun) {
@@ -661,6 +679,31 @@ export default function LibrarianDashboard() {
     }
   }
 
+  async function fetchTransactionReport() {
+    setTxLoading(true);
+    setError("");
+    try {
+      const params = new URLSearchParams();
+      if (txFilters.startDate) params.set("startDate", txFilters.startDate);
+      if (txFilters.endDate)   params.set("endDate",   txFilters.endDate);
+      if (txFilters.userId)    params.set("userId",    txFilters.userId);
+      if (txFilters.type)      params.set("type",      txFilters.type);
+      const res = await fetch(
+        `http://localhost:3000/api/librarian/analytics/transactions/report?${params}`,
+        { credentials: "include" }
+      );
+      const data = await res.json();
+      if (!res.ok) { setError(data.error); return; }
+      setTxResults(data);
+      setTxHasRun(true);
+      setTxAppliedType(txFilters.type);
+    } catch {
+      setError("Failed to load transaction report");
+    } finally {
+      setTxLoading(false);
+    }
+  }
+
   async function handleReturn(loanId) {
     const isOverdue = loansTab === "overdue";
     const msg = isOverdue
@@ -1193,6 +1236,8 @@ export default function LibrarianDashboard() {
                 TopType:               analyticsResults[0]?.TypeLabel ?? null,
                 TopItemTitle:          analyticsResults[0]?.Title ?? null,
                 AvgLoanDays:           wCount > 0 ? Math.round(wDays / wCount * 10) / 10 : null,
+                CheckoutsThisWeek:     analyticsSummary?.CheckoutsThisWeek ?? null,
+                CheckoutsLastWeek:     analyticsSummary?.CheckoutsLastWeek ?? null,
               };
             })()
           : analyticsSummary;
@@ -1220,9 +1265,245 @@ export default function LibrarianDashboard() {
           return analyticsSort.dir === "desc" ? " ↓" : " ↑";
         }
 
+        // Transaction report sort helpers
+        function toggleTxSort(key) {
+          setTxSort(prev =>
+            prev.key === key
+              ? { key, dir: prev.dir === "desc" ? "asc" : "desc" }
+              : { key, dir: "desc" }
+          );
+        }
+        function txSortIndicator(key) {
+          if (txSort.key !== key) return " ↕";
+          return txSort.dir === "desc" ? " ↓" : " ↑";
+        }
+        const txSorted = [...txResults].sort((a, b) => {
+          const dir = txSort.dir === "asc" ? 1 : -1;
+          if (txSort.key === "TransactionDate") return dir * (new Date(a.TransactionDate) - new Date(b.TransactionDate));
+          if (txSort.key === "TransactionType") return dir * a.TransactionType.localeCompare(b.TransactionType);
+          if (txSort.key === "UserName") return dir * a.UserName.localeCompare(b.UserName);
+          if (txSort.key === "Title") return dir * (a.Title ?? "").localeCompare(b.Title ?? "");
+          if (txSort.key === "StatusLabel") return dir * (a.StatusLabel ?? "").localeCompare(b.StatusLabel ?? "");
+          if (txSort.key === "AgeDays") return dir * ((a.AgeDays ?? 0) - (b.AgeDays ?? 0));
+          if (txSort.key === "DaysOverdue") return dir * ((a.DaysOverdue ?? 0) - (b.DaysOverdue ?? 0));
+          if (txSort.key === "FineAmount") return dir * ((a.FineAmount ?? 0) - (b.FineAmount ?? 0));
+          return 0;
+        });
+
         return (
           <div>
-            <h2>Checkout Analytics</h2>
+            <h2>Analytics</h2>
+
+            {/* Tab switcher */}
+            <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem" }}>
+              <button
+                onClick={() => setAnalyticsTab("checkouts")}
+                style={{ fontWeight: analyticsTab === "checkouts" ? "bold" : "normal" }}
+              >
+                Most Checkouts
+              </button>
+              <button
+                onClick={() => setAnalyticsTab("transactions")}
+                style={{ fontWeight: analyticsTab === "transactions" ? "bold" : "normal" }}
+              >
+                Transaction Report
+              </button>
+            </div>
+
+            {analyticsTab === "transactions" && (() => {
+              const computedSummary = txHasRun && txResults.length > 0 ? (() => {
+                const loans = txResults.filter(r => r.TransactionType === "Loan");
+                const holds = txResults.filter(r => r.TransactionType === "Hold");
+                const fines = txResults.filter(r => r.TransactionType === "Fine");
+                const completedLoans = loans.filter(r => r.ReturnDate);
+                const avgLoanDays = completedLoans.length > 0
+                  ? Math.round(completedLoans.reduce((s, r) => s + (r.AgeDays ?? 0), 0) / completedLoans.length * 10) / 10
+                  : null;
+                const avgHoldDays = holds.length > 0
+                  ? Math.round(holds.reduce((s, r) => s + (r.AgeDays ?? 0), 0) / holds.length * 10) / 10
+                  : null;
+                const unpaidFines = fines.filter(r => r.StatusLabel === "Unpaid");
+                const paidFinesWithPayDays = fines.filter(r => r.StatusLabel === "Paid" && r.DaysToPayFine != null);
+                const avgPayDays = paidFinesWithPayDays.length > 0
+                  ? Math.round(paidFinesWithPayDays.reduce((s, r) => s + Number(r.DaysToPayFine), 0) / paidFinesWithPayDays.length * 10) / 10
+                  : null;
+                return {
+                  OverdueLoans: loans.filter(r => r.StatusLabel === "Overdue").length,
+                  TotalHolds: holds.length,
+                  ActiveHolds: holds.filter(r => r.StatusLabel === "Active").length,
+                  UnpaidFines: unpaidFines.length,
+                  TotalOutstandingFineAmount: unpaidFines.reduce((s, r) => s + Number(r.FineAmount ?? 0), 0),
+                  AvgCompletedLoanDays: avgLoanDays,
+                  AvgHoldLifecycleDays: avgHoldDays,
+                  AvgDaysToPayFine: avgPayDays,
+                };
+              })() : (() => {
+                if (!txSummary) return null;
+                return { ...txSummary, AvgDaysToPayFine: null };
+              })();
+              const s = computedSummary;
+              const txCards = s ? [
+                { label: "Overdue Loans",        value: s.OverdueLoans },
+                { label: "Total Holds",          value: s.TotalHolds },
+                { label: "Active Holds",         value: s.ActiveHolds },
+                { label: "Unpaid Fines",         value: s.UnpaidFines },
+                { label: "Outstanding Fines",    value: s.TotalOutstandingFineAmount != null ? `$${Number(s.TotalOutstandingFineAmount).toFixed(2)}` : "—" },
+                { label: "Avg Loan Duration",    value: s.AvgCompletedLoanDays != null ? `${s.AvgCompletedLoanDays} days` : "—" },
+                { label: "Avg Hold Lifecycle",   value: s.AvgHoldLifecycleDays != null ? `${s.AvgHoldLifecycleDays} days` : "—" },
+                { label: "Avg Days to Pay Fine", value: s.AvgDaysToPayFine != null ? `${s.AvgDaysToPayFine} days` : "—" },
+              ] : [];
+              return (
+                <>
+                  {txCards.length > 0 && (
+                    <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", marginBottom: "1.5rem" }}>
+                      {txCards.map(card => (
+                        <div key={card.label} style={{
+                          border: "1px solid #ccc", borderRadius: "4px",
+                          padding: "0.75rem 1rem", minWidth: "130px", flex: "1 1 130px", background: "#f9f9f9"
+                        }}>
+                          <div style={{ fontSize: "0.75rem", color: "#666", marginBottom: "0.25rem" }}>{card.label}</div>
+                          <div style={{ fontSize: "1.25rem", fontWeight: "bold" }}>{card.value ?? "—"}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Tables used */}
+                  {(!txHasRun || txResults.length > 0) && (() => {
+                    const t = txHasRun ? txAppliedType : "";
+                    let tables = [];
+                    if (!t || t === "Loan") tables.push(...["loans", "copies", "items", "users"]);
+                    if (!t || t === "Hold") tables.push(...["holds", "items", "users"]);
+                    if (!t || t === "Fine") tables.push(...["fines", "loans", "copies", "items", "users"]);
+                    const unique = [...new Set(tables)].sort();
+                    return (
+                      <div style={{ marginBottom: "0.75rem", fontSize: "0.78rem", color: "#555" }}>
+                        <span style={{ marginRight: "0.4rem" }}>Tables Used:</span>
+                        {unique.map(tbl => (
+                          <span key={tbl} style={{ display: "inline-block", background: "#eef", border: "1px solid #aac", borderRadius: "3px", padding: "1px 6px", marginRight: "4px", fontFamily: "monospace" }}>{tbl}</span>
+                        ))}
+                      </div>
+                    );
+                  })()}
+
+                  {/* Filter bar */}
+                  <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", alignItems: "flex-end", marginBottom: "1rem", padding: "0.75rem", border: "1px solid #ccc" }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.8rem", marginBottom: "2px" }}>Start Date</label>
+                      <input type="date" value={txFilters.startDate} onChange={e => setTxFilters({ ...txFilters, startDate: e.target.value })} />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.8rem", marginBottom: "2px" }}>End Date</label>
+                      <input type="date" value={txFilters.endDate} onChange={e => setTxFilters({ ...txFilters, endDate: e.target.value })} />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.8rem", marginBottom: "2px" }}>User ID</label>
+                      <input type="number" placeholder="All" value={txFilters.userId} onChange={e => setTxFilters({ ...txFilters, userId: e.target.value })} style={{ width: "80px" }} />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.8rem", marginBottom: "2px" }}>Type</label>
+                      <select value={txFilters.type} onChange={e => setTxFilters({ ...txFilters, type: e.target.value })}>
+                        <option value="">All</option>
+                        <option value="Loan">Loan</option>
+                        <option value="Hold">Hold</option>
+                        <option value="Fine">Fine</option>
+                      </select>
+                    </div>
+                    <button onClick={fetchTransactionReport} disabled={txLoading}>
+                      {txLoading ? "Loading…" : "Run Report"}
+                    </button>
+                    {(txFilters.startDate || txFilters.endDate || txFilters.userId || txFilters.type) && (
+                      <button onClick={() => setTxFilters({ startDate: "", endDate: "", userId: "", type: "" })}>
+                        Clear Filters
+                      </button>
+                    )}
+                  </div>
+
+                  {!txHasRun && !txLoading && (
+                    <p style={{ color: "#666" }}>Set filters above and click Run Report to see results.</p>
+                  )}
+                  {txHasRun && !txLoading && txResults.length === 0 && (
+                    <p style={{ color: "#666" }}>No results found for the selected filters.</p>
+                  )}
+                  {txSorted.length > 0 && (
+                    <>
+                      <p style={{ marginBottom: "0.5rem", color: "#555" }}>{txSorted.length} record{txSorted.length !== 1 ? "s" : ""} — click a column header to sort</p>
+
+                      {/* Donut charts: type split + status breakdown */}
+                      {(() => {
+                        const COLORS = { Loan: "#c8102e", Hold: "#4a90d9", Fine: "#e8a020", Active: "#4caf50", Overdue: "#c8102e", Returned: "#888", Fulfilled: "#4a90d9", Cancelled: "#bbb", Paid: "#4caf50", Unpaid: "#e8a020" };
+                        const typeCounts = ["Loan","Hold","Fine"].map(type => ({
+                          name: type, value: txSorted.filter(r => r.TransactionType === type).length
+                        })).filter(d => d.value > 0);
+                        const statusCounts = Object.entries(
+                          txSorted.reduce((acc, r) => { acc[r.StatusLabel] = (acc[r.StatusLabel] || 0) + 1; return acc; }, {})
+                        ).map(([name, value]) => ({ name, value }));
+                        return (
+                          <div style={{ display: "flex", gap: "2rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
+                            <div style={{ flex: "1 1 260px" }}>
+                              <p style={{ fontSize: "0.85rem", color: "#555", marginBottom: "0.25rem", textAlign: "center" }}>By Transaction Type</p>
+                              <ResponsiveContainer width="100%" height={220}>
+                                <PieChart>
+                                  <Pie data={typeCounts} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={3} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
+                                    {typeCounts.map((d, i) => <Cell key={i} fill={COLORS[d.name] || "#aaa"} />)}
+                                  </Pie>
+                                  <Tooltip />
+                                </PieChart>
+                              </ResponsiveContainer>
+                            </div>
+                            <div style={{ flex: "1 1 260px" }}>
+                              <p style={{ fontSize: "0.85rem", color: "#555", marginBottom: "0.25rem", textAlign: "center" }}>By Status</p>
+                              <ResponsiveContainer width="100%" height={220}>
+                                <PieChart>
+                                  <Pie data={statusCounts} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={3} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
+                                    {statusCounts.map((d, i) => <Cell key={i} fill={COLORS[d.name] || "#999"} />)}
+                                  </Pie>
+                                  <Tooltip />
+                                  <Legend iconSize={10} wrapperStyle={{ fontSize: "0.78rem" }} />
+                                </PieChart>
+                              </ResponsiveContainer>
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      <table border="1" cellPadding="8" style={{ borderCollapse: "collapse", width: "100%" }}>
+                        <thead>
+                          <tr>
+                            <th style={{ cursor: "pointer" }} onClick={() => toggleTxSort("TransactionType")}>Transaction Type{txSortIndicator("TransactionType")}</th>
+                            <th>Loan ID</th>
+                            <th style={{ cursor: "pointer" }} onClick={() => toggleTxSort("UserName")}>Patron Name{txSortIndicator("UserName")}</th>
+                            <th style={{ cursor: "pointer" }} onClick={() => toggleTxSort("Title")}>Item Title{txSortIndicator("Title")}</th>
+                            <th style={{ cursor: "pointer" }} onClick={() => toggleTxSort("TransactionDate")}>Transaction Date{txSortIndicator("TransactionDate")}</th>
+                            <th style={{ cursor: "pointer" }} onClick={() => toggleTxSort("StatusLabel")}>Current Status{txSortIndicator("StatusLabel")}</th>
+                            <th style={{ cursor: "pointer" }} onClick={() => toggleTxSort("AgeDays")}>Age / Overdue Days{txSortIndicator("AgeDays")}</th>
+                            <th style={{ cursor: "pointer" }} onClick={() => toggleTxSort("DaysOverdue")}>Days Past Due (loans){txSortIndicator("DaysOverdue")}</th>
+                            <th style={{ cursor: "pointer" }} onClick={() => toggleTxSort("FineAmount")}>Fine Amount ($){txSortIndicator("FineAmount")}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {txSorted.map((row, idx) => (
+                            <tr key={idx} style={row.NeedsAttention ? { background: "#fff3f3" } : {}}>
+                              <td>{row.TransactionType}</td>
+                              <td>{row.TransactionType === "Loan" ? row.TransactionID : "—"}</td>
+                              <td>{row.UserName}</td>
+                              <td>{row.Title ?? "—"}</td>
+                              <td>{row.TransactionDate ? new Date(row.TransactionDate).toLocaleDateString() : "—"}</td>
+                              <td>{row.StatusLabel ?? "—"}</td>
+                              <td>{row.AgeDays ?? "—"}</td>
+                              <td>{row.DaysOverdue > 0 ? row.DaysOverdue : "—"}</td>
+                              <td>{row.FineAmount != null ? `$${Number(row.FineAmount).toFixed(2)}` : "—"}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </>
+                  )}
+                </>
+              );
+            })()}
+
+            {analyticsTab === "checkouts" && <>
 
             {/* Summary cards */}
             {displaySummary && (() => {
@@ -1234,6 +1515,8 @@ export default function LibrarianDashboard() {
                 { label: "Top Type",                 value: displaySummary.TopType },
                 { label: "Most Checked Out Item",    value: displaySummary.TopItemTitle },
                 { label: "Avg Loan Duration",        value: displaySummary.AvgLoanDays != null ? `${displaySummary.AvgLoanDays} days` : "—" },
+                { label: "Checkouts This Week",      value: displaySummary.CheckoutsThisWeek ?? "—" },
+                { label: "Checkouts Last Week",      value: displaySummary.CheckoutsLastWeek ?? "—" },
               ];
               return (
                 <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", marginBottom: "1.5rem" }}>
@@ -1249,6 +1532,24 @@ export default function LibrarianDashboard() {
                       <div style={{ fontSize: "0.75rem", color: "#666", marginBottom: "0.25rem" }}>{card.label}</div>
                       <div style={{ fontSize: "1.25rem", fontWeight: "bold" }}>{card.value ?? "—"}</div>
                     </div>
+                  ))}
+                </div>
+              );
+            })()}
+
+            {/* Tables used */}
+            {(!analyticsHasRun || analyticsResults.length > 0) && (() => {
+              const cat = analyticsHasRun ? (analyticsAppliedFilters?.category ?? "") : "";
+              let tables = ["loans", "copies", "items"];
+              if (!cat || cat === "1") tables.push("literature");
+              if (!cat || cat === "2") tables.push("media");
+              if (!cat || cat === "3") tables.push("devices");
+              const unique = [...new Set(tables)].sort();
+              return (
+                <div style={{ marginBottom: "0.75rem", fontSize: "0.78rem", color: "#555" }}>
+                  <span style={{ marginRight: "0.4rem" }}>Tables Used:</span>
+                  {unique.map(tbl => (
+                    <span key={tbl} style={{ display: "inline-block", background: "#eef", border: "1px solid #aac", borderRadius: "3px", padding: "1px 6px", marginRight: "4px", fontFamily: "monospace" }}>{tbl}</span>
                   ))}
                 </div>
               );
@@ -1328,24 +1629,53 @@ export default function LibrarianDashboard() {
                   </p>
                 )}
                 <p style={{ marginBottom: "0.5rem", color: "#555" }}>{sorted.length} item{sorted.length !== 1 ? "s" : ""} — click a column header to sort</p>
+
+                {/* Bar chart: top 15 items by checkouts */}
+                {(() => {
+                  const BAR_COLORS = ["#c8102e","#d63456","#e05a7a","#960c22","#b01030","#6b0018","#f09090"];
+                  const barData = [...analyticsResults]
+                    .sort((a, b) => b.CheckoutCount - a.CheckoutCount)
+                    .slice(0, 10)
+                    .map(r => ({
+                      name: r.Title.length > 18 ? r.Title.slice(0, 16) + "…" : r.Title,
+                      Checkouts: r.CheckoutCount,
+                      full: r.Title,
+                    }));
+                  return (
+                    <div style={{ marginBottom: "1.5rem" }}>
+                      <p style={{ fontSize: "0.85rem", color: "#555", marginBottom: "0.4rem" }}>Top {barData.length} items by checkouts</p>
+                      <ResponsiveContainer width="100%" height={260}>
+                        <BarChart data={barData} margin={{ top: 4, right: 16, left: 0, bottom: 60 }}>
+                          <XAxis dataKey="name" tick={{ fontSize: 11 }} angle={-35} textAnchor="end" interval={0} />
+                          <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                          <Tooltip formatter={(v, _n, p) => [v, p.payload.full]} />
+                          <Bar dataKey="Checkouts" radius={[3, 3, 0, 0]}>
+                            {barData.map((_, i) => <Cell key={i} fill={BAR_COLORS[i % BAR_COLORS.length]} />)}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  );
+                })()}
+
                 <table border="1" cellPadding="8" style={{ borderCollapse: "collapse", width: "100%" }}>
                   <thead>
                     <tr>
                       <th style={{ width: "3rem" }}>#</th>
                       <th style={{ cursor: "pointer" }} onClick={() => toggleSort("Title")}>
-                        Title{sortIndicator("Title")}
+                        Item Title{sortIndicator("Title")}
                       </th>
                       <th style={{ cursor: "pointer" }} onClick={() => toggleSort("TypeLabel")}>
-                        Type{sortIndicator("TypeLabel")}
+                        Item Type{sortIndicator("TypeLabel")}
                       </th>
                       <th style={{ cursor: "pointer" }} onClick={() => toggleSort("CheckoutCount")}>
-                        Checkouts{sortIndicator("CheckoutCount")}
+                        Total Checkouts (in range){sortIndicator("CheckoutCount")}
                       </th>
                       <th style={{ cursor: "pointer" }} onClick={() => toggleSort("AvgLoanDays")}>
-                        Avg Loan Duration{sortIndicator("AvgLoanDays")}
+                        Avg Loan Duration (days){sortIndicator("AvgLoanDays")}
                       </th>
                       <th style={{ cursor: "pointer" }} onClick={() => toggleSort("OverdueCount")}>
-                        Overdue{sortIndicator("OverdueCount")}
+                        Currently Overdue Copies{sortIndicator("OverdueCount")}
                       </th>
                     </tr>
                   </thead>
@@ -1364,6 +1694,8 @@ export default function LibrarianDashboard() {
                 </table>
               </>
             )}
+            </>}
+
           </div>
         );
       })()}

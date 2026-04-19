@@ -772,7 +772,7 @@ BEGIN
             WHEN 3 THEN CASE dev.ItemType
                 WHEN 1 THEN 'Laptop'
                 WHEN 2 THEN 'Tablet'
-                WHEN 3 THEN 'Calculator'
+                WHEN 3 THEN 'Equipment'
                 ELSE 'Device'
             END
             ELSE 'Unknown'
