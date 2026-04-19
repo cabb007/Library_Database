@@ -492,13 +492,13 @@ export default function Landing() {
             )}
             <button
               onClick={() => navigate("/catalog")}
-              className="px-7 py-3 border border-stone-600 text-stone-300 hover:border-amber-700 hover:text-amber-300 rounded transition tracking-wide">
+              className="px-7 py-3 bg-amber-700 hover:bg-amber-600 text-stone-950 rounded transition tracking-wide">
               Browse Catalog
             </button>
 
             <button
               onClick={() => featuredRef.current?.scrollIntoView({ behavior: "smooth" })}
-              className="px-7 py-3 border border-stone-600 text-stone-300 hover:border-amber-700 hover:text-amber-300 rounded transition tracking-wide"
+              className="px-7 py-3 bg-amber-700 hover:bg-amber-600 text-stone-950 rounded transition tracking-wide"
             >
               Dashboard
             </button>
