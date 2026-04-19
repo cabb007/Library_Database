@@ -69,7 +69,8 @@ BEGIN
     ) AS a
     JOIN users u ON u.UserID = a.ActionUserID
     WHERE
-        (p_start_date IS NULL OR DATE(a.ActionTimestamp) >= p_start_date)
+        u.UserType = 2
+        AND (p_start_date IS NULL OR DATE(a.ActionTimestamp) >= p_start_date)
         AND (p_end_date IS NULL OR DATE(a.ActionTimestamp) <= p_end_date)
         AND (p_librarian_id IS NULL OR a.ActionUserID = p_librarian_id)
         AND (p_table_name IS NULL OR a.TableName = p_table_name)
