@@ -1,7 +1,7 @@
 DELIMITER $$
 
 -- =========================================================
--- Procedure: Get top librarian
+-- Procedure: Get top
 -- =========================================================
 DROP PROCEDURE IF EXISTS GetTopLibrarian $$
 CREATE PROCEDURE GetTopLibrarian()
@@ -200,7 +200,6 @@ BEGIN
         (SELECT COUNT(*) FROM holds) AS TotalHolds,
         (SELECT COUNT(*) FROM holds WHERE HoldStatus = 0) AS ActiveHolds,
         (SELECT COUNT(*) FROM holds WHERE HoldStatus = 1) AS FulfilledHolds,
-        (SELECT COUNT(*) FROM holds WHERE HoldStatus = 2) AS CancelledHolds,
         (SELECT COUNT(*) FROM fines) AS TotalFines,
         (SELECT COUNT(*) FROM fines WHERE PaidStatus = 0) AS UnpaidFines,
         (SELECT COUNT(*) FROM fines WHERE PaidStatus = 1) AS PaidFines,
