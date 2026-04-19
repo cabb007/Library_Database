@@ -46,6 +46,7 @@ export default function ItemDashboard() {
   const [literature, setLiterature] = useState([]);
   const [media, setMedia] = useState([]);
   const [devices, setDevices] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // =========================
   // FETCH DATA
@@ -114,7 +115,7 @@ export default function ItemDashboard() {
 
   // scrolls to specific item when highlightID is set, briefly highlights it, 
   // then removes the highlight after 2 seconds
-  useEffect(() => { 
+  useEffect(() => {
     if (!highlightId) return;
     const el = document.getElementById(`row-${highlightId}`);
     if (!el) return;
@@ -157,10 +158,28 @@ export default function ItemDashboard() {
     return items.filter((item) => Number(item.ItemType) === selectedType);
   }
 
+  function applySearchFilter(items) {
+    if (!searchQuery.trim()) return items;
+
+    const q = searchQuery.toLowerCase();
+
+    return items.filter((item) =>
+      (item.Title ?? "").toLowerCase().includes(q)
+    );
+  }
+
   // Build the visible rows before rendering so the JSX stays focused on layout instead of filter logic.
-  const filteredLiterature = getFilteredItems(literature, "books");
-  const filteredMedia = getFilteredItems(media, "media");
-  const filteredDevices = getFilteredItems(devices, "devices");
+  const filteredLiterature = applySearchFilter(
+    getFilteredItems(literature, "books")
+  );
+
+  const filteredMedia = applySearchFilter(
+    getFilteredItems(media, "media")
+  );
+
+  const filteredDevices = applySearchFilter(
+    getFilteredItems(devices, "devices")
+  );
 
   // =========================
   // TABLE RENDER
@@ -188,11 +207,10 @@ export default function ItemDashboard() {
               onClick={() =>
                 isAvailable ? handleCheckout(item) : handleHold(item)
               }
-              className={`px-4 py-1 rounded text-stone-950 ${
-                isAvailable
+              className={`px-4 py-1 rounded text-stone-950 ${isAvailable
                   ? "bg-amber-700 hover:bg-amber-600"
                   : "bg-stone-600 hover:bg-stone-500"
-              }`}
+                }`}
             >
               {isAvailable ? "Checkout" : "Hold"}
             </button>
@@ -232,23 +250,30 @@ export default function ItemDashboard() {
           Home
         </button>
       </nav>
-
+      <div className="flex justify-center mt-6 px-6">
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search items by title..."
+          className="w-full max-w-md px-4 py-2 rounded border border-amber-700 bg-stone-900 text-amber-50 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-amber-600"
+        />
+      </div>
       <div className="flex justify-center gap-4 mt-8">
-          {catalogTabs.map((tab) => (
-            <button
-              key={tab.value}
-              onClick={() => setActiveSubTab(tab.value)}
-              className={`px-4 py-1 rounded ${
-                activeSubTab === tab.value
-                  ? "bg-amber-700 text-stone-950"
-                  : "border border-amber-700 text-amber-300"
+        {catalogTabs.map((tab) => (
+          <button
+            key={tab.value}
+            onClick={() => setActiveSubTab(tab.value)}
+            className={`px-4 py-1 rounded ${activeSubTab === tab.value
+                ? "bg-amber-700 text-stone-950"
+                : "border border-amber-700 text-amber-300"
               }`}
-            >
-              {/* Render the title-case label so the tab text matches the requested button styling. */}
-              {tab.label}
-            </button>
-          ))}
-        </div>
+          >
+            {/* Render the title-case label so the tab text matches the requested button styling. */}
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
       {/* Show ItemType subfilters directly below the main category tabs so users can narrow the active catalog view. */}
       <div className="flex flex-wrap justify-center gap-3 mt-4 px-6">
@@ -259,11 +284,10 @@ export default function ItemDashboard() {
               [activeSubTab]: "all",
             }))
           }
-          className={`px-4 py-1 rounded ${
-            activeTypeFilters[activeSubTab] === "all"
+          className={`px-4 py-1 rounded ${activeTypeFilters[activeSubTab] === "all"
               ? "bg-amber-700 text-stone-950"
               : "border border-amber-700 text-amber-300"
-          }`}
+            }`}
         >
           All
         </button>
@@ -277,11 +301,10 @@ export default function ItemDashboard() {
                 [activeSubTab]: filter.value,
               }))
             }
-            className={`px-4 py-1 rounded ${
-              activeTypeFilters[activeSubTab] === filter.value
+            className={`px-4 py-1 rounded ${activeTypeFilters[activeSubTab] === filter.value
                 ? "bg-amber-700 text-stone-950"
                 : "border border-amber-700 text-amber-300"
-            }`}
+              }`}
           >
             {/* Use the database-backed ItemType label so each subfilter button matches its category's real subtype. */}
             {filter.label}
