@@ -321,24 +321,22 @@ export default function Landing() {
                       </div>
                     ) : (
                       notifications.map((n, i) => {
-                        const id = n.notificationId || n.NotificationID || n.id;
+                        const id = n.NotificationID; // ✅ exact match to DB
 
                         return (
                           <div
                             key={id || i}
                             className="p-3 border-b border-amber-900/10 text-sm text-stone-300 flex items-center justify-between gap-3"
                           >
-                            {/* TEXT (won’t push button out) */}
-                            <span className="flex-1 truncate pr-2">
+                            <span className="flex-1">
                               {n.message || n.Message}
                             </span>
 
-                            {/* BUTTON */}
                             <button
                               onClick={async () => {
                                 try {
                                   if (!id) {
-                                    console.error("No notification ID found", n);
+                                    console.error("Missing NotificationID", n);
                                     return;
                                   }
 
@@ -351,21 +349,23 @@ export default function Landing() {
                                     body: JSON.stringify({ notificationId: id }),
                                   });
 
+                                  const data = await res.json();
+                                  console.log("mark read response:", data);
+
                                   if (!res.ok) {
-                                    throw new Error("Failed to mark as read");
+                                    throw new Error(data.error || "Failed to mark as read");
                                   }
 
-                                  // remove from UI immediately
+                                  // ✅ remove from UI (since you're only showing unread)
                                   setNotifications(prev =>
-                                    prev.filter(item =>
-                                      (item.notificationId || item.NotificationID || item.id) !== id
-                                    )
+                                    prev.filter(item => item.NotificationID !== id)
                                   );
+
                                 } catch (err) {
                                   console.error("mark as read failed", err);
                                 }
                               }}
-                              className="text-xs px-2 py-1 border border-amber-500 text-amber-200 rounded hover:bg-amber-800/30 transition shrink-0"
+                              className="text-xs px-3 py-1 border border-amber-700/60 rounded hover:bg-amber-800/30 transition whitespace-nowrap"
                             >
                               Read
                             </button>
@@ -398,7 +398,7 @@ export default function Landing() {
             Log in with your student or faculty account to get started.
           </p>
           <div className="mt-2 flex flex-wrap gap-4">
-           {!loggedIn && (
+            {!loggedIn && (
               <button
                 onClick={() => navigate("/login")}
                 className="px-7 py-3 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold rounded transition tracking-wide"
