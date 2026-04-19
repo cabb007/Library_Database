@@ -11,12 +11,12 @@ const SHELVES = [
     subtitle: "Curated picks from our book collection",
     subTab: "books",
     items: [
-      { id: 9780061965487, title: "1984",                     credit: "George Orwell",        badge: "BOOK",   image: `${API}/images/literature/1984.jpeg` },
-      { id: 9780385490818, title: "The Great Gatsby",          credit: "F. Scott Fitzgerald",  badge: "BOOK",   image: `${API}/images/literature/The Great Gatsby.jpeg` },
-      { id: 9780062315007, title: "The Hobbit",               credit: "J.R.R. Tolkien",       badge: "BOOK",   image: `${API}/images/literature/The Hobbit.jpeg` },
-      { id: 9780743273565, title: "To Kill a Mockingbird",    credit: "Harper Lee",           badge: "BOOK",   image: `${API}/images/literature/To Kill a Mockingbird.jpeg` },
-      { id: 9780316769174, title: "Pride and Prejudice",      credit: "Jane Austen",          badge: "BOOK",   image: `${API}/images/literature/Pride and Prejudice.jpeg` },
-      { id: 9780062409867, title: "Crime and Punishment",     credit: "Fyodor Dostoevsky",    badge: "BOOK",   image: `${API}/images/literature/Crime and Punishment.jpeg` },
+      { id: 9780061965487, title: "1984", credit: "George Orwell", badge: "BOOK", image: `${API}/images/literature/1984.jpeg` },
+      { id: 9780385490818, title: "The Great Gatsby", credit: "F. Scott Fitzgerald", badge: "BOOK", image: `${API}/images/literature/The Great Gatsby.jpeg` },
+      { id: 9780062315007, title: "The Hobbit", credit: "J.R.R. Tolkien", badge: "BOOK", image: `${API}/images/literature/The Hobbit.jpeg` },
+      { id: 9780743273565, title: "To Kill a Mockingbird", credit: "Harper Lee", badge: "BOOK", image: `${API}/images/literature/To Kill a Mockingbird.jpeg` },
+      { id: 9780316769174, title: "Pride and Prejudice", credit: "Jane Austen", badge: "BOOK", image: `${API}/images/literature/Pride and Prejudice.jpeg` },
+      { id: 9780062409867, title: "Crime and Punishment", credit: "Fyodor Dostoevsky", badge: "BOOK", image: `${API}/images/literature/Crime and Punishment.jpeg` },
     ],
   },
   {
@@ -24,12 +24,12 @@ const SHELVES = [
     subtitle: "Featured films and recordings",
     subTab: "media",
     items: [
-      { id: 43396519466,  title: "Inception",                credit: "Christopher Nolan",    badge: "DVD/CD", image: `${API}/images/media/Inception.jpeg` },
-      { id: 883929318513, title: "The Godfather",            credit: "Francis Ford Coppola", badge: "DVD/CD", image: `${API}/images/media/The Godfather.jpeg` },
-      { id: 31398282068,  title: "The Dark Knight",          credit: "Christopher Nolan",    badge: "DVD/CD", image: `${API}/images/media/The Dark Knight.jpeg` },
-      { id: 715515159227, title: "The Shawshank Redemption", credit: "Frank Darabont",       badge: "DVD/CD", image: `${API}/images/media/The Shawshank Redemption.jpeg` },
-      { id: 24543153788,  title: "Pulp Fiction",             credit: "Quentin Tarantino",    badge: "DVD/CD", image: `${API}/images/media/Pulp Fiction.jpeg` },
-      { id: 786936847543, title: "Goodfellas",               credit: "Martin Scorsese",      badge: "DVD/CD", image: `${API}/images/media/Goodfellas.jpeg` },
+      { id: 43396519466, title: "Inception", credit: "Christopher Nolan", badge: "DVD/CD", image: `${API}/images/media/Inception.jpeg` },
+      { id: 883929318513, title: "The Godfather", credit: "Francis Ford Coppola", badge: "DVD/CD", image: `${API}/images/media/The Godfather.jpeg` },
+      { id: 31398282068, title: "The Dark Knight", credit: "Christopher Nolan", badge: "DVD/CD", image: `${API}/images/media/The Dark Knight.jpeg` },
+      { id: 715515159227, title: "The Shawshank Redemption", credit: "Frank Darabont", badge: "DVD/CD", image: `${API}/images/media/The Shawshank Redemption.jpeg` },
+      { id: 24543153788, title: "Pulp Fiction", credit: "Quentin Tarantino", badge: "DVD/CD", image: `${API}/images/media/Pulp Fiction.jpeg` },
+      { id: 786936847543, title: "Goodfellas", credit: "Martin Scorsese", badge: "DVD/CD", image: `${API}/images/media/Goodfellas.jpeg` },
     ],
   },
   {
@@ -37,12 +37,12 @@ const SHELVES = [
     subtitle: "Technology available for loan",
     subTab: "devices",
     items: [
-      { id: 1767950141, title: "MacBook Air M2",             credit: "Apple",     badge: "LAPTOP", image: `${API}/images/devices/Apple,MacBook Air M2.jpeg` },
-      { id: 4326338643, title: 'iPad Pro 12.9" M2',         credit: "Apple",     badge: "TABLET", image: `${API}/images/devices/Apple,iPad Pro 12.9-inch M2.jpeg` },
-      { id: 2067004398, title: "XPS 15 9530",               credit: "Dell",      badge: "LAPTOP", image: `${API}/images/devices/Dell,XPS 15 9530.jpeg` },
-      { id: 6170128796, title: "Surface Pro 9",             credit: "Microsoft", badge: "TABLET", image: `${API}/images/devices/Microsoft,Surface Pro 9.jpeg` },
-      { id: 3930751749, title: "ThinkPad X1 Carbon Gen 11", credit: "Lenovo",    badge: "LAPTOP", image: `${API}/images/devices/Lenovo,ThinkPad X1 Carbon Gen 11.jpeg` },
-      { id: 2729251472, title: "Galaxy Tab S9 Ultra",        credit: "Samsung",   badge: "TABLET", image: `${API}/images/devices/Samsung,Galaxy Tab S9 Ultra.jpeg` },
+      { id: 1767950141, title: "MacBook Air M2", credit: "Apple", badge: "LAPTOP", image: `${API}/images/devices/Apple,MacBook Air M2.jpeg` },
+      { id: 4326338643, title: 'iPad Pro 12.9" M2', credit: "Apple", badge: "TABLET", image: `${API}/images/devices/Apple,iPad Pro 12.9-inch M2.jpeg` },
+      { id: 2067004398, title: "XPS 15 9530", credit: "Dell", badge: "LAPTOP", image: `${API}/images/devices/Dell,XPS 15 9530.jpeg` },
+      { id: 6170128796, title: "Surface Pro 9", credit: "Microsoft", badge: "TABLET", image: `${API}/images/devices/Microsoft,Surface Pro 9.jpeg` },
+      { id: 3930751749, title: "ThinkPad X1 Carbon Gen 11", credit: "Lenovo", badge: "LAPTOP", image: `${API}/images/devices/Lenovo,ThinkPad X1 Carbon Gen 11.jpeg` },
+      { id: 2729251472, title: "Galaxy Tab S9 Ultra", credit: "Samsung", badge: "TABLET", image: `${API}/images/devices/Samsung,Galaxy Tab S9 Ultra.jpeg` },
     ],
   },
 ];
@@ -121,8 +121,8 @@ function FeaturedCard({ entry }) {
           </p>
           <div
             className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${isAvailable
-                ? "border border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
-                : "border border-amber-500/20 bg-amber-500/10 text-amber-200"
+              ? "border border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
+              : "border border-amber-500/20 bg-amber-500/10 text-amber-200"
               }`}
           >
             {isAvailable ? "Ready Now" : "High Demand"}
@@ -203,6 +203,7 @@ export default function Landing() {
   const [notifications, setNotifications] = useState([]);
   const [notifOpen, setNotifOpen] = useState(false);
   const notifRef = useRef(null);
+  const [popupNotif, setPopupNotif] = useState(null);
 
   useEffect(() => {
     async function checkAuth() {
@@ -292,68 +293,68 @@ export default function Landing() {
     <div className="min-h-screen bg-stone-950 text-amber-50 flex flex-col">
       {/* Navbar */}
       <nav className="flex flex-col gap-4 border-b border-amber-900/40 px-6 py-5 md:flex-row md:items-center md:justify-between md:px-10">
-  <h1 className="text-2xl font-serif tracking-widest text-amber-400">
-    Cougar Commons
-  </h1>
+        <h1 className="text-2xl font-serif tracking-widest text-amber-400">
+          Cougar Commons
+        </h1>
 
-  <div className="flex items-center gap-4 w-full md:justify-end">
+        <div className="flex items-center gap-4 w-full md:justify-end">
 
-    {/* LEFT BUTTON GROUP */}
-    <div className="flex flex-wrap gap-3 items-center">
+          {/* LEFT BUTTON GROUP */}
+          <div className="flex flex-wrap gap-3 items-center">
 
-      {!loggedIn && (
-        <>
-          <button
-            onClick={() => navigate("/login")}
-            className="px-5 py-2 border border-amber-700 text-amber-300 hover:bg-amber-900/30 transition rounded text-sm tracking-wide"
-          >
-            Login
-          </button>
+            {!loggedIn && (
+              <>
+                <button
+                  onClick={() => navigate("/login")}
+                  className="px-5 py-2 border border-amber-700 text-amber-300 hover:bg-amber-900/30 transition rounded text-sm tracking-wide"
+                >
+                  Login
+                </button>
 
-          <button
-            onClick={() => navigate("/register")}
-            className="px-5 py-2 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold transition rounded text-sm tracking-wide"
-          >
-            Register
-          </button>
-        </>
-      )}
+                <button
+                  onClick={() => navigate("/register")}
+                  className="px-5 py-2 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold transition rounded text-sm tracking-wide"
+                >
+                  Register
+                </button>
+              </>
+            )}
 
-      {userType === 2 && (
-        <button
-          onClick={() => navigate("/librarian")}
-          className="px-5 py-2 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold transition rounded text-sm tracking-wide"
-        >
-          Librarian Dashboard
-        </button>
-      )}
+            {userType === 2 && (
+              <button
+                onClick={() => navigate("/librarian")}
+                className="px-5 py-2 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold transition rounded text-sm tracking-wide"
+              >
+                Librarian Dashboard
+              </button>
+            )}
 
-      {/* 👇 FIXED: stays next to other buttons */}
-      <button
-        onClick={() => navigate("/useraccount")}
-        className="px-5 py-2 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold transition rounded text-sm tracking-wide"
-      >
-        My Account
-      </button>
+            {/* 👇 FIXED: stays next to other buttons */}
+            <button
+              onClick={() => navigate("/useraccount")}
+              className="px-5 py-2 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold transition rounded text-sm tracking-wide"
+            >
+              My Account
+            </button>
 
-    </div>
+          </div>
 
-    {/* RIGHT SIDE: NOTIFICATIONS */}
-    {loggedIn && (
-      <div className="relative">
+          {/* RIGHT SIDE: NOTIFICATIONS */}
+          {loggedIn && (
+            <div className="relative">
 
-        <button
-          onClick={() => setNotifOpen(!notifOpen)}
-          className="relative px-4 py-2 border border-amber-700 rounded hover:bg-amber-900/30 transition"
-        >
-          🔔
+              <button
+                onClick={() => setNotifOpen(!notifOpen)}
+                className="relative px-4 py-2 border border-amber-700 rounded hover:bg-amber-900/30 transition"
+              >
+                🔔
 
-          {/* 🔴 RED DOT / STAR (only if unread exist) */}
-          {notifications.length > 0 && (
-            <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 shadow-lg ring-2 ring-stone-950" />          )}
-        </button>
+                {/* 🔴 RED DOT / STAR (only if unread exist) */}
+                {notifications.length > 0 && (
+                  <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 shadow-lg ring-2 ring-stone-950" />)}
+              </button>
 
-        {/* DROPDOWN */}
+              {/* DROPDOWN */}
               {notifOpen && (
                 <div className="absolute right-0 mt-2 w-80 bg-stone-900 border border-amber-700 rounded-lg shadow-xl z-50">
 
@@ -376,9 +377,17 @@ export default function Landing() {
                             className="p-3 border-b border-amber-900/10 text-sm text-stone-300 flex items-center justify-between gap-3"
                           >
                             {/* TEXT (won’t push button out) */}
-                            <span className="flex-1 truncate pr-2">
-                              {n.header || n.Header}
-                            </span>
+                            <div className="flex-1 pr-2 flex flex-col">
+                              {/* Header (bold / primary) */}
+                              <span className="text-sm font-semibold text-amber-200 leading-snug">
+                                {n.header || n.Header}
+                              </span>
+
+                              {/* Body (smaller / secondary) */}
+                              <span className="text-xs text-stone-400 leading-snug mt-1 line-clamp-2">
+                                {n.body || n.Body}
+                              </span>
+                            </div>
 
                             {/* BUTTON */}
                             <button
@@ -395,7 +404,7 @@ export default function Landing() {
                                       "Content-Type": "application/json",
                                     },
                                     credentials: "include",
-                                    body: JSON.stringify({ NotificationID: id }),
+                                    body: JSON.stringify({ NotificationID: id }), // ⚠️ FIXED KEY
                                   });
 
                                   const data = await res.json();
@@ -406,12 +415,22 @@ export default function Landing() {
                                     throw new Error(data.error || "Failed to mark as read");
                                   }
 
-                                  // remove from UI immediately
-                                  setNotifications(prev =>
-                                    prev.filter(item =>
-                                      (item.NotificationID) !== id
-                                    )
-                                  );
+                                  // remove current notification
+                                  setNotifications(prev => {
+                                    const idx = prev.findIndex(item => item.NotificationID === id);
+
+                                    const updated = prev.filter(item => item.NotificationID !== id);
+
+                                    // 👇 show next item (index + 1)
+                                    const next = prev[idx + 1] || null;
+                                    setPopupNotif(next);
+
+                                    return updated;
+                                  });
+
+                                  // auto-close popup after 2s
+                                  setTimeout(() => setPopupNotif(null), 2000);
+
                                 } catch (err) {
                                   console.error("mark as read failed", err);
                                 }
@@ -429,8 +448,19 @@ export default function Landing() {
               )}
             </div>
           )}
-  </div>
-</nav>
+        </div>
+        {popupNotif && (
+          <div className="fixed bottom-6 right-6 bg-stone-900 border border-amber-700 text-amber-100 px-4 py-3 rounded-lg shadow-xl z-50 animate-fade-in">
+            <div className="text-xs uppercase tracking-widest text-amber-400 mb-1">
+              Next Notification
+            </div>
+
+            <div className="text-sm">
+              {popupNotif.header || popupNotif.Header || "No more notifications"}
+            </div>
+          </div>
+        )}
+      </nav>
 
       {/* Hero */}
       <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col items-center justify-center gap-16 px-6 py-16 md:flex-row md:px-10 md:py-20">
@@ -448,11 +478,14 @@ export default function Landing() {
             Log in with your student or faculty account to get started.
           </p>
           <div className="mt-2 flex flex-wrap gap-4">
-            <button
-              onClick={() => navigate(loggedIn ? "/catalog" : "/login")}
-              className="px-7 py-3 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold rounded transition tracking-wide">
-              {loggedIn ? "Open Catalog" : "Get Started"}
-            </button>
+            {!loggedIn && (
+              <button
+                onClick={() => navigate("/login")}
+                className="px-7 py-3 bg-amber-700 hover:bg-amber-600 text-stone-950 font-semibold rounded transition tracking-wide"
+              >
+                Get Started
+              </button>
+            )}
             <button
               onClick={() => navigate("/catalog")}
               className="px-7 py-3 border border-stone-600 text-stone-300 hover:border-amber-700 hover:text-amber-300 rounded transition tracking-wide">
