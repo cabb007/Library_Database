@@ -198,7 +198,7 @@ BEGIN
             SET MESSAGE_TEXT = 'Return invalid: copy still has another active loan.';
         END IF;
 
-        --  4. Chronological validation
+        --  Chronological validation
         IF NEW.ReturnDate < NEW.CreatedAt THEN
             SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'ReturnDate cannot be earlier than CreatedAt.';

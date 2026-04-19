@@ -1,224 +1,230 @@
 ItemID,ItemType,Author,Publisher,PublicationYear
-9780743273565,1,Harper Lee,J.B. Lippincott & Co.,1960
-9780061965487,1,George Orwell,Secker & Warburg,1949
-9780385490818,1,F. Scott Fitzgerald,Charles Scribner's Sons,1925
-9780316769174,1,Jane Austen,T. Egerton,1813
-9780679720201,1,J.D. Salinger,"Little, Brown and Company",1951
-9780060935467,1,Aldous Huxley,Chatto & Windus,1932
-9780062315007,1,J.R.R. Tolkien,George Allen & Unwin,1937
-9780385737951,1,George Orwell,Secker & Warburg,1945
-9780385490313,1,John Steinbeck,Covici Friede,1937
-9780679745587,1,John Steinbeck,The Viking Press,1939
-9780062409850,1,Charlotte Bronte,"Smith, Elder & Co.",1847
-9780553418025,1,Emily Bronte,Thomas Newby,1847
-9780062457714,1,Charles Dickens,Chapman & Hall,1861
-9781250301703,1,Charles Dickens,Chapman & Hall,1859
-9780062409867,1,Fyodor Dostoevsky,The Russian Messenger,1866
-9780525559481,1,Leo Tolstoy,The Russian Messenger,1869
-9780062315021,1,Fyodor Dostoevsky,The Russian Messenger,1880
-9780385490825,1,Miguel de Cervantes,Francisco de Robles,1605
-9780743273572,1,James Joyce,Sylvia Beach,1922
-9780061965494,1,Herman Melville,Harper & Brothers,1851
-9780316769181,1,Nathaniel Hawthorne,Ticknor Reed and Fields,1850
-9780679720218,1,Mark Twain,Chatto & Windus,1884
-9780060935474,1,Louisa May Alcott,Roberts Brothers,1868
-9780385490320,1,Mary Shelley,Lackington Hughes Harding Mavor & Jones,1818
-9780679745594,1,Oscar Wilde,Ward Lock and Company,1890
-9780679723172,1,H.G. Wells,C. Arthur Pearson,1897
-9780062409874,1,H.G. Wells,William Heinemann,1895
-9780553418032,1,Jules Verne,Pierre-Jules Hetzel,1872
-9780062457721,1,Jules Verne,Pierre-Jules Hetzel,1870
-9781250301710,1,Alexandre Dumas,Journal des Debats,1844
-9780062315038,1,Victor Hugo,A. Lacroix,1862
-9780385490832,1,Alexandre Dumas,Baudry,1844
-9780743273589,1,Leo Tolstoy,The Russian Messenger,1878
-9780061965500,1,Vladimir Nabokov,Olympia Press,1955
-9780316769198,1,Joseph Heller,Simon & Schuster,1961
-9780679720225,1,Kurt Vonnegut,Delacorte,1969
-9780060935481,1,Gabriel Garcia Marquez,Harper & Row,1967
-9780385490337,1,Ernest Hemingway,Scribner,1929
-9780679745600,1,Ernest Hemingway,Scribner,1940
-9780679723189,1,Ernest Hemingway,Scribner,1952
-9780062409881,1,William Faulkner,Jonathan Cape and Harrison Smith,1929
-9780553418049,1,Toni Morrison,Alfred A. Knopf,1987
-9780062457738,1,Toni Morrison,Alfred A. Knopf,1977
-9780460482608,1,Ralph Ellison,Random House,1952
-9780234347027,1,Richard Wright,Harper & Brothers,1940
-9781141650408,1,Alice Walker,Harcourt Brace Jovanovich,1982
-9780404955274,1,James Baldwin,Alfred A. Knopf,1953
-9781233961047,1,George Eliot,William Blackwood and Sons,1871
-9790596150906,1,Wilkie Collins,Sampson Low,1859
-9790405128973,1,D.H. Lawrence,Duckworth,1913
-9781464344749,1,D.H. Lawrence,Thomas Seltzer,1920
-9790585203736,1,E.M. Forster,Edward Arnold,1908
-9780800107567,1,E.M. Forster,Edward Arnold,1924
+9791171042029,4,Aldous Huxley,Chatto & Windus,1932
 9780705893985,1,Henry James,Macmillan Publishers,1881
-9780142078341,1,Edith Wharton,D. Appleton & Company,1920
-9781378696811,1,Sinclair Lewis,Harcourt Brace and Howe,1920
-9791942594795,1,Philip Roth,Houghton Mifflin,1997
-9781283012621,1,Saul Bellow,Viking Press,1975
-9791864844183,1,Saul Bellow,Viking Press,1964
-9790281315313,1,Saul Bellow,Viking Press,1953
-9790161758919,1,Thomas Pynchon,Viking Press,1973
-9780922401734,1,Cormac McCarthy,Random House,1985
-9790604324008,1,Cormac McCarthy,Alfred A. Knopf,2005
-9791825128918,1,Cormac McCarthy,Alfred A. Knopf,2006
-9780993539169,1,Cormac McCarthy,Alfred A. Knopf,1992
-9791246213101,1,Don DeLillo,Viking Press,1985
-9790694700133,1,Don DeLillo,Scribner,1997
-9790765429444,1,David Foster Wallace,Little Brown and Company,1996
-9781937485290,1,Jonathan Franzen,Farrar Straus and Giroux,2001
-9780590097901,1,Jonathan Franzen,Farrar Straus and Giroux,2010
-9780885043415,1,Junot Diaz,Riverhead Books,2007
-9790246629615,1,Jeffrey Eugenides,Farrar Straus and Giroux,2002
-9791413850696,1,Kazuo Ishiguro,Faber and Faber,1989
-9780212267590,1,Kazuo Ishiguro,Faber and Faber,2005
-9790798227949,1,Arundhati Roy,India Ink,1997
-9780964744967,1,Zadie Smith,Hamish Hamilton,2000
-9781791639037,1,Ian McEwan,Jonathan Cape,2001
-9790806867839,1,Ian McEwan,Jonathan Cape,2005
-9781622966974,1,Sally Rooney,Faber and Faber,2018
-9791778394729,1,Sally Rooney,Faber and Faber,2017
-9780394510750,1,Khaled Hosseini,Riverhead Books,2003
-9790871105775,1,Khaled Hosseini,Riverhead Books,2007
-9780109420824,1,Yann Martel,Knopf Canada,2001
-9780188349375,1,Markus Zusak,Picador,2005
-9781192875362,1,Erich Maria Remarque,Propylaen Verlag,1929
-9781976845079,1,Hermann Hesse,S. Fischer Verlag,1922
-9780848476007,1,Franz Kafka,Verlag Die Schmiede,1925
-9790719938367,1,Franz Kafka,Kurt Wolff Verlag,1915
-9790223631099,1,Albert Camus,Gallimard,1942
-9791655194305,1,Albert Camus,Gallimard,1947
-9790982596790,1,Milan Kundera,Gallimard,1984
-9780627727559,1,Gustave Flaubert,Revue de Paris,1856
-9790425912064,1,Mikhail Bulgakov,YMCA Press,1967
-9781283734424,1,Boris Pasternak,Giangiacomo Feltrinelli Editore,1957
-9781706372653,1,Gunter Grass,Luchterhand,1959
-9781821321109,1,Truman Capote,Random House,1966
-9780222249586,1,Truman Capote,Random House,1958
-9780632695072,1,Jack Kerouac,Viking Press,1957
-9790625659349,1,William S. Burroughs,Olympia Press,1959
-9780596720124,1,J.D. Salinger,Little Brown and Company,1961
-9791696383027,1,J.D. Salinger,Little Brown and Company,1953
-9791302892042,1,Tom Wolfe,Farrar Straus and Giroux,1987
-9790176656033,1,Hunter S. Thompson,Random House,1971
-9781174920615,1,John Updike,Alfred A. Knopf,1960
-9790174559930,1,John Updike,Alfred A. Knopf,1971
-9780189816197,1,John Updike,Alfred A. Knopf,1981
-9780629231320,1,John Updike,Alfred A. Knopf,1990
-9780911830934,1,Hermann Hesse,S. Fischer Verlag,1927
-9791441792197,1,Jean-Paul Sartre,Gallimard,1938
-9790448144152,1,Samuel Beckett,Les Editions de Minuit,1952
-9781699293331,1,Mark Twain,American Publishing Company,1876
-9780700686469,1,William Faulkner,Jonathan Cape and Harrison Smith,1930
-9780804682282,1,Gabriel Garcia Marquez,Editorial Oveja Negra,1985
-9790557459123,1,James Baldwin,Dial Press,1956
-9780584343014,1,Virginia Woolf,Hogarth Press,1928
-9781812007302,1,George Eliot,William Blackwood and Sons,1860
-9790975388463,1,Elizabeth Gaskell,Chapman & Hall,1855
-9790276012807,1,Charlotte Bronte,Smith Elder & Co.,1853
-9780825121692,1,Wilkie Collins,Tinsley Brothers,1868
-9791892762251,1,Robert Louis Stevenson,Longmans Green & Co.,1886
-9790931308832,1,Joseph Conrad,Blackwood's Magazine,1900
-9791429149371,1,Joseph Conrad,Methuen & Co.,1907
+9780416357479,1,Bram Stoker,Archibald Constable and Company,1897
 9780931364433,1,D.H. Lawrence,Privately printed,1928
-9790104643517,1,Henry James,William Heinemann,1898
-9781311787699,1,Theodore Dreiser,Doubleday Page & Company,1900
-9791835190196,1,Theodore Dreiser,Boni & Liveright,1925
-9780295365688,1,Edith Wharton,Scribner,1911
-9781863505758,1,Sinclair Lewis,Harcourt Brace and Company,1922
-9781267040527,1,Philip Roth,Random House,1969
-9791152299305,1,Saul Bellow,Viking Press,1970
-9790993992659,1,Saul Bellow,Vanguard Press,1944
-9781833859157,1,Saul Bellow,Viking Press,1956
-9790410298951,1,William Gaddis,Harcourt Brace and Company,1955
-9780640400354,1,Thomas Pynchon,Henry Holt and Company,1997
-9781639648313,1,Thomas Pynchon,Penguin Press,2009
-9781308668161,1,Don DeLillo,Viking Press,1988
+9781812007302,1,George Eliot,William Blackwood and Sons,1860
+9781378696811,1,Sinclair Lewis,Harcourt Brace and Howe,1920
+9780942464481,1,Sebastian Faulks,Hutchinson,1993
+9781283734424,1,Boris Pasternak,Giangiacomo Feltrinelli Editore,1957
 9781150758898,1,Dave Eggers,Simon & Schuster,2000
-9790361588460,1,Jeffrey Eugenides,Farrar Straus and Giroux,1993
-9791500018503,1,Michael Cunningham,Farrar Straus and Giroux,1998
-9780131016859,1,Zadie Smith,Hamish Hamilton,2005
-9781530252954,1,Ian McEwan,Jonathan Cape,1998
-9781560256663,1,Ian McEwan,Jonathan Cape,1997
-9791136171283,1,Sally Rooney,Faber and Faber,2021
-9790860999958,1,Khaled Hosseini,Riverhead Books,2013
+9781725180161,1,Thomas Pynchon,J.B. Lippincott,1963
+9780103504285,1,Virginia Woolf,Hogarth Press,1931
 9790242086207,1,James T. Farrell,Vanguard Press,1932
-9791511144567,1,John Dos Passos,Harper & Brothers,1925
+9781482545319,4,Ray Bradbury,Ballantine Books,1953
+9780553418032,1,Jules Verne,Pierre-Jules Hetzel,1872
+9790557459123,1,James Baldwin,Dial Press,1956
+9780507305747,4,Paulo Coelho,HarperCollins,1988
+9790694700133,1,Don DeLillo,Scribner,1997
+9780553418049,1,Toni Morrison,Alfred A. Knopf,1987
+9791835190196,1,Theodore Dreiser,Boni & Liveright,1925
+9780679720218,1,Mark Twain,Chatto & Windus,1884
 9781855742048,1,Jack Kerouac,Viking Press,1958
-9790671540110,1,Tom Wolfe,Farrar Straus and Giroux,1979
-9781665310819,1,Hunter S. Thompson,Simon & Schuster,1998
-9791969518781,1,John Updike,Alfred A. Knopf,1984
-9781764693264,1,Samuel Beckett,Les Editions de Minuit,1951
-9791627437232,1,Milan Kundera,Gallimard,1979
-9790351444400,1,Honore de Balzac,Revue de Paris,1835
-9790906765929,1,Nikolai Gogol,Tikhonov,1842
-9791818198638,1,Ivan Turgenev,The Russian Messenger,1862
-9781476062259,1,Ivan Goncharov,Notes of the Fatherland,1859
-9791709464620,1,Albert Camus,Gallimard,1956
+9790281361648,1,Truman Capote,Random House,1948
+9791696383027,1,J.D. Salinger,Little Brown and Company,1953
+9780316769174,1,Jane Austen,T. Egerton,1813
+9780800107567,1,E.M. Forster,Edward Arnold,1924
+9791765502830,4,Fyodor Dostoevsky,The Russian Messenger,1866
+9790860999958,1,Khaled Hosseini,Riverhead Books,2013
+9780385490313,1,John Steinbeck,Covici Friede,1937
+9780709527268,1,J.R.R. Tolkien,George Allen & Unwin,1954
+9791413850696,1,Kazuo Ishiguro,Faber and Faber,1989
+9790104643517,1,Henry James,William Heinemann,1898
+9780062457721,1,Jules Verne,Pierre-Jules Hetzel,1870
+9780316769181,1,Nathaniel Hawthorne,Ticknor Reed and Fields,1850
+9791511144567,1,John Dos Passos,Harper & Brothers,1925
 9790770004940,1,Rudyard Kipling,Macmillan Publishers,1901
-9780471965374,1,Thomas Pynchon,Penguin Press,2006
+9780327825753,1,Virginia Woolf,Hogarth Press,1927
+9790223631099,1,Albert Camus,Gallimard,1942
+9791441792197,1,Jean-Paul Sartre,Gallimard,1938
+9780060935481,1,Gabriel Garcia Marquez,Harper & Row,1967
+9781791639037,1,Ian McEwan,Jonathan Cape,2001
+9781192875362,1,Erich Maria Remarque,Propylaen Verlag,1929
+9791892762251,1,Robert Louis Stevenson,Longmans Green & Co.,1886
+9780462088013,4,Charles Dickens,Chapman & Hall,1859
+9781165825806,1,Henry Roth,Robert O. Ballou,1934
+9790885615307,4,Charles Dickens,Chapman & Hall,1861
+9791709464620,1,Albert Camus,Gallimard,1956
+9791864844183,1,Saul Bellow,Viking Press,1964
+9791627437232,1,Milan Kundera,Gallimard,1979
+9780372356509,1,Sylvia Plath,William Heinemann,1963
+9780596720124,1,J.D. Salinger,Little Brown and Company,1961
+9790246629615,1,Jeffrey Eugenides,Farrar Straus and Giroux,2002
+9780385490337,1,Ernest Hemingway,Scribner,1929
+9791976707055,1,John Updike,Alfred A. Knopf,1968
+9780495298809,1,Ray Bradbury,Ballantine Books,1953
+9780993539169,1,Cormac McCarthy,Alfred A. Knopf,1992
+9781937485290,1,Jonathan Franzen,Farrar Straus and Giroux,2001
+9790765429444,1,David Foster Wallace,Little Brown and Company,1996
 9790407846981,1,Thomas Pynchon,Little Brown and Company,1990
+9791825128918,1,Cormac McCarthy,Alfred A. Knopf,2006
+9790137836559,4,George Orwell,Secker & Warburg,1945
+9791942594795,1,Philip Roth,Houghton Mifflin,1997
+9780532284314,4,Harper Lee,J.B. Lippincott & Co.,1960
+9780212267590,1,Kazuo Ishiguro,Faber and Faber,2005
+9790405959560,1,Thomas Hardy,Smith Elder & Co.,1874
 9790361001600,1,Thomas Pynchon,Penguin Press,2013
 9780420924964,1,William Gaddis,Alfred A. Knopf,1975
-9781643219172,1,Saul Bellow,Viking Press,1959
-9781747994197,1,Thomas Pynchon,J.B. Lippincott,1966
-9780959907148,1,Erskine Caldwell,Scribner,1932
-9780657242343,1,John Dos Passos,Houghton Mifflin,1938
-9781165825806,1,Henry Roth,Robert O. Ballou,1934
-9780698291461,1,Marcel Proust,Grasset and Gallimard,1913
-9791680086378,1,Stendhal,Levavasseur,1830
-9791308617717,1,Emile Zola,Gil Blas,1885
-9791439727798,1,Honore de Balzac,Furne Paulin et Cie,1842
-9781783275069,1,Franz Kafka,Kurt Wolff Verlag,1926
-9781676540892,1,Samuel Beckett,Les Editions de Minuit,1951
-9790456143536,1,Tom Wolfe,Farrar Straus and Giroux,1968
-9790281361648,1,Truman Capote,Random House,1948
-9781300287339,1,William S. Burroughs,Ace Books,1953
-9780643774278,1,William Gaddis,Poseidon Press,1994
-9791644960737,1,Ernest Hemingway,Scribner,1964
-9781610499361,1,Ernest Hemingway,Scribner,1936
-9781725180161,1,Thomas Pynchon,J.B. Lippincott,1963
-9791976707055,1,John Updike,Alfred A. Knopf,1968
-9790712619515,1,Roddy Doyle,Secker & Warburg,1993
-9780616456163,1,Roddy Doyle,King Farouk,1987
-9780942464481,1,Sebastian Faulks,Hutchinson,1993
-9781338190618,1,Sebastian Faulks,Hutchinson,1998
-9780265444948,1,J.K. Rowling,Scholastic,1997
-9780709527268,1,J.R.R. Tolkien,George Allen & Unwin,1954
-9780507681209,1,Paulo Coelho,HarperCollins,1988
-9780495298809,1,Ray Bradbury,Ballantine Books,1953
-9780416357479,1,Bram Stoker,Archibald Constable and Company,1897
-9780459540562,1,Ernest Hemingway,Scribner,1926
-9780295558400,1,Zora Neale Hurston,J.B. Lippincott,1937
-9780372356509,1,Sylvia Plath,William Heinemann,1963
-9781965630938,1,Virginia Woolf,Hogarth Press,1925
-9780327825753,1,Virginia Woolf,Hogarth Press,1927
-9780103504285,1,Virginia Woolf,Hogarth Press,1931
-9781470567293,1,Thomas Hardy,Harper & Brothers,1891
-9790405959560,1,Thomas Hardy,Smith Elder & Co.,1874
-9780448168562,1,Robert Louis Stevenson,Cassell and Company,1883
+9780640400354,1,Thomas Pynchon,Henry Holt and Company,1997
+9780316769198,1,Joseph Heller,Simon & Schuster,1961
+9780825121692,1,Wilkie Collins,Tinsley Brothers,1868
+9780679720225,1,Kurt Vonnegut,Delacorte,1969
+9790906765929,1,Nikolai Gogol,Tikhonov,1842
+9780062409874,1,H.G. Wells,William Heinemann,1895
+9780629231320,1,John Updike,Alfred A. Knopf,1990
 9780178161796,1,Joseph Conrad,Blackwood's Magazine,1899
+9781530252954,1,Ian McEwan,Jonathan Cape,1998
+9781783275069,1,Franz Kafka,Kurt Wolff Verlag,1926
+9780062457714,1,Charles Dickens,Chapman & Hall,1861
+9790719938367,1,Franz Kafka,Kurt Wolff Verlag,1915
+9780450035722,4,J.K. Rowling,Scholastic,1997
+9791302892042,1,Tom Wolfe,Farrar Straus and Giroux,1987
+9780062315038,1,Victor Hugo,A. Lacroix,1862
+9781821321109,1,Truman Capote,Random House,1966
+9781491328675,4,Leo Tolstoy,The Russian Messenger,1869
+9781560256663,1,Ian McEwan,Jonathan Cape,1997
+9790871105775,1,Khaled Hosseini,Riverhead Books,2007
+9780964744967,1,Zadie Smith,Hamish Hamilton,2000
+9781470567293,1,Thomas Hardy,Harper & Brothers,1891
+9781338190618,1,Sebastian Faulks,Hutchinson,1998
+9791778394729,1,Sally Rooney,Faber and Faber,2017
+9780679745594,1,Oscar Wilde,Ward Lock and Company,1890
 9781522476283,1,E.M. Forster,Edward Arnold,1910
+9781253966732,4,John Steinbeck,The Viking Press,1939
+9791523721282,4,Jane Austen,T. Egerton,1813
+9780385737951,1,George Orwell,Secker & Warburg,1945
+9781233961047,1,George Eliot,William Blackwood and Sons,1871
+9790696141002,4,F. Scott Fitzgerald,Charles Scribner's Sons,1925
+9780188349375,1,Markus Zusak,Picador,2005
+9780525559481,1,Leo Tolstoy,The Russian Messenger,1869
+9781250301710,1,Alexandre Dumas,Journal des Debats,1844
+9780743273572,1,James Joyce,Sylvia Beach,1922
+9780804682282,1,Gabriel Garcia Marquez,Editorial Oveja Negra,1985
+9790448144152,1,Samuel Beckett,Les Editions de Minuit,1952
+9790712619515,1,Roddy Doyle,Secker & Warburg,1993
+9781699293331,1,Mark Twain,American Publishing Company,1876
+9780885043415,1,Junot Diaz,Riverhead Books,2007
+9790798227949,1,Arundhati Roy,India Ink,1997
+9780627727559,1,Gustave Flaubert,Revue de Paris,1856
+9781965630938,1,Virginia Woolf,Hogarth Press,1925
+9780061965494,1,Herman Melville,Harper & Brothers,1851
+9790625659349,1,William S. Burroughs,Olympia Press,1959
+9780448168562,1,Robert Louis Stevenson,Cassell and Company,1883
+9790806867839,1,Ian McEwan,Jonathan Cape,2005
+9780404955274,1,James Baldwin,Alfred A. Knopf,1953
+9790176656033,1,Hunter S. Thompson,Random House,1971
+9790993992659,1,Saul Bellow,Vanguard Press,1944
+9780743273565,1,Harper Lee,J.B. Lippincott & Co.,1960
+9780922401734,1,Cormac McCarthy,Random House,1985
+9791968469770,4,George Orwell,Secker & Warburg,1949
+9781267040527,1,Philip Roth,Random House,1969
+9781222172409,4,John Steinbeck,Covici Friede,1937
+9781676540892,1,Samuel Beckett,Les Editions de Minuit,1951
+9781610499361,1,Ernest Hemingway,Scribner,1936
+9791655194305,1,Albert Camus,Gallimard,1947
+9790361588460,1,Jeffrey Eugenides,Farrar Straus and Giroux,1993
+9780679723172,1,H.G. Wells,C. Arthur Pearson,1897
+9790161758919,1,Thomas Pynchon,Viking Press,1973
+9780222249586,1,Truman Capote,Random House,1958
+9790410298951,1,William Gaddis,Harcourt Brace and Company,1955
+9780060935474,1,Louisa May Alcott,Roberts Brothers,1868
+9791439727798,1,Honore de Balzac,Furne Paulin et Cie,1842
+9790425912064,1,Mikhail Bulgakov,YMCA Press,1967
+9781863505758,1,Sinclair Lewis,Harcourt Brace and Company,1922
+9781622966974,1,Sally Rooney,Faber and Faber,2018
+9780848476007,1,Franz Kafka,Verlag Die Schmiede,1925
+9780657242343,1,John Dos Passos,Houghton Mifflin,1938
+9780959907148,1,Erskine Caldwell,Scribner,1932
+9780616456163,1,Roddy Doyle,King Farouk,1987
+9780142078341,1,Edith Wharton,D. Appleton & Company,1920
+9780471965374,1,Thomas Pynchon,Penguin Press,2006
+9791152299305,1,Saul Bellow,Viking Press,1970
+9780507681209,1,Paulo Coelho,HarperCollins,1988
+9781643219172,1,Saul Bellow,Viking Press,1959
+9790596150906,1,Wilkie Collins,Sampson Low,1859
+9790671540110,1,Tom Wolfe,Farrar Straus and Giroux,1979
+9780109420824,1,Yann Martel,Knopf Canada,2001
+9781833859157,1,Saul Bellow,Viking Press,1956
+9790962009005,4,J.D. Salinger,Little,Brown and Company
 9781780216775,1,Henry James,Archibald Constable & Co.,1902
+9790982596790,1,Milan Kundera,Gallimard,1984
+9780062457738,1,Toni Morrison,Alfred A. Knopf,1977
 9791219594916,1,Edith Wharton,Scribner,1905
-9780532284314,2,Harper Lee,J.B. Lippincott & Co.,1960
-9791968469770,2,George Orwell,Secker & Warburg,1949
-9790696141002,2,F. Scott Fitzgerald,Charles Scribner's Sons,1925
-9791523721282,2,Jane Austen,T. Egerton,1813
-9790962009005,2,J.D. Salinger,"Little, Brown and Company",1951
-9791171042029,2,Aldous Huxley,Chatto & Windus,1932
-9791919734629,2,J.R.R. Tolkien,George Allen & Unwin,1937
-9780450035722,2,J.K. Rowling,Scholastic,1997
-9781674249117,2,J.R.R. Tolkien,George Allen & Unwin,1954
-9790137836559,2,George Orwell,Secker & Warburg,1945
-9780507305747,2,Paulo Coelho,HarperCollins,1988
-9781222172409,2,John Steinbeck,Covici Friede,1937
-9781253966732,2,John Steinbeck,The Viking Press,1939
-9781482545319,2,Ray Bradbury,Ballantine Books,1953
-9791732424936,2,Charlotte Bronte,"Smith, Elder & Co.",1847
-9781822551581,2,Emily Bronte,Thomas Newby,1847
-9790885615307,2,Charles Dickens,Chapman & Hall,1861
-9780462088013,2,Charles Dickens,Chapman & Hall,1859
-9791765502830,2,Fyodor Dostoevsky,The Russian Messenger,1866
-9781491328675,2,Leo Tolstoy,The Russian Messenger,1869
+9780062409850,1,Charlotte Bronte,Smith,Elder & Co.
+9790585203736,1,E.M. Forster,Edward Arnold,1908
+9781764693264,1,Samuel Beckett,Les Editions de Minuit,1951
+9780295365688,1,Edith Wharton,Scribner,1911
+9780385490320,1,Mary Shelley,Lackington Hughes Harding Mavor & Jones,1818
+9780679720201,1,J.D. Salinger,Little,Brown and Company
+9781174920615,1,John Updike,Alfred A. Knopf,1960
+9791644960737,1,Ernest Hemingway,Scribner,1964
+9780460482608,1,Ralph Ellison,Random House,1952
+9781300287339,1,William S. Burroughs,Ace Books,1953
+9791308617717,1,Emile Zola,Gil Blas,1885
+9780385490832,1,Alexandre Dumas,Baudry,1844
+9780679745587,1,John Steinbeck,The Viking Press,1939
+9780679723189,1,Ernest Hemingway,Scribner,1952
+9791818198638,1,Ivan Turgenev,The Russian Messenger,1862
+9780553418025,1,Emily Bronte,Thomas Newby,1847
+9780459540562,1,Ernest Hemingway,Scribner,1926
+9781822551581,4,Emily Bronte,Thomas Newby,1847
+9790604324008,1,Cormac McCarthy,Alfred A. Knopf,2005
+9780679745600,1,Ernest Hemingway,Scribner,1940
+9780062409881,1,William Faulkner,Jonathan Cape and Harrison Smith,1929
+9780632695072,1,Jack Kerouac,Viking Press,1957
+9781283012621,1,Saul Bellow,Viking Press,1975
+9780698291461,1,Marcel Proust,Grasset and Gallimard,1913
+9780061965500,1,Vladimir Nabokov,Olympia Press,1955
+9781976845079,1,Hermann Hesse,S. Fischer Verlag,1922
+9790281315313,1,Saul Bellow,Viking Press,1953
+9791429149371,1,Joseph Conrad,Methuen & Co.,1907
+9791969518781,1,John Updike,Alfred A. Knopf,1984
+9780700686469,1,William Faulkner,Jonathan Cape and Harrison Smith,1930
+9791732424936,4,Charlotte Bronte,Smith,Elder & Co.
+9790276012807,1,Charlotte Bronte,Smith Elder & Co.,1853
+9780131016859,1,Zadie Smith,Hamish Hamilton,2005
+9781706372653,1,Gunter Grass,Luchterhand,1959
+9780234347027,1,Richard Wright,Harper & Brothers,1940
+9790975388463,1,Elizabeth Gaskell,Chapman & Hall,1855
+9791680086378,1,Stendhal,Levavasseur,1830
+9790456143536,1,Tom Wolfe,Farrar Straus and Giroux,1968
+9780584343014,1,Virginia Woolf,Hogarth Press,1928
+9781464344749,1,D.H. Lawrence,Thomas Seltzer,1920
+9781308668161,1,Don DeLillo,Viking Press,1988
+9781747994197,1,Thomas Pynchon,J.B. Lippincott,1966
+9780590097901,1,Jonathan Franzen,Farrar Straus and Giroux,2010
+9790405128973,1,D.H. Lawrence,Duckworth,1913
+9780062315007,1,J.R.R. Tolkien,George Allen & Unwin,1937
+9780295558400,1,Zora Neale Hurston,J.B. Lippincott,1937
+9780911830934,1,Hermann Hesse,S. Fischer Verlag,1927
+9781250301703,1,Charles Dickens,Chapman & Hall,1859
+9781639648313,1,Thomas Pynchon,Penguin Press,2009
+9791136171283,1,Sally Rooney,Faber and Faber,2021
+9790351444400,1,Honore de Balzac,Revue de Paris,1835
+9791500018503,1,Michael Cunningham,Farrar Straus and Giroux,1998
+9780265444948,1,J.K. Rowling,Scholastic,1997
+9781311787699,1,Theodore Dreiser,Doubleday Page & Company,1900
+9780189816197,1,John Updike,Alfred A. Knopf,1981
+9791919734629,4,J.R.R. Tolkien,George Allen & Unwin,1937
+9790174559930,1,John Updike,Alfred A. Knopf,1971
+9781476062259,1,Ivan Goncharov,Notes of the Fatherland,1859
+9791246213101,1,Don DeLillo,Viking Press,1985
+9790931308832,1,Joseph Conrad,Blackwood's Magazine,1900
+9780062315021,1,Fyodor Dostoevsky,The Russian Messenger,1880
+9780643774278,1,William Gaddis,Poseidon Press,1994
+9780385490825,1,Miguel de Cervantes,Francisco de Robles,1605
+9780060935467,1,Aldous Huxley,Chatto & Windus,1932
+9780385490818,1,F. Scott Fitzgerald,Charles Scribner's Sons,1925
+9780061965487,1,George Orwell,Secker & Warburg,1949
+9781674249117,4,J.R.R. Tolkien,George Allen & Unwin,1954
+9780394510750,1,Khaled Hosseini,Riverhead Books,2003
+9781665310819,1,Hunter S. Thompson,Simon & Schuster,1998
+9780062409867,1,Fyodor Dostoevsky,The Russian Messenger,1866
+9780743273589,1,Leo Tolstoy,The Russian Messenger,1878
+9781141650408,1,Alice Walker,Harcourt Brace Jovanovich,1982
+9793000000001,2,Thomas H. Cormen,MIT Press,2022
+9793000000002,2,Lisa A. Urry,Pearson,2020
+9793000000003,2,Hugh D. Young,Pearson,2021
+9793000000004,3,National Geographic Society,National Geographic,2026
+9793000000005,3,Scientific American Editors,Springer Nature,2026
+9793000000006,3,The Economist Editors,The Economist Group,2026
