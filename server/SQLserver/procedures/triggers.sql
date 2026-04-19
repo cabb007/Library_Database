@@ -268,12 +268,7 @@ BEGIN
     VALUES (
         NEW.UserID,
         'A fine was issued to your account.',
-        CONCAT(
-            'A fine has been added to your account. ',
-            'Your current total outstanding fine balance is $',
-            FORMAT(v_CurrentBalance, 2),
-            '. Please clear your balance before new checkouts or holds.'
-        ),
+        'Please clear your balance before attempting new checkouts or holds.',
         0,
         CURRENT_TIMESTAMP(),
         1,
@@ -312,17 +307,16 @@ BEGIN
             CASE
                 WHEN NEW.PaidStatus = 1 AND v_CurrentBalance = 0 THEN 'Your fines have been paid.'
                 WHEN NEW.PaidStatus = 1 THEN 'Your balance has been updated.'
-                ELSE 'Your balance has been updated'
+                ELSE 'Your balance has been updated.'
             END,
             CASE
                 WHEN v_CurrentBalance = 0 THEN
                     'Your outstanding fine balance is now $0.00. All fines on your account are fully cleared.'
                 ELSE
                     CONCAT(
-                        'Your fine record was updated. ',
                         'Your current total outstanding fine balance is $',
                         FORMAT(v_CurrentBalance, 2),
-                        '. Please clear your balance before new checkouts or holds.'
+                        '. Please clear your balance before attempting new checkouts or holds.'
                     )
             END,
             0,

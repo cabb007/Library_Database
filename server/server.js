@@ -1035,7 +1035,7 @@ app.post('/api/loans/return', async (req, res) => {
       return res.status(403).json({ error: 'Only librarians can process returns' });
     }
 
-    await db.promise().query('CALL ReturnLoan(?, ?)', [loanId, processedBy]);
+    await db.execute('CALL ReturnLoan(?, ?)', [loanId, processedBy]);
 
     res.json({
       success: true,
@@ -1081,7 +1081,7 @@ app.post('/api/notifications/read', async (req, res) => {
       return res.status(400).json({ error: 'NotificationID is required' });
     }
 
-    await db.promise().query('CALL MarkNotificationRead(?)', [NotificationID]);
+    await db.execute('CALL MarkNotificationRead(?)', [NotificationID]);
 
     res.json({
       success: true,

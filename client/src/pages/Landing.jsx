@@ -377,9 +377,17 @@ export default function Landing() {
                             className="p-3 border-b border-amber-900/10 text-sm text-stone-300 flex items-center justify-between gap-3"
                           >
                             {/* TEXT (won’t push button out) */}
-                            <span className="flex-1 truncate pr-2">
-                              {n.header || n.Header}
-                            </span>
+                            <div className="flex-1 pr-2 flex flex-col">
+                              {/* Header (bold / primary) */}
+                              <span className="text-sm font-semibold text-amber-200 leading-snug">
+                                {n.header || n.Header}
+                              </span>
+
+                              {/* Body (smaller / secondary) */}
+                              <span className="text-xs text-stone-400 leading-snug mt-1 line-clamp-2">
+                                {n.body || n.Body}
+                              </span>
+                            </div>
 
                             {/* BUTTON */}
                             <button
