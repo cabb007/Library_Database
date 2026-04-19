@@ -46,7 +46,7 @@ const ITEM_TYPE_LABELS = {
 };
 
 /* =========================================================
-   🔴 GLOBAL CORS FIX (THIS IS WHAT WAS BREAKING EVERYTHING)
+   GLOBAL CORS FIX (THIS IS WHAT WAS BREAKING EVERYTHING)
    ========================================================= */
 
 const ALLOWED_ORIGIN = "http://localhost:5173";
@@ -1130,4 +1130,47 @@ const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+});
+
+// ================ EMPLOYEE AUDIT REPORT =================
+// Audit overview route
+app.get("/api/librarian/employee-audit/overview", requireLibrarian, async (_req, res) => {
+  try {
+    const [data] = await db.execute("CALL GetEmployeeAuditOverview()");
+    res.json(data[0][0]);
+  } catch (err) {
+    console.error("Failed to fetch employee audit overview:", err);
+    res.status(500).json({ error: "Failed to fetch employee audit overview" });
+  }
+});
+
+// Audit summary route
+app.get("/api/librarian/employee-audit/summary", requireLibrarian, async (_req, res) => {
+  try {
+    const [data] = await db.execute("CALL GetEmployeeAuditSummary()");
+    res.json(data[0][0]);
+  } catch (err) {
+    console.error("Failed to fetch employee audit summary:", err);
+    res.status(500).json({ error: "Failed to fetch employee audit summary" });
+  }
+});
+
+// Audit report route
+app.get("/api/librarian/employee-audit/report", requireLibrarian, async (req, res) => {
+  const { startDate, endDate, librarianId, tableName, actionType } = req.query;
+
+  try {
+    const [data] = await db.execute("CALL GetEmployeeAuditReport(?, ?, ?, ?, ?)", [
+      startDate || null,
+      endDate || null,
+      librarianId ? Number(librarianId) : null,
+      tableName || null,
+      actionType || null,
+    ]);
+
+    res.json(data[0]);
+  } catch (err) {
+    console.error("Failed to fetch employee audit report:", err);
+    res.status(500).json({ error: "Failed to fetch employee audit report" });
+  }
 });
