@@ -1,7 +1,7 @@
 DELIMITER $$
 
 -- =========================================================
--- Procedure: Get top
+-- Procedure: Get top Librarian
 -- =========================================================
 DROP PROCEDURE IF EXISTS GetTopLibrarian $$
 CREATE PROCEDURE GetTopLibrarian()
