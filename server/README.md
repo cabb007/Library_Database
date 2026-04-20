@@ -94,7 +94,7 @@ SOURCE load_all.sql;
    `15 = Jazz / Blues`
    `16 = Classical / Soundtrack`
 8. `devices.ItemType`
-   `1 = Laptop`, `2 = Tablet`, `3 = Calculator`
+   `1 = Laptop`, `2 = Tablet`, `3 = lab equipment`
 9. `copies.CopyStatus`
    `0 = Available`, `1 = On Loan`, `2 = Removed`
 10. `holds.HoldStatus`
