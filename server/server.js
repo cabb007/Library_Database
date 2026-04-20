@@ -743,6 +743,48 @@ app.post(
   }
 );
 
+app.put(
+  "/api/librarian/catalog/devices/:id",
+  requireLibrarian,
+  async (req, res) => {
+    try {
+      const { Title, ItemType, Manufacturer, Model } = req.body;
+      await db.execute("CALL UpdateDevice(?, ?, ?, ?, ?, ?)", [
+        Number(req.params.id),
+        Title,
+        Number(ItemType),
+        Manufacturer,
+        Model || null,
+        req.session.user.UserID,
+      ]);
+      res.json({ message: "Device updated" });
+    } catch (err) {
+      console.error(err);
+      if (err.sqlState === "45000") {
+        return res.status(400).json({ error: err.sqlMessage });
+      }
+      res.status(500).json({ error: "Failed to update device" });
+    }
+  }
+);
+
+app.delete(
+  "/api/librarian/catalog/devices/:id",
+  requireLibrarian,
+  async (req, res) => {
+    try {
+      await db.execute("CALL DeleteDevice(?)", [Number(req.params.id)]);
+      res.json({ message: "Device deleted" });
+    } catch (err) {
+      console.error(err);
+      if (err.sqlState === "45000") {
+        return res.status(400).json({ error: err.sqlMessage });
+      }
+      res.status(500).json({ error: "Failed to delete device" });
+    }
+  }
+);
+
 /* ================= MEDIA ================= */
 
 app.put(

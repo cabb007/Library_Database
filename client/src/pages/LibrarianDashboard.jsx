@@ -2158,6 +2158,8 @@ export default function LibrarianDashboard() {
             ) : activeLoans.length === 0 ? (
               <p>No active loans.</p>
             ) : (
+              <>
+              <h2>Active Loans ({activeLoans.filter(l => `${l.LoanID} ${l.UserID} ${l.UserName} ${l.Title}`.toLowerCase().includes(loanSearch.toLowerCase())).length})</h2>
               <table border="1" cellPadding="6" style={{ borderCollapse: "collapse", width: "100%" }}>
                 <thead>
                   <tr>
@@ -2198,6 +2200,7 @@ export default function LibrarianDashboard() {
                   ))}
                 </tbody>
               </table>
+              </>
             )
           )}
 
@@ -2207,6 +2210,8 @@ export default function LibrarianDashboard() {
             ) : overdueLoans.length === 0 ? (
               <p>No overdue loans.</p>
             ) : (
+              <>
+              <h2>Overdue Loans ({overdueLoans.filter(l => `${l.LoanID} ${l.UserID} ${l.UserName} ${l.Title}`.toLowerCase().includes(loanSearch.toLowerCase())).length})</h2>
               <table border="1" cellPadding="6" style={{ borderCollapse: "collapse", width: "100%" }}>
                 <thead>
                   <tr>
@@ -2247,6 +2252,7 @@ export default function LibrarianDashboard() {
                   ))}
                 </tbody>
               </table>
+              </>
             )
           )}
         </div>
@@ -2254,12 +2260,11 @@ export default function LibrarianDashboard() {
 
       {view === "holds" && (
         <div>
-          <h2>Active Holds</h2>
           <input
             placeholder="Search by Hold ID, User ID, Name or Title..."
             value={holdSearch}
             onChange={e => setHoldSearch(e.target.value)}
-            style={{ marginBottom: "0.75rem", padding: "0.4rem", width: "100%" }}
+            style={{ marginBottom: "0.5rem", padding: "0.4rem", width: "100%" }}
           />
           {holdsLoading ? (
             <p>Loading...</p>
@@ -2267,7 +2272,7 @@ export default function LibrarianDashboard() {
             <p>No active holds.</p>
           ) : (
             <>
-              <p style={{ marginBottom: "0.5rem", color: "#555" }}>{activeHolds.length} active hold{activeHolds.length !== 1 ? "s" : ""}</p>
+              <h2>Active Holds ({activeHolds.filter(h => `${h.HoldID} ${h.UserID} ${h.UserName} ${h.Title}`.toLowerCase().includes(holdSearch.toLowerCase())).length})</h2>
               <table border="1" cellPadding="6" style={{ borderCollapse: "collapse", width: "100%" }}>
                 <thead>
                   <tr>
@@ -2484,7 +2489,7 @@ export default function LibrarianDashboard() {
                   onChange={e => setEditUserForm({ ...editUserForm, Status: e.target.value })}
                 >
                   <option value={1}>Active</option>
-                  <option value={0}>Blocked</option>
+                  <option value={0}>Inactive</option>
                 </select>
                 <button type="submit">Save</button>
                 <button type="button" onClick={() => setEditingUser(null)}>Cancel</button>

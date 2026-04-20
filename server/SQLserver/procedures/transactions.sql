@@ -432,7 +432,7 @@ BEGIN
     END IF;
 
     UPDATE loans
-    SET ReturnDate = CURRENT_TIMESTAMP(),
+    SET ReturnDate = GREATEST(CURRENT_TIMESTAMP(), CreatedAt),
         UpdatedAt = CURRENT_TIMESTAMP(),
         UpdatedBy = p_ProcessedBy
     WHERE LoanID = p_LoanID;
@@ -444,6 +444,17 @@ BEGIN
     WHERE CopyID = v_CopyID;
 
     COMMIT;
+
+    -- If the hold fulfillment trigger created a new active loan for this copy,
+    -- the copy status needs to reflect OnLoan again
+    UPDATE copies
+    SET CopyStatus = 1
+    WHERE CopyID = v_CopyID
+      AND EXISTS (
+          SELECT 1 FROM loans
+          WHERE CopyID = v_CopyID
+            AND ReturnDate IS NULL
+      );
 END$$
 
 DELIMITER ;

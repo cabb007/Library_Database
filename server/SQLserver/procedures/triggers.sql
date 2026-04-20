@@ -90,6 +90,7 @@ BEGIN
                     NULL
                 );
 
+
                 -- Get item title and determine type via subtype tables
                 SELECT 
                     i.Title,
@@ -198,8 +199,8 @@ BEGIN
             SET MESSAGE_TEXT = 'Return invalid: copy still has another active loan.';
         END IF;
 
-        --  Chronological validation
-        IF NEW.ReturnDate < NEW.CreatedAt THEN
+        --  Chronological validation (date-level only to avoid timestamp precision/timezone issues)
+        IF DATE(NEW.ReturnDate) < DATE(NEW.CreatedAt) THEN
             SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'ReturnDate cannot be earlier than CreatedAt.';
         END IF;
