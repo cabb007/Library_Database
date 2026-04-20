@@ -6,6 +6,10 @@ function buildShelfImageUrl(folderName, fileName) {
   return `${API}/library-images/${folderName}/${encodeURIComponent(fileName)}`;
 }
 
+// The landing hero uses the backend image route too, so decorative assets stay
+// in one place instead of being duplicated between client and server folders.
+const HOME_BACKGROUND_IMAGE = buildShelfImageUrl("StockPhotos", "dash home.png");
+
 // ─── CONFIGURE FEATURED ITEMS  ──────────────────────────────────────
 // Replace each `id` with the actual ItemID from database to change navigation.
 // Image paths match filenames in server/SQLserver/data/images/
@@ -298,9 +302,27 @@ export default function Landing() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-950 text-amber-50 flex flex-col">
+    <div className="relative isolate flex min-h-screen flex-col overflow-hidden bg-stone-950 text-amber-50">
+      {/* Decorative hero background image: centered behind the hero content,
+          made a bit stronger so it reads more clearly, and still covered with
+          a soft gradient so the text and buttons stay readable. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-0 h-[44rem] overflow-hidden"
+      >
+        {/* This glow helps the centered image feel intentional instead of pasted
+            on top of the page background. */}
+        <div className="absolute left-1/2 top-44 h-[22rem] w-[22rem] -translate-x-1/2 rounded-full bg-amber-700/15 blur-3xl md:top-48 md:h-[28rem] md:w-[28rem]" />
+        <img
+          src={HOME_BACKGROUND_IMAGE}
+          alt=""
+          className="absolute left-1/2 top-40 h-[18rem] w-[18rem] max-w-none -translate-x-1/2 object-contain opacity-[0.2] md:top-44 md:h-[26rem] md:w-[26rem] md:opacity-[0.28]"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#f7f3e8]/40 via-[#f7f3e8]/78 to-[#f7f3e8]" />
+      </div>
+
       {/* Navbar */}
-      <nav className="flex flex-col gap-4 border-b border-amber-900/40 px-6 py-5 md:flex-row md:items-center md:justify-between md:px-10">
+      <nav className="relative z-10 flex flex-col gap-4 border-b border-amber-900/40 px-6 py-5 md:flex-row md:items-center md:justify-between md:px-10">
         <h1 className="text-2xl font-serif tracking-widest text-amber-400">
           Cougar Commons
         </h1>
@@ -471,7 +493,7 @@ export default function Landing() {
       </nav>
 
       {/* Hero */}
-      <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col items-center justify-center gap-16 px-6 py-16 md:flex-row md:px-10 md:py-20">
+      <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-1 flex-col items-center justify-center gap-16 px-6 py-16 md:flex-row md:px-10 md:py-20">
         {/* Text */}
         <div className="flex-1 flex flex-col gap-6">
           <p className="text-amber-600 text-sm tracking-[0.3em] uppercase">

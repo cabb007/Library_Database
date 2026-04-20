@@ -16,6 +16,8 @@ const IMAGE_FOLDERS = new Set([
   "items",
   "literature",
   "media",
+  // Landing page decorative assets are served through the same safe image route.
+  "StockPhotos",
 ]);
 const IMAGE_CONTENT_TYPES = {
   ".jpeg": "image/jpeg",
