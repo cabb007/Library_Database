@@ -877,6 +877,7 @@ export default function LibrarianDashboard() {
       if (!res.ok) throw new Error(data.error || "Failed to return item");
       if (loansTab === "active") await fetchActiveLoans();
       else await fetchOverdueLoans();
+      fetchOverviewStats();
     } catch (err) {
       setReturnError(err.message);
     }

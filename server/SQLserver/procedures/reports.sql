@@ -292,7 +292,7 @@ BEGIN
         lo.LoanID AS RefID,
         CONCAT(u.FirstName, ' ', u.LastName) AS UserName,
         i.Title,
-        lo.CreatedAt AS ActivityAt,
+        COALESCE(lo.ReturnDate, lo.CreatedAt) AS ActivityAt,
         CASE
             WHEN lo.ReturnDate IS NOT NULL THEN 'Returned'
             WHEN lo.DueDate < CURDATE() THEN 'Overdue'
@@ -302,7 +302,7 @@ BEGIN
     JOIN users u ON lo.UserID = u.UserID
     JOIN copies c ON lo.CopyID = c.CopyID
     JOIN items i ON c.ItemID = i.ItemID
-    ORDER BY lo.CreatedAt DESC
+    ORDER BY COALESCE(lo.ReturnDate, lo.CreatedAt) DESC
     LIMIT 8;
 END$$
 
