@@ -35,7 +35,7 @@ BEGIN
     FROM loans l
     LEFT JOIN fines f ON f.LoanID = l.LoanID
     WHERE f.FineID IS NULL
-      AND l.DueDate < CURDATE();
+      AND CURDATE() > l.DueDate; -- only create fines for overdue loans
 
     -- Update all existing unpaid fines
     UPDATE fines f
@@ -47,7 +47,7 @@ BEGIN
         f.UpdatedAt = CURRENT_TIMESTAMP(),
         f.UpdatedBy = 1 -- SysAdmin UserID = 1
     WHERE f.PaidStatus = 0
-      AND l.DueDate < CURDATE();
+      AND CURDATE() > l.DueDate;
 END$$
 
 -- =========================================================
@@ -100,6 +100,13 @@ BEGIN
         UpdatedBy = p_UserID
     WHERE UserID = p_UserID
       AND PaidStatus = 0;
+
+    -- Update timestamp and status for the user
+    UPDATE loans
+    SET UpdatedAt = CURRENT_TIMESTAMP(),
+        UpdatedBy = p_UserID
+    WHERE UserID = p_UserID
+      AND ReturnDate IS NULL;
 
     UPDATE users
         SET Status = 1

@@ -162,7 +162,7 @@ CREATE TABLE loans (
     ActiveLoan TINYINT AS (IF(ReturnDate IS NULL, 1, NULL)) STORED,
 
     CONSTRAINT fk_loans_user FOREIGN KEY (UserID) REFERENCES users(UserID)
-        ON DELETE RESTRICT,
+        ON DELETE CASCADE,
     CONSTRAINT fk_loans_copy FOREIGN KEY (CopyID) REFERENCES copies(CopyID)
         ON DELETE CASCADE,
     CONSTRAINT fk_loans_createdby FOREIGN KEY (CreatedBy) REFERENCES users(UserID)
@@ -236,7 +236,7 @@ CREATE TABLE fines (
     CONSTRAINT fk_fines_loan FOREIGN KEY (LoanID) REFERENCES loans(LoanID)
         ON DELETE CASCADE,
     CONSTRAINT fk_fines_user FOREIGN KEY (UserID) REFERENCES users(UserID)
-        ON DELETE RESTRICT,
+        ON DELETE CASCADE,
     CONSTRAINT fk_fines_createdby FOREIGN KEY (CreatedBy) REFERENCES users(UserID)
         ON DELETE SET NULL,
     CONSTRAINT fk_fines_updatedby FOREIGN KEY (UpdatedBy) REFERENCES users(UserID)
@@ -266,13 +266,16 @@ CREATE TABLE notifications (
         CHECK (IsRead IN (0, 1)),
 
     CONSTRAINT fk_notifications_user
-        FOREIGN KEY (UserID) REFERENCES users(UserID),
+        FOREIGN KEY (UserID) REFERENCES users(UserID)
+        ON DELETE CASCADE,
 
     CONSTRAINT fk_notifications_createdby
-        FOREIGN KEY (CreatedBy) REFERENCES users(UserID),
+        FOREIGN KEY (CreatedBy) REFERENCES users(UserID)
+        ON DELETE SET NULL,
 
     CONSTRAINT fk_notifications_updatedby
         FOREIGN KEY (UpdatedBy) REFERENCES users(UserID)
+        ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
 SET FOREIGN_KEY_CHECKS = 1;
