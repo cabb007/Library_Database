@@ -317,13 +317,8 @@ app.post("/api/login", async (req, res) => {
     };
 
 
-    req.session.save(err => {
-            if (err) {
-                return res.status(500).json({ error: "Session save failed" });
-            }
-            res.json({ success: true, user: req.session.user });
-        });
-        
+    res.json({ success: true, user: req.session.user });
+
   } catch (err) {
     setCorsHeaders(res);
     res.status(500).json({ error: "Server error" });
