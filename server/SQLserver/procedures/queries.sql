@@ -886,4 +886,40 @@ BEGIN
     ORDER BY h.HoldStatus ASC, h.CreatedAt ASC;
 END$$
 
+DROP PROCEDURE IF EXISTS GetAllActiveHolds$$
+CREATE PROCEDURE GetAllActiveHolds()
+BEGIN
+    SELECT
+        h.HoldID,
+        h.UserID,
+        CONCAT(u.FirstName, ' ', u.LastName) AS UserName,
+        u.Email,
+        h.ItemID,
+        i.Title,
+        CASE i.ItemCategory
+            WHEN 1 THEN CASE lit.ItemType
+                WHEN 1 THEN 'Book' WHEN 2 THEN 'Textbook'
+                WHEN 3 THEN 'Magazine' WHEN 4 THEN 'Audiobook'
+                ELSE 'Literature' END
+            WHEN 2 THEN CASE med.ItemType
+                WHEN 1 THEN 'DVD/CD' WHEN 2 THEN 'Blu-Ray'
+                WHEN 3 THEN 'Vinyl' ELSE 'Media' END
+            WHEN 3 THEN CASE dev.ItemType
+                WHEN 1 THEN 'Laptop' WHEN 2 THEN 'Tablet'
+                WHEN 3 THEN 'Calculator' ELSE 'Device' END
+            ELSE 'Unknown'
+        END AS ItemTypeName,
+        h.CreatedAt,
+        h.UpdatedAt,
+        DATEDIFF(CURDATE(), h.CreatedAt) AS DaysWaiting
+    FROM holds AS h
+    JOIN users        AS u   ON h.UserID = u.UserID
+    JOIN items        AS i   ON h.ItemID = i.ItemID
+    LEFT JOIN literature AS lit ON i.ItemID = lit.ItemID
+    LEFT JOIN media      AS med ON i.ItemID = med.ItemID
+    LEFT JOIN devices    AS dev ON i.ItemID = dev.ItemID
+    WHERE h.HoldStatus = 0
+    ORDER BY h.CreatedAt ASC;
+END$$
+
 DELIMITER ;
