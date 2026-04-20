@@ -6,6 +6,53 @@ import {
   PieChart, Pie, Legend
 } from "recharts";
 
+const LITERATURE_GENRES = [
+  { value: 0, label: "Unspecified / Other" },
+  { value: 1, label: "Classic" },
+  { value: 2, label: "Historical Fiction" },
+  { value: 3, label: "Fantasy" },
+  { value: 4, label: "Science Fiction / Dystopian" },
+  { value: 5, label: "Mystery / Thriller" },
+  { value: 6, label: "Romance" },
+  { value: 7, label: "Literary / Contemporary" },
+  { value: 8, label: "Philosophy / Existential" },
+  { value: 9, label: "Adventure" },
+  { value: 10, label: "Science / Technology" },
+  { value: 11, label: "Business / Economics" },
+  { value: 12, label: "Politics / Current Affairs" },
+  { value: 13, label: "Biography / Memoir" },
+  { value: 14, label: "Arts / Culture" },
+  { value: 15, label: "Horror / Gothic" },
+];
+
+const MEDIA_GENRES = [
+  { value: 0, label: "Unspecified / Other" },
+  { value: 1, label: "Drama" },
+  { value: 2, label: "Crime / Noir" },
+  { value: 3, label: "Action / Adventure" },
+  { value: 4, label: "Science Fiction / Fantasy" },
+  { value: 5, label: "Thriller / Mystery" },
+  { value: 6, label: "Comedy" },
+  { value: 7, label: "Romance" },
+  { value: 8, label: "Documentary / Biography" },
+  { value: 9, label: "Horror" },
+  { value: 10, label: "Rock / Alternative" },
+  { value: 11, label: "Pop" },
+  { value: 12, label: "Hip-Hop / Rap" },
+  { value: 13, label: "R&B / Soul / Funk" },
+  { value: 14, label: "Folk / Country" },
+  { value: 15, label: "Jazz / Blues" },
+  { value: 16, label: "Classical / Soundtrack" },
+];
+
+function getGenreLabel(options, value, fallback) {
+  return (
+    options.find((option) => option.value === Number(value))?.label ||
+    fallback ||
+    "Unspecified / Other"
+  );
+}
+
 export default function LibrarianDashboard() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
@@ -63,8 +110,12 @@ export default function LibrarianDashboard() {
   const [auditSummary, setAuditSummary] = useState(null);
   const [auditSort, setAuditSort] = useState({ key: "LastActionAt", dir: "desc" });
   const [overviewStats, setOverviewStats] = useState(null);
+  const [recentActivity, setRecentActivity] = useState([]);
   const [loansTab, setLoansTab] = useState("active");
   const [activeLoans, setActiveLoans] = useState([]);
+  const [activeHolds, setActiveHolds] = useState([]);
+  const [holdsLoading, setHoldsLoading] = useState(false);
+  const [holdSearch, setHoldSearch] = useState("");
   const [loansLoading, setLoansLoading] = useState(false);
   const [overdueLoans, setOverdueLoans] = useState([]);
   const [fines, setFines] = useState([]);
@@ -76,10 +127,10 @@ export default function LibrarianDashboard() {
   const [showMediaForm, setShowMediaForm] = useState(false);
   const [showDeviceForm, setShowDeviceForm] = useState(false);
   const [litForm, setLitForm] = useState({
-    ItemID: "", Title: "", ItemType: 1, Author: "", Publisher: "", PublicationYear: "", Copies: 1
+    ItemID: "", Title: "", ItemType: 1, Genre: 0, Author: "", Publisher: "", PublicationYear: "", Copies: 1
   });
   const [mediaForm, setMediaForm] = useState({
-    Title: "", ItemType: 1, Producer: "", DurationMinutes: "", Copies: 1
+    Title: "", ItemType: 1, Genre: 0, Producer: "", DurationMinutes: "", Copies: 1
   });
   const [deviceForm, setDeviceForm] = useState({
     Title: "", ItemType: 1, Manufacturer: "", Model: "", Copies: 1
@@ -93,19 +144,22 @@ export default function LibrarianDashboard() {
       fetchActiveLoans();
       if (users.length === 0) fetchUsersQuiet();
     }
+    if (view === "holds") {
+      fetchActiveHolds();
+    }
     if (view === "fines") {
       fetchFines("all");
       if (users.length === 0) fetchUsersQuiet();
     }
     if (view === "analytics") {
       if (!analyticsSummary) {
-        fetch("http://localhost:3000/api/librarian/analytics/summary", { credentials: "include" })
+        fetch(`${API}/api/librarian/analytics/summary`, { credentials: "include" })
           .then(r => r.json())
           .then(data => { if (!data.error) setAnalyticsSummary(data); })
           .catch(() => {});
       }
       if (!txSummary) {
-        fetch("http://localhost:3000/api/librarian/analytics/transactions/summary", { credentials: "include" })
+        fetch(`${API}/api/librarian/analytics/transactions/summary`, { credentials: "include" })
           .then(r => r.json())
           .then(data => { if (!data.error) setTxSummary(data); })
           .catch(() => {});
@@ -114,7 +168,7 @@ export default function LibrarianDashboard() {
         fetchAnalytics();
       }
       if (!auditSummary) {
-        fetch("http://localhost:3000/api/librarian/employee-audit/summary", { credentials: "include" })
+        fetch(`${API}/api/librarian/employee-audit/summary`, { credentials: "include" })
           .then(r => r.json())
           .then(data => { if (!data.error) setAuditSummary(data); })
           .catch(() => {});
@@ -134,7 +188,7 @@ export default function LibrarianDashboard() {
   async function fetchActiveLoans() {
     setLoansLoading(true);
     try {
-      const res = await fetch("http://localhost:3000/api/librarian/loans/active", { credentials: "include" });
+      const res = await fetch(`${API}/api/librarian/loans/active`, { credentials: "include" });
       const data = await res.json();
       if (res.ok) setActiveLoans(data);
     } catch {
@@ -144,10 +198,23 @@ export default function LibrarianDashboard() {
     }
   }
 
+  async function fetchActiveHolds() {
+    setHoldsLoading(true);
+    try {
+      const res = await fetch(`${API}/api/librarian/holds/active`, { credentials: "include" });
+      const data = await res.json();
+      if (res.ok) setActiveHolds(data);
+    } catch {
+      // table stays empty on failure
+    } finally {
+      setHoldsLoading(false);
+    }
+  }
+
   async function fetchFines(filter) {
     const endpointMap = { all: "/api/librarian/fines", paid: "/api/librarian/fines/paid", unpaid: "/api/librarian/fines/unpaid" };
     try {
-      const res = await fetch(`http://localhost:3000${endpointMap[filter]}`, { credentials: "include" });
+      const res = await fetch(`${API}${endpointMap[filter]}`, { credentials: "include" });
       const data = await res.json();
       if (res.ok) setFines(data);
     } catch {
@@ -158,7 +225,7 @@ export default function LibrarianDashboard() {
   async function fetchOverdueLoans() {
     setLoansLoading(true);
     try {
-      const res = await fetch("http://localhost:3000/api/librarian/loans/overdue", { credentials: "include" });
+      const res = await fetch(`${API}/api/librarian/loans/overdue`, { credentials: "include" });
       const data = await res.json();
       if (res.ok) setOverdueLoans(data);
     } catch {
@@ -170,17 +237,24 @@ export default function LibrarianDashboard() {
 
   async function fetchOverviewStats() {
     try {
-      const res = await fetch("http://localhost:3000/api/librarian/overview/stats", { credentials: "include" });
+      const res = await fetch(`${API}/api/librarian/overview/stats`, { credentials: "include" });
       const data = await res.json();
       if (res.ok) setOverviewStats(data);
     } catch {
       // cards show "—" on failure
     }
+    try {
+      const res = await fetch(`${API}/api/librarian/overview/recent-activity`, { credentials: "include" });
+      const data = await res.json();
+      if (res.ok) setRecentActivity(Array.isArray(data) ? data : []);
+    } catch {
+      // feed stays empty on failure
+    }
   }
 
   useEffect(() => {
     async function checkAccess() {
-      const res = await fetch("http://localhost:3000/api/me", { credentials: "include" });
+      const res = await fetch(`${API}/api/me`, { credentials: "include" });
       const data = await res.json();
       if (!res.ok || data.user?.UserType !== 2) {
         navigate("/login");
@@ -194,7 +268,7 @@ export default function LibrarianDashboard() {
 
   async function fetchUsersQuiet() {
     try {
-      const res = await fetch("http://localhost:3000/api/librarian/users", { credentials: "include" });
+      const res = await fetch(`${API}/api/librarian/users`, { credentials: "include" });
       const data = await res.json();
       if (res.ok) setUsers(data);
     } catch {
@@ -205,7 +279,7 @@ export default function LibrarianDashboard() {
   async function fetchUsers() {
     setError("");
     try {
-      const res = await fetch("http://localhost:3000/api/librarian/users", { credentials: "include" });
+      const res = await fetch(`${API}/api/librarian/users`, { credentials: "include" });
       const data = await res.json();
       if (res.ok) {
         setUsers(data);
@@ -222,7 +296,7 @@ export default function LibrarianDashboard() {
     e.preventDefault();
     setError("");
     try {
-      const res = await fetch("http://localhost:3000/api/librarian/users", {
+      const res = await fetch(`${API}/api/librarian/users`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -261,7 +335,7 @@ export default function LibrarianDashboard() {
     e.preventDefault();
     setError("");
     try {
-      const res = await fetch(`http://localhost:3000/api/librarian/users/${editingUser.UserID}`, {
+      const res = await fetch(`${API}/api/librarian/users/${editingUser.UserID}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -286,7 +360,7 @@ export default function LibrarianDashboard() {
     if (!confirm("Are you sure you want to delete this user?")) return;
     setError("");
     try {
-      const res = await fetch(`http://localhost:3000/api/librarian/users/${userId}`, {
+      const res = await fetch(`${API}/api/librarian/users/${userId}`, {
         method: "DELETE",
         credentials: "include"
       });
@@ -313,6 +387,7 @@ export default function LibrarianDashboard() {
     setEditLitForm({
       Title: item.Title,
       ItemType: item.ItemType ?? 1,
+      Genre: item.Genre ?? 0,
       Author: item.Author,
       Publisher: item.Publisher || "",
       PublicationYear: item.PublicationYear || ""
@@ -325,13 +400,14 @@ export default function LibrarianDashboard() {
     e.preventDefault();
     setError("");
     try {
-      const res = await fetch(`http://localhost:3000/api/librarian/catalog/literature/${editingLit.ItemID}`, {
+      const res = await fetch(`${API}/api/librarian/catalog/literature/${editingLit.ItemID}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
           Title: editLitForm.Title,
           ItemType: Number(editLitForm.ItemType),
+          Genre: Number(editLitForm.Genre) || 0,
           Author: editLitForm.Author,
           Publisher: editLitForm.Publisher,
           PublicationYear: editLitForm.PublicationYear ? Number(editLitForm.PublicationYear) : null
@@ -351,7 +427,7 @@ export default function LibrarianDashboard() {
     e.preventDefault();
     setError("");
     try {
-      const res = await fetch("http://localhost:3000/api/librarian/catalog/literature", {
+      const res = await fetch(`${API}/api/librarian/catalog/literature`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -359,13 +435,14 @@ export default function LibrarianDashboard() {
           ...litForm,
           ItemID: Number(litForm.ItemID),
           ItemType: Number(litForm.ItemType),
+          Genre: Number(litForm.Genre) || 0,
           PublicationYear: litForm.PublicationYear ? Number(litForm.PublicationYear) : null,
           Copies: Number(litForm.Copies)
         })
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error); return; }
-      setLitForm({ ItemID: "", Title: "", ItemType: 1, Author: "", Publisher: "", PublicationYear: "", Copies: 1 });
+      setLitForm({ ItemID: "", Title: "", ItemType: 1, Genre: 0, Author: "", Publisher: "", PublicationYear: "", Copies: 1 });
       setShowLitForm(false);
       fetchCatalog();
     } catch {
@@ -377,15 +454,15 @@ export default function LibrarianDashboard() {
   async function refreshCatalogData() {
     try {
       if (catalogTab === "books") {
-        const res = await fetch("http://localhost:3000/api/literature");
+        const res = await fetch(`${API}/api/literature`);
         const data = await res.json();
         setLiterature(Array.isArray(data[0]) ? data[0] : data);
       } else if (catalogTab === "media") {
-        const res = await fetch("http://localhost:3000/api/media");
+        const res = await fetch(`${API}/api/media`);
         const data = await res.json();
         setMedia(Array.isArray(data[0]) ? data[0] : data);
       } else if (catalogTab === "devices") {
-        const res = await fetch("http://localhost:3000/api/devices");
+        const res = await fetch(`${API}/api/devices`);
         const data = await res.json();
         setDevices(Array.isArray(data[0]) ? data[0] : data);
       }
@@ -396,7 +473,7 @@ export default function LibrarianDashboard() {
 
   async function loadCopies(item) {
     try {
-      const res = await fetch(`http://localhost:3000/api/librarian/catalog/${item.ItemID}/copies`, {
+      const res = await fetch(`${API}/api/librarian/catalog/${item.ItemID}/copies`, {
         credentials: "include"
       });
       const data = await res.json();
@@ -412,7 +489,7 @@ export default function LibrarianDashboard() {
   async function handleAddCopy(itemId) {
     setError("");
     try {
-      const res = await fetch("http://localhost:3000/api/librarian/catalog/copies", {
+      const res = await fetch(`${API}/api/librarian/catalog/copies`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -431,7 +508,7 @@ export default function LibrarianDashboard() {
     if (!confirm("Are you sure you want to delete this copy?")) return;
     setError("");
     try {
-      const res = await fetch(`http://localhost:3000/api/librarian/catalog/copies/${copyId}`, {
+      const res = await fetch(`${API}/api/librarian/catalog/copies/${copyId}`, {
         method: "DELETE",
         credentials: "include"
       });
@@ -448,7 +525,7 @@ export default function LibrarianDashboard() {
     e.preventDefault();
     setError("");
     try {
-      const res = await fetch("http://localhost:3000/api/librarian/catalog/devices", {
+      const res = await fetch(`${API}/api/librarian/catalog/devices`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -472,7 +549,7 @@ export default function LibrarianDashboard() {
     if (!confirm("Are you sure you want to delete this item?")) return;
     setError("");
     try {
-      const res = await fetch(`http://localhost:3000/api/librarian/catalog/devices/${itemId}`, {
+      const res = await fetch(`${API}/api/librarian/catalog/devices/${itemId}`, {
         method: "DELETE",
         credentials: "include"
       });
@@ -496,6 +573,7 @@ export default function LibrarianDashboard() {
     setEditMediaForm({
       Title: item.Title,
       ItemType: item.ItemType ?? 1,
+      Genre: item.Genre ?? 0,
       Producer: item.Producer || "",
       DurationMinutes: item.DurationMinutes || ""
     });
@@ -507,13 +585,14 @@ export default function LibrarianDashboard() {
     e.preventDefault();
     setError("");
     try {
-      const res = await fetch(`http://localhost:3000/api/librarian/catalog/media/${editingMedia.ItemID}`, {
+      const res = await fetch(`${API}/api/librarian/catalog/media/${editingMedia.ItemID}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
           Title: editMediaForm.Title,
           ItemType: Number(editMediaForm.ItemType),
+          Genre: Number(editMediaForm.Genre) || 0,
           Producer: editMediaForm.Producer,
           DurationMinutes: editMediaForm.DurationMinutes ? Number(editMediaForm.DurationMinutes) : null
         })
@@ -550,7 +629,7 @@ export default function LibrarianDashboard() {
     e.preventDefault();
     setError("");
     try {
-      const res = await fetch(`http://localhost:3000/api/librarian/catalog/devices/${editingDevice.ItemID}`, {
+      const res = await fetch(`${API}/api/librarian/catalog/devices/${editingDevice.ItemID}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -574,20 +653,21 @@ export default function LibrarianDashboard() {
     e.preventDefault();
     setError("");
     try {
-      const res = await fetch("http://localhost:3000/api/librarian/catalog/media", {
+      const res = await fetch(`${API}/api/librarian/catalog/media`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
           ...mediaForm,
           ItemType: Number(mediaForm.ItemType),
+          Genre: Number(mediaForm.Genre) || 0,
           DurationMinutes: mediaForm.DurationMinutes ? Number(mediaForm.DurationMinutes) : null,
           Copies: Number(mediaForm.Copies)
         })
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error); return; }
-      setMediaForm({ Title: "", ItemType: 1, Producer: "", DurationMinutes: "", Copies: 1 });
+      setMediaForm({ Title: "", ItemType: 1, Genre: 0, Producer: "", DurationMinutes: "", Copies: 1 });
       setShowMediaForm(false);
       fetchMedia();
     } catch {
@@ -599,7 +679,7 @@ export default function LibrarianDashboard() {
     if (!confirm("Are you sure you want to delete this item?")) return;
     setError("");
     try {
-      const res = await fetch(`http://localhost:3000/api/librarian/catalog/media/${itemId}`, {
+      const res = await fetch(`${API}/api/librarian/catalog/media/${itemId}`, {
         method: "DELETE",
         credentials: "include"
       });
@@ -615,21 +695,21 @@ export default function LibrarianDashboard() {
     if (!confirm("Are you sure you want to delete this item?")) return;
     setError("");
     try {
-      const res = await fetch(`http://localhost:3000/api/librarian/catalog/literature/${itemId}`, {
+      const res = await fetch(`${API}/api/librarian/catalog/literature/${itemId}`, {
         method: "DELETE",
         credentials: "include"
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error); return; }
+      if (!res.ok) { alert(data.error || "Failed to delete literature"); return; }
       fetchCatalog();
     } catch {
-      setError("Failed to delete literature");
+      alert("Failed to delete literature");
     }
   }
 
     async function fetchCatalog() {
     try {
-      const res = await fetch("http://localhost:3000/api/literature");
+      const res = await fetch(`${API}/api/literature`);
       const data = await res.json();
       setLiterature(Array.isArray(data[0]) ? data[0] : data);
     } catch {
@@ -643,7 +723,7 @@ export default function LibrarianDashboard() {
 
    async function fetchMedia() {
     try {
-      const res = await fetch("http://localhost:3000/api/media");
+      const res = await fetch(`${API}/api/media`);
       const data = await res.json();
       setMedia(Array.isArray(data[0]) ? data[0] : data);
     } catch {
@@ -659,7 +739,7 @@ export default function LibrarianDashboard() {
 
   async function fetchDevices() {
     try {
-      const res = await fetch("http://localhost:3000/api/devices");
+      const res = await fetch(`${API}/api/devices`);
       const data = await res.json();
       setDevices(Array.isArray(data[0]) ? data[0] : data);
     } catch {
@@ -684,7 +764,7 @@ export default function LibrarianDashboard() {
       if (analyticsFilters.category)  params.set("category",  analyticsFilters.category);
       if (analyticsFilters.itemType)  params.set("itemType",  analyticsFilters.itemType);
       const res = await fetch(
-        `http://localhost:3000/api/librarian/analytics/most-checked-out?${params}`,
+        `${API}/api/librarian/analytics/most-checked-out?${params}`,
         { credentials: "include" }
       );
       const data = await res.json();
@@ -710,7 +790,7 @@ export default function LibrarianDashboard() {
       if (txFilters.userId)    params.set("userId",    txFilters.userId);
       if (txFilters.type)      params.set("type",      txFilters.type);
       const res = await fetch(
-        `http://localhost:3000/api/librarian/analytics/transactions/report?${params}`,
+        `${API}/api/librarian/analytics/transactions/report?${params}`,
         { credentials: "include" }
       );
       const data = await res.json();
@@ -736,7 +816,7 @@ export default function LibrarianDashboard() {
       if (auditFilters.tableName)   params.set("tableName",   auditFilters.tableName);
       if (auditFilters.actionType)  params.set("actionType",  auditFilters.actionType);
       const res = await fetch(
-        `http://localhost:3000/api/librarian/employee-audit/report?${params}`,
+        `${API}/api/librarian/employee-audit/report?${params}`,
         { credentials: "include" }
       );
       const data = await res.json();
@@ -775,7 +855,7 @@ export default function LibrarianDashboard() {
 
   async function handleLogout() {
     try {
-      await fetch("http://localhost:3000/api/logout", {
+      await fetch(`${API}/api/logout`, {
         method: "POST",
         credentials: "include"
       });
@@ -803,35 +883,78 @@ export default function LibrarianDashboard() {
 
   return (
     <div className="librarian-dashboard" style={{ padding: "2rem" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
-        <h1>Librarian Dashboard</h1>
-        <div>
-          <span style={{ marginRight: "1rem" }}>Welcome, {user.FirstName} {user.LastName}</span>
-          <button onClick={() => navigate("/")} style={{ marginRight: "0.5rem" }}>Student View</button>
-          <button onClick={handleLogout}>Logout</button>
+      <div style={{
+        position: "relative",
+        borderRadius: "8px",
+        overflow: "hidden",
+        marginBottom: "1.5rem",
+      }}>
+        <img
+          src="/CougarCommonsBanner.png"
+          alt="Cougar Commons"
+          style={{ width: "100%", height: "200px", objectFit: "cover", display: "block" }}
+        />
+        <div style={{
+          position: "absolute", inset: 0,
+          background: "linear-gradient(to bottom, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.65) 100%)",
+          display: "flex", flexDirection: "column", justifyContent: "space-between",
+          padding: "1.25rem 1.5rem",
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <h1 style={{ margin: 0, color: "#fff", textShadow: "0 2px 8px rgba(0,0,0,0.85), 0 1px 2px rgba(0,0,0,0.9)", fontWeight: "800", letterSpacing: "0.01em", fontSize: "2.25rem" }}>Librarian Dashboard</h1>
+            <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+              <span style={{ color: "#fff", fontSize: "0.85rem", textShadow: "0 1px 3px rgba(0,0,0,0.7)" }}>Logged in as "{user.FirstName} {user.LastName}"</span>
+              <button onClick={() => navigate("/")} style={{ fontSize: "0.8rem" }}>Student View</button>
+              <button onClick={handleLogout} style={{ fontSize: "0.8rem" }}>Logout</button>
+            </div>
+          </div>
+          <nav style={{ display: "flex", gap: "0.5rem" }}>
+            {[
+              { label: "Overview",  key: "home",      action: () => setView("home") },
+              { label: "Users",     key: "users",     action: fetchUsers },
+              { label: "Catalog",   key: "catalog",   action: fetchCatalog },
+              { label: "Loans",     key: "loans",     action: () => setView("loans") },
+              { label: "Holds",     key: "holds",     action: () => setView("holds") },
+              { label: "Fines",     key: "fines",     action: () => setView("fines") },
+              { label: "Analytics", key: "analytics", action: () => setView("analytics") },
+            ].map(({ label, key, action }) => (
+              <button key={key} onClick={action} style={{
+                fontWeight: view === key ? "bold" : "normal",
+                background: view === key ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.1)",
+                color: "#fff",
+                border: "1px solid rgba(255,255,255,0.4)",
+                borderRadius: "4px",
+                padding: "0.3rem 0.75rem",
+                cursor: "pointer",
+                fontSize: "0.85rem",
+                backdropFilter: "blur(4px)",
+              }}>
+                {label}
+              </button>
+            ))}
+          </nav>
         </div>
       </div>
 
       {error && <p style={{ color: "red", marginBottom: "1rem" }}>{error}</p>}
 
-      <nav style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem", borderBottom: "1px solid #ccc", paddingBottom: "0.75rem" }}>
-        {[
-          { label: "Overview",  key: "home",      action: () => setView("home") },
-          { label: "Users",     key: "users",     action: fetchUsers },
-          { label: "Catalog",   key: "catalog",   action: fetchCatalog },
-          { label: "Loans",     key: "loans",     action: () => setView("loans") },
-          { label: "Fines",     key: "fines",     action: () => setView("fines") },
-          { label: "Analytics", key: "analytics", action: () => setView("analytics") },
-        ].map(({ label, key, action }) => (
-          <button key={key} onClick={action} style={{ fontWeight: view === key ? "bold" : "normal" }}>
-            {label}
-          </button>
-        ))}
-      </nav>
-
       {view === "home" && (
         <div>
-          <h2>Overview</h2>
+          {/* Welcome card */}
+          <div style={{ background: "#f0f4ff", border: "1px solid #d0d8f0", borderRadius: "6px", padding: "1rem 1.25rem", marginBottom: "1.25rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.5rem" }}>
+            <div>
+              <div style={{ fontWeight: "bold", fontSize: "1.05rem" }}>Welcome back, {user.FirstName}!</div>
+              <div style={{ fontSize: "0.85rem", color: "#555", marginTop: "0.25rem" }}>
+                {new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+              </div>
+            </div>
+            {overviewStats?.OverdueLoans > 0 && (
+              <div style={{ background: "#fff3f3", border: "1px solid #f5c6c6", borderRadius: "4px", padding: "0.5rem 0.9rem", fontSize: "0.85rem", color: "#c0392b" }}>
+                ⚠ {overviewStats.OverdueLoans} overdue loan{overviewStats.OverdueLoans !== 1 ? "s" : ""} need attention
+              </div>
+            )}
+          </div>
+
           <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginTop: "1rem" }}>
             {[
               { label: "Total Users",      value: overviewStats?.TotalUsers,    subtitle: "registered accounts" },
@@ -846,6 +969,31 @@ export default function LibrarianDashboard() {
               </div>
             ))}
           </div>
+
+          {/* Recent activity feed */}
+          {recentActivity.length > 0 && (
+            <div style={{ marginTop: "1.5rem" }}>
+              <h3 style={{ marginBottom: "0.75rem", fontSize: "0.95rem", color: "#444" }}>Recent Activity</h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                {recentActivity.map((row, idx) => {
+                  const statusColor = row.StatusLabel === "Overdue" ? "#c0392b" : row.StatusLabel === "Returned" ? "#27ae60" : "#2980b9";
+                  return (
+                    <div key={idx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.6rem 0.9rem", background: "#fafafa", border: "1px solid #e8e8e8", borderRadius: "4px", flexWrap: "wrap", gap: "0.4rem" }}>
+                      <div style={{ fontSize: "0.85rem" }}>
+                        <span style={{ fontWeight: "500" }}>{row.UserName}</span>
+                        <span style={{ color: "#888", margin: "0 0.4rem" }}>—</span>
+                        <span>{row.Title}</span>
+                      </div>
+                      <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", fontSize: "0.8rem" }}>
+                        <span style={{ color: statusColor, fontWeight: "500" }}>{row.StatusLabel}</span>
+                        <span style={{ color: "#aaa" }}>{new Date(row.ActivityAt).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -874,6 +1022,11 @@ export default function LibrarianDashboard() {
                     <option value={3}>Magazine</option>
                     <option value={4}>Audiobook</option>
                   </select>
+                  <select value={litForm.Genre} onChange={e => setLitForm({ ...litForm, Genre: Number(e.target.value) })}>
+                    {LITERATURE_GENRES.map((genre) => (
+                      <option key={genre.value} value={genre.value}>{genre.label}</option>
+                    ))}
+                  </select>
                   <input placeholder="Author *" value={litForm.Author} onChange={e => setLitForm({ ...litForm, Author: e.target.value })} />
                   <input placeholder="Publisher" value={litForm.Publisher} onChange={e => setLitForm({ ...litForm, Publisher: e.target.value })} />
                   <input placeholder="Publication Year" type="number" value={litForm.PublicationYear} onChange={e => setLitForm({ ...litForm, PublicationYear: e.target.value })} />
@@ -883,7 +1036,7 @@ export default function LibrarianDashboard() {
               )}
 
               <input
-                placeholder="Search by title or author..."
+                placeholder="Search by title, author, or genre..."
                 value={bookSearch}
                 onChange={e => setBookSearch(e.target.value)}
                 style={{ marginBottom: "0.5rem", padding: "0.4rem", width: "100%" }}
@@ -892,18 +1045,19 @@ export default function LibrarianDashboard() {
                 <table border="1" cellPadding="8" style={{ borderCollapse: "collapse", width: "100%" }}>
         <thead>
           <tr>
-            <th>ISBN</th><th>Title</th><th>Type</th><th>Publisher</th>
+            <th>ISBN</th><th>Title</th><th>Type</th><th>Genre</th><th>Publisher</th>
             <th>Author</th><th>Year</th><th>Available</th><th>Actions</th>
           </tr>
         </thead>
         <tbody>
           {literature.filter(l =>
-            `${l.Title} ${l.Author}`.toLowerCase().includes(bookSearch.toLowerCase())
+            `${l.Title} ${l.Author} ${l.GenreName ?? ""}`.toLowerCase().includes(bookSearch.toLowerCase())
           ).map(item => (
             <tr key={item.ItemID}>
               <td>{item.ItemID}</td>
               <td>{item.Title}</td>
               <td>{["", "Book", "Textbook", "Magazine", "Audiobook"][item.ItemType] ?? "—"}</td>
+              <td>{item.GenreName ?? getGenreLabel(LITERATURE_GENRES, item.Genre)}</td>
               <td>{item.Publisher}</td>
               <td>{item.Author}</td>
               <td>{item.PublicationYear}</td>
@@ -939,6 +1093,14 @@ export default function LibrarianDashboard() {
                   <option value={2}>Textbook</option>
                   <option value={3}>Magazine</option>
                   <option value={4}>Audiobook</option>
+                </select>
+                <select
+                  value={editLitForm.Genre}
+                  onChange={e => setEditLitForm({ ...editLitForm, Genre: Number(e.target.value) })}
+                >
+                  {LITERATURE_GENRES.map((genre) => (
+                    <option key={genre.value} value={genre.value}>{genre.label}</option>
+                  ))}
                 </select>
                 <input
                   placeholder="Author *"
@@ -1013,6 +1175,11 @@ export default function LibrarianDashboard() {
                     <option value={2}>Blu-ray</option>
                     <option value={3}>Vinyl</option>
                   </select>
+                  <select value={mediaForm.Genre} onChange={e => setMediaForm({ ...mediaForm, Genre: Number(e.target.value) })}>
+                    {MEDIA_GENRES.map((genre) => (
+                      <option key={genre.value} value={genre.value}>{genre.label}</option>
+                    ))}
+                  </select>
                   <input placeholder="Producer" value={mediaForm.Producer} onChange={e => setMediaForm({ ...mediaForm, Producer: e.target.value })} />
                   <input placeholder="Duration (minutes)" type="number" min="1" value={mediaForm.DurationMinutes} onChange={e => setMediaForm({ ...mediaForm, DurationMinutes: e.target.value })} />
                   <input placeholder="Copies *" type="number" min="1" value={mediaForm.Copies} onChange={e => setMediaForm({ ...mediaForm, Copies: e.target.value })} />
@@ -1021,7 +1188,7 @@ export default function LibrarianDashboard() {
               )}
 
               <input
-                placeholder="Search by ID or Name..."
+                placeholder="Search by ID, name, or genre..."
                 value={mediaSearch}
                 onChange={e => setMediaSearch(e.target.value)}
                 style={{ marginBottom: "0.5rem", padding: "0.4rem", width: "100%" }}
@@ -1030,18 +1197,19 @@ export default function LibrarianDashboard() {
                 <table border="1" cellPadding="8" style={{ borderCollapse: "collapse", width: "100%" }}>
         <thead>
           <tr>
-            <th>Device ID</th><th>Name</th><th>Type</th><th>Producer</th><th>Duration</th>
+            <th>Device ID</th><th>Name</th><th>Type</th><th>Genre</th><th>Producer</th><th>Duration</th>
             <th>Available</th><th>Actions</th>
           </tr>
         </thead>
         <tbody>
           {media.filter(m =>
-            `${m.ItemID} ${m.Title}`.toLowerCase().includes(mediaSearch.toLowerCase())
+            `${m.ItemID} ${m.Title} ${m.GenreName ?? ""}`.toLowerCase().includes(mediaSearch.toLowerCase())
           ).map(item => (
             <tr key={item.ItemID}>
               <td>{item.ItemID}</td>
               <td>{item.Title}</td>
               <td>{["", "DVD/CD", "Blu-ray", "Vinyl"][item.ItemType] ?? "—"}</td>
+              <td>{item.GenreName ?? getGenreLabel(MEDIA_GENRES, item.Genre)}</td>
               <td>{item.Producer}</td>
               <td>{item.DurationMinutes}</td>
               <td>{item.AvailableCopies}</td>
@@ -1075,6 +1243,14 @@ export default function LibrarianDashboard() {
                   <option value={1}>DVD / CD</option>
                   <option value={2}>Blu-ray</option>
                   <option value={3}>Vinyl</option>
+                </select>
+                <select
+                  value={editMediaForm.Genre}
+                  onChange={e => setEditMediaForm({ ...editMediaForm, Genre: Number(e.target.value) })}
+                >
+                  {MEDIA_GENRES.map((genre) => (
+                    <option key={genre.value} value={genre.value}>{genre.label}</option>
+                  ))}
                 </select>
                 <input
                   placeholder="Producer"
@@ -2070,6 +2246,59 @@ export default function LibrarianDashboard() {
                 </tbody>
               </table>
             )
+          )}
+        </div>
+      )}
+
+      {view === "holds" && (
+        <div>
+          <h2>Active Holds</h2>
+          <input
+            placeholder="Search by Hold ID, User ID, Name or Title..."
+            value={holdSearch}
+            onChange={e => setHoldSearch(e.target.value)}
+            style={{ marginBottom: "0.75rem", padding: "0.4rem", width: "100%" }}
+          />
+          {holdsLoading ? (
+            <p>Loading...</p>
+          ) : activeHolds.length === 0 ? (
+            <p>No active holds.</p>
+          ) : (
+            <>
+              <p style={{ marginBottom: "0.5rem", color: "#555" }}>{activeHolds.length} active hold{activeHolds.length !== 1 ? "s" : ""}</p>
+              <table border="1" cellPadding="6" style={{ borderCollapse: "collapse", width: "100%" }}>
+                <thead>
+                  <tr>
+                    <th>Hold ID</th>
+                    <th>User ID</th>
+                    <th>User Name</th>
+                    <th>Email</th>
+                    <th>Item ID</th>
+                    <th>Title</th>
+                    <th>Item Type</th>
+                    <th>Days Waiting</th>
+                    <th>Placed On</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {activeHolds.filter(h =>
+                    `${h.HoldID} ${h.UserID} ${h.UserName} ${h.Title}`.toLowerCase().includes(holdSearch.toLowerCase())
+                  ).map(hold => (
+                    <tr key={hold.HoldID} style={hold.DaysWaiting > 7 ? { background: "#fff8f0" } : {}}>
+                      <td>{hold.HoldID}</td>
+                      <td>{hold.UserID}</td>
+                      <td>{hold.UserName}</td>
+                      <td>{hold.Email}</td>
+                      <td>{hold.ItemID}</td>
+                      <td>{hold.Title}</td>
+                      <td>{hold.ItemTypeName}</td>
+                      <td style={hold.DaysWaiting > 7 ? { color: "#c0392b", fontWeight: "bold" } : {}}>{hold.DaysWaiting}</td>
+                      <td>{hold.CreatedAt ? new Date(hold.CreatedAt).toLocaleDateString() : "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
           )}
         </div>
       )}

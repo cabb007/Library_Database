@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import API from "../api";
 
@@ -169,6 +169,7 @@ export default function ItemDashboard() {
       item.Title,
       item.Author,
       item.Publisher,
+      item.GenreName,
       item.Producer,
       item.Manufacturer,
       item.Model,
@@ -270,7 +271,7 @@ export default function ItemDashboard() {
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search items by title..."
+          placeholder="Search items by title, creator, or genre..."
           className="w-full max-w-md px-4 py-2 rounded border border-amber-700 bg-stone-900 text-amber-50 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-amber-600"
         />
       </div>
@@ -337,6 +338,7 @@ export default function ItemDashboard() {
                 <tr className="bg-stone-900">
                   <th className="p-3">ISBN</th>
                   <th className="p-3">Title</th>
+                  <th className="p-3">Genre</th>
                   <th className="p-3">Publisher</th>
                   <th className="p-3">Author</th>
                   <th className="p-3">Year</th>
@@ -349,6 +351,7 @@ export default function ItemDashboard() {
                 {renderTableRows(filteredLiterature, [
                   { key: "ItemID" },
                   { key: "Title" },
+                  { key: "GenreName" },
                   { key: "Publisher" },
                   { key: "Author" },
                   { key: "PublicationYear" },
@@ -364,6 +367,7 @@ export default function ItemDashboard() {
             <thead>
               <tr className="bg-stone-900">
                 <th className="p-3">Name</th>
+                <th className="p-3">Genre</th>
                 <th className="p-3">Producer</th>
                 <th className="p-3">Duration</th>
                 <th className="p-3">Avail</th>
@@ -374,6 +378,7 @@ export default function ItemDashboard() {
               {/* Pass the filtered media rows so only the selected media type stays visible. */}
               {renderTableRows(filteredMedia, [
                 { key: "Title" },
+                { key: "GenreName" },
                 { key: "Producer" },
                 { key: "DurationMinutes" },
                 { key: "AvailableCopies" },

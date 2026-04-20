@@ -42,7 +42,7 @@ FIELDS TERMINATED BY ','
 ENCLOSED BY '"'
 LINES TERMINATED BY '\n'
 IGNORE 1 ROWS
-(ItemID, ItemType, Author, Publisher, PublicationYear);
+(ItemID, ItemType, Genre, Author, Publisher, PublicationYear);
 
 SHOW WARNINGS LIMIT 50;
 SELECT COUNT(*) FROM literature;
@@ -56,7 +56,7 @@ FIELDS TERMINATED BY ','
 ENCLOSED BY '"'
 LINES TERMINATED BY '\n'
 IGNORE 1 ROWS
-(ItemID, ItemType, Producer, DurationMinutes);
+(ItemID, ItemType, Genre, Producer, DurationMinutes);
 
 SHOW WARNINGS LIMIT 50;
 SELECT COUNT(*) FROM media;

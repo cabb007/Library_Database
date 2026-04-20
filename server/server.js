@@ -653,6 +653,58 @@ app.get("/api/title", async (req, res) => {
   res.json(data);
 });
 
+/* ================= CATALOG: COPIES ================= */
+
+app.get(
+  "/api/librarian/catalog/:itemID/copies",
+  requireLibrarian,
+  async (req, res) => {
+    try {
+      const itemID = Number(req.params.itemID);
+      const [rows] = await db.execute("CALL GetItemCopies(?)", [itemID]);
+      res.json(rows[0]);
+    } catch (err) {
+      handleSqlError(res, err, "Failed to fetch copies");
+    }
+  }
+);
+
+app.post(
+  "/api/librarian/catalog/copies",
+  requireLibrarian,
+  async (req, res) => {
+    try {
+      const itemID = Number(req.body.ItemID);
+
+      await db.execute("CALL AddCopy(?, ?, ?)", [
+        itemID,
+        0,
+        req.session.user.UserID,
+      ]);
+
+      res.status(201).json({ message: "Copy added" });
+    } catch (err) {
+      handleSqlError(res, err, "Failed to add copy");
+    }
+  }
+);
+
+app.delete(
+  "/api/librarian/catalog/copies/:copyID",
+  requireLibrarian,
+  async (req, res) => {
+    try {
+      const copyID = Number(req.params.copyID);
+
+      await db.execute("CALL DeleteCopy(?)", [copyID]);
+
+      res.json({ message: "Copy deleted" });
+    } catch (err) {
+      handleSqlError(res, err, "Failed to delete copy");
+    }
+  }
+);
+
 /* ================= CATALOG: DEVICES ================= */
 
 app.post(
@@ -699,12 +751,13 @@ app.put(
   async (req, res) => {
     try {
       const id = Number(req.params.id);
-      const { Title, ItemType, Producer, DurationMinutes } = req.body;
+      const { Title, ItemType, Genre, Producer, DurationMinutes } = req.body;
 
-      await db.execute("CALL UpdateMedia(?, ?, ?, ?, ?, ?)", [
+      await db.execute("CALL UpdateMedia(?, ?, ?, ?, ?, ?, ?)", [
         id,
         Title,
         Number(ItemType),
+        Number(Genre) || 0,
         Producer,
         DurationMinutes ? Number(DurationMinutes) : null,
         req.session.user.UserID,
@@ -750,6 +803,7 @@ app.post(
       const {
         Title,
         ItemType,
+        Genre,
         Producer,
         DurationMinutes,
         Copies,
@@ -761,10 +815,11 @@ app.post(
 
       const nextID = row.nextID;
 
-      await db.execute("CALL AddMedia(?, ?, ?, ?, ?, ?, ?)", [
+      await db.execute("CALL AddMedia(?, ?, ?, ?, ?, ?, ?, ?)", [
         nextID,
         Title,
         Number(ItemType),
+        Number(Genre) || 0,
         Producer,
         DurationMinutes ? Number(DurationMinutes) : null,
         Number(Copies) || 0,
@@ -795,16 +850,18 @@ app.post(
         ItemID,
         Title,
         ItemType,
+        Genre,
         Author,
         Publisher,
         PublicationYear,
         Copies,
       } = req.body;
 
-      await db.execute("CALL AddLiterature(?, ?, ?, ?, ?, ?, ?, ?)", [
+      await db.execute("CALL AddLiterature(?, ?, ?, ?, ?, ?, ?, ?, ?)", [
         ItemID,
         Title,
         Number(ItemType),
+        Number(Genre) || 0,
         Author,
         Publisher,
         PublicationYear ? Number(PublicationYear) : null,
@@ -821,6 +878,64 @@ app.post(
       }
 
       res.status(500).json({ error: "Failed to add literature" });
+    }
+  }
+);
+
+app.put(
+  "/api/librarian/catalog/literature/:id",
+  requireLibrarian,
+  async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const {
+        Title,
+        ItemType,
+        Genre,
+        Author,
+        Publisher,
+        PublicationYear,
+      } = req.body;
+
+      await db.execute("CALL UpdateLiterature(?, ?, ?, ?, ?, ?, ?, ?)", [
+        id,
+        Title,
+        Number(ItemType),
+        Number(Genre) || 0,
+        Author,
+        Publisher,
+        PublicationYear ? Number(PublicationYear) : null,
+        req.session.user.UserID,
+      ]);
+
+      res.json({ message: "Literature updated" });
+    } catch (err) {
+      console.error(err);
+
+      if (err.sqlState === "45000") {
+        return res.status(400).json({ error: err.sqlMessage });
+      }
+
+      res.status(500).json({ error: "Failed to update literature" });
+    }
+  }
+);
+
+app.delete(
+  "/api/librarian/catalog/literature/:id",
+  requireLibrarian,
+  async (req, res) => {
+    try {
+      await db.execute("CALL DeleteLiterature(?)", [Number(req.params.id)]);
+      res.json({ message: "Literature deleted" });
+    } catch (err) {
+      console.error(err);
+
+      if (err.sqlState === "45000") {
+        return res.status(400).json({ error: err.sqlMessage });
+      }
+
+      res.status(500).json({ error: "Failed to delete literature" });
     }
   }
 );
@@ -1026,6 +1141,16 @@ app.get("/api/user/holds", requireLogin, async (req, res) => {
 
 /* ================= LIBRARIAN LOANS ================= */
 
+app.get("/api/librarian/holds/active", requireLibrarian, async (_req, res) => {
+  try {
+    const [rows] = await db.execute("CALL GetAllActiveHolds()");
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("Failed to fetch active holds:", err);
+    res.status(500).json({ error: "Failed to fetch active holds" });
+  }
+});
+
 app.get("/api/librarian/loans/active", requireLibrarian, async (_req, res) => {
   try {
     const [rows] = await db.execute("CALL GetActiveLoans()");
@@ -1172,5 +1297,14 @@ app.get("/api/librarian/employee-audit/report", requireLibrarian, async (req, re
   } catch (err) {
     console.error("Failed to fetch employee audit report:", err);
     res.status(500).json({ error: "Failed to fetch employee audit report" });
+  }
+});
+
+app.get("/api/librarian/overview/recent-activity", requireLibrarian, async (_req, res) => {
+  try {
+    const [rows] = await db.execute("CALL GetRecentActivity()");
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch recent activity" });
   }
 });
