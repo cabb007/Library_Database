@@ -114,10 +114,13 @@ export default function LibrarianDashboard() {
   const [loansTab, setLoansTab] = useState("active");
   const [activeLoans, setActiveLoans] = useState([]);
   const [activeHolds, setActiveHolds] = useState([]);
+  const [fulfilledHolds, setFulfilledHolds] = useState([]);
+  const [holdsTab, setHoldsTab] = useState("active");
   const [holdsLoading, setHoldsLoading] = useState(false);
   const [holdSearch, setHoldSearch] = useState("");
   const [loansLoading, setLoansLoading] = useState(false);
   const [overdueLoans, setOverdueLoans] = useState([]);
+  const [returnedLoans, setReturnedLoans] = useState([]);
   const [fines, setFines] = useState([]);
   const [fineSearch, setFineSearch] = useState("");
   const [finesFilter, setFinesFilter] = useState("all");
@@ -211,6 +214,19 @@ export default function LibrarianDashboard() {
     }
   }
 
+  async function fetchFulfilledHolds() {
+    setHoldsLoading(true);
+    try {
+      const res = await fetch(`${API}/api/librarian/holds/fulfilled`, { credentials: "include" });
+      const data = await res.json();
+      if (res.ok) setFulfilledHolds(data);
+    } catch {
+      // table stays empty on failure
+    } finally {
+      setHoldsLoading(false);
+    }
+  }
+
   async function fetchFines(filter) {
     const endpointMap = { all: "/api/librarian/fines", paid: "/api/librarian/fines/paid", unpaid: "/api/librarian/fines/unpaid" };
     try {
@@ -228,6 +244,19 @@ export default function LibrarianDashboard() {
       const res = await fetch(`${API}/api/librarian/loans/overdue`, { credentials: "include" });
       const data = await res.json();
       if (res.ok) setOverdueLoans(data);
+    } catch {
+      // table stays empty on failure
+    } finally {
+      setLoansLoading(false);
+    }
+  }
+
+  async function fetchReturnedLoans() {
+    setLoansLoading(true);
+    try {
+      const res = await fetch(`${API}/api/librarian/loans/returned`, { credentials: "include" });
+      const data = await res.json();
+      if (res.ok) setReturnedLoans(data);
     } catch {
       // table stays empty on failure
     } finally {
@@ -2150,6 +2179,12 @@ export default function LibrarianDashboard() {
             >
               Overdue
             </button>
+            <button
+              onClick={() => { setLoansTab("returned"); fetchReturnedLoans(); }}
+              style={{ fontWeight: loansTab === "returned" ? "bold" : "normal" }}
+            >
+              Returned
+            </button>
           </div>
 
           {loansTab === "active" && (
@@ -2255,6 +2290,56 @@ export default function LibrarianDashboard() {
               </>
             )
           )}
+
+          {loansTab === "returned" && (
+            loansLoading ? (
+              <p>Loading...</p>
+            ) : returnedLoans.length === 0 ? (
+              <p>No returned loans.</p>
+            ) : (
+              <>
+              <h2>Returned Loans ({returnedLoans.filter(l => `${l.LoanID} ${l.UserID} ${l.UserName} ${l.Title}`.toLowerCase().includes(loanSearch.toLowerCase())).length})</h2>
+              <table border="1" cellPadding="6" style={{ borderCollapse: "collapse", width: "100%" }}>
+                <thead>
+                  <tr>
+                    <th>Loan ID</th>
+                    <th>User ID</th>
+                    <th>User Name</th>
+                    <th>Copy ID</th>
+                    <th>Item ID</th>
+                    <th>Title</th>
+                    <th>Due Date</th>
+                    <th>Return Date</th>
+                    <th>Created At</th>
+                    <th>Created By</th>
+                    <th>Updated At</th>
+                    <th>Updated By</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {returnedLoans.filter(l =>
+                    `${l.LoanID} ${l.UserID} ${l.UserName} ${l.Title}`.toLowerCase().includes(loanSearch.toLowerCase())
+                  ).map(loan => (
+                    <tr key={loan.LoanID}>
+                      <td>{loan.LoanID}</td>
+                      <td>{loan.UserID}</td>
+                      <td>{loan.UserName}</td>
+                      <td>{loan.CopyID}</td>
+                      <td>{loan.ItemID}</td>
+                      <td>{loan.Title}</td>
+                      <td>{loan.DueDate ? new Date(loan.DueDate).toLocaleDateString() : "—"}</td>
+                      <td>{loan.ReturnDate ? new Date(loan.ReturnDate).toLocaleString() : "—"}</td>
+                      <td>{loan.CreatedAt ? new Date(loan.CreatedAt).toLocaleString() : "—"}</td>
+                      <td>{userNameById(loan.CreatedBy)}</td>
+                      <td>{loan.UpdatedAt ? new Date(loan.UpdatedAt).toLocaleString() : "—"}</td>
+                      <td>{userNameById(loan.UpdatedBy)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              </>
+            )
+          )}
         </div>
       )}
 
@@ -2266,46 +2351,107 @@ export default function LibrarianDashboard() {
             onChange={e => setHoldSearch(e.target.value)}
             style={{ marginBottom: "0.5rem", padding: "0.4rem", width: "100%" }}
           />
-          {holdsLoading ? (
-            <p>Loading...</p>
-          ) : activeHolds.length === 0 ? (
-            <p>No active holds.</p>
-          ) : (
-            <>
-              <h2>Active Holds ({activeHolds.filter(h => `${h.HoldID} ${h.UserID} ${h.UserName} ${h.Title}`.toLowerCase().includes(holdSearch.toLowerCase())).length})</h2>
-              <table border="1" cellPadding="6" style={{ borderCollapse: "collapse", width: "100%" }}>
-                <thead>
-                  <tr>
-                    <th>Hold ID</th>
-                    <th>User ID</th>
-                    <th>User Name</th>
-                    <th>Email</th>
-                    <th>Item ID</th>
-                    <th>Title</th>
-                    <th>Item Type</th>
-                    <th>Days Waiting</th>
-                    <th>Placed On</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {activeHolds.filter(h =>
-                    `${h.HoldID} ${h.UserID} ${h.UserName} ${h.Title}`.toLowerCase().includes(holdSearch.toLowerCase())
-                  ).map(hold => (
-                    <tr key={hold.HoldID} style={hold.DaysWaiting > 7 ? { background: "#fff8f0" } : {}}>
-                      <td>{hold.HoldID}</td>
-                      <td>{hold.UserID}</td>
-                      <td>{hold.UserName}</td>
-                      <td>{hold.Email}</td>
-                      <td>{hold.ItemID}</td>
-                      <td>{hold.Title}</td>
-                      <td>{hold.ItemTypeName}</td>
-                      <td style={hold.DaysWaiting > 7 ? { color: "#c0392b", fontWeight: "bold" } : {}}>{hold.DaysWaiting}</td>
-                      <td>{hold.CreatedAt ? new Date(hold.CreatedAt).toLocaleDateString() : "—"}</td>
+          <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
+            <button
+              onClick={() => { setHoldsTab("active"); fetchActiveHolds(); }}
+              style={{ fontWeight: holdsTab === "active" ? "bold" : "normal" }}
+            >
+              Active
+            </button>
+            <button
+              onClick={() => { setHoldsTab("fulfilled"); fetchFulfilledHolds(); }}
+              style={{ fontWeight: holdsTab === "fulfilled" ? "bold" : "normal" }}
+            >
+              Fulfilled
+            </button>
+          </div>
+
+          {holdsTab === "active" && (
+            holdsLoading ? (
+              <p>Loading...</p>
+            ) : activeHolds.length === 0 ? (
+              <p>No active holds.</p>
+            ) : (
+              <>
+                <h2>Active Holds ({activeHolds.filter(h => `${h.HoldID} ${h.UserID} ${h.UserName} ${h.Title}`.toLowerCase().includes(holdSearch.toLowerCase())).length})</h2>
+                <table border="1" cellPadding="6" style={{ borderCollapse: "collapse", width: "100%" }}>
+                  <thead>
+                    <tr>
+                      <th>Hold ID</th>
+                      <th>User ID</th>
+                      <th>User Name</th>
+                      <th>Email</th>
+                      <th>Item ID</th>
+                      <th>Title</th>
+                      <th>Item Type</th>
+                      <th>Days Waiting</th>
+                      <th>Placed On</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </>
+                  </thead>
+                  <tbody>
+                    {activeHolds.filter(h =>
+                      `${h.HoldID} ${h.UserID} ${h.UserName} ${h.Title}`.toLowerCase().includes(holdSearch.toLowerCase())
+                    ).map(hold => (
+                      <tr key={hold.HoldID} style={hold.DaysWaiting > 7 ? { background: "#fff8f0" } : {}}>
+                        <td>{hold.HoldID}</td>
+                        <td>{hold.UserID}</td>
+                        <td>{hold.UserName}</td>
+                        <td>{hold.Email}</td>
+                        <td>{hold.ItemID}</td>
+                        <td>{hold.Title}</td>
+                        <td>{hold.ItemTypeName}</td>
+                        <td style={hold.DaysWaiting > 7 ? { color: "#c0392b", fontWeight: "bold" } : {}}>{hold.DaysWaiting}</td>
+                        <td>{hold.CreatedAt ? new Date(hold.CreatedAt).toLocaleString() : "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </>
+            )
+          )}
+
+          {holdsTab === "fulfilled" && (
+            holdsLoading ? (
+              <p>Loading...</p>
+            ) : fulfilledHolds.length === 0 ? (
+              <p>No fulfilled holds.</p>
+            ) : (
+              <>
+                <h2>Fulfilled Holds ({fulfilledHolds.filter(h => `${h.HoldID} ${h.UserID} ${h.UserName} ${h.Title}`.toLowerCase().includes(holdSearch.toLowerCase())).length})</h2>
+                <table border="1" cellPadding="6" style={{ borderCollapse: "collapse", width: "100%" }}>
+                  <thead>
+                    <tr>
+                      <th>Hold ID</th>
+                      <th>User ID</th>
+                      <th>User Name</th>
+                      <th>Email</th>
+                      <th>Item ID</th>
+                      <th>Title</th>
+                      <th>Item Type</th>
+                      <th>Placed On</th>
+                      <th>Fulfilled At</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {fulfilledHolds.filter(h =>
+                      `${h.HoldID} ${h.UserID} ${h.UserName} ${h.Title}`.toLowerCase().includes(holdSearch.toLowerCase())
+                    ).map(hold => (
+                      <tr key={hold.HoldID}>
+                        <td>{hold.HoldID}</td>
+                        <td>{hold.UserID}</td>
+                        <td>{hold.UserName}</td>
+                        <td>{hold.Email}</td>
+                        <td>{hold.ItemID}</td>
+                        <td>{hold.Title}</td>
+                        <td>{hold.ItemTypeName}</td>
+                        <td>{hold.CreatedAt ? new Date(hold.CreatedAt).toLocaleString() : "—"}</td>
+                        <td>{hold.UpdatedAt ? new Date(hold.UpdatedAt).toLocaleString() : "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </>
+            )
           )}
         </div>
       )}

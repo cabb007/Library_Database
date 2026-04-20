@@ -48,7 +48,7 @@ export default function Login() {
       if (data.user?.UserType === 2) {
         navigate("/librarian");
       } else {
-        navigate("/useraccount");
+        navigate("/");
       }
 
     } catch(err){

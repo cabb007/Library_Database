@@ -722,6 +722,33 @@ END$$
 
 
 -- =========================================================
+-- Procedure: Get all returned loans
+-- =========================================================
+DROP PROCEDURE IF EXISTS GetReturnedLoans$$
+CREATE PROCEDURE GetReturnedLoans()
+BEGIN
+    SELECT
+        l.LoanID,
+        l.UserID,
+        CONCAT(u.FirstName, ' ', u.LastName) AS UserName,
+        l.CopyID,
+        c.ItemID,
+        i.Title,
+        l.DueDate,
+        l.ReturnDate,
+        l.CreatedAt,
+        l.CreatedBy,
+        l.UpdatedAt,
+        l.UpdatedBy
+    FROM loans AS l
+    JOIN users AS u ON l.UserID = u.UserID
+    JOIN copies AS c ON l.CopyID = c.CopyID
+    JOIN items AS i ON c.ItemID = i.ItemID
+    WHERE l.ReturnDate IS NOT NULL
+    ORDER BY l.ReturnDate DESC;
+END$$
+
+-- =========================================================
 -- Procedure: Get all fines (with user details)
 -- =========================================================
 DROP PROCEDURE IF EXISTS GetFines$$
@@ -920,6 +947,44 @@ BEGIN
     LEFT JOIN devices    AS dev ON i.ItemID = dev.ItemID
     WHERE h.HoldStatus = 0
     ORDER BY h.CreatedAt ASC;
+END$$
+
+-- =========================================================
+-- Procedure: Get all fulfilled holds
+-- =========================================================
+DROP PROCEDURE IF EXISTS GetFulfilledHolds$$
+CREATE PROCEDURE GetFulfilledHolds()
+BEGIN
+    SELECT
+        h.HoldID,
+        h.UserID,
+        CONCAT(u.FirstName, ' ', u.LastName) AS UserName,
+        u.Email,
+        h.ItemID,
+        i.Title,
+        CASE i.ItemCategory
+            WHEN 1 THEN CASE lit.ItemType
+                WHEN 1 THEN 'Book' WHEN 2 THEN 'Textbook'
+                WHEN 3 THEN 'Magazine' WHEN 4 THEN 'Audiobook'
+                ELSE 'Literature' END
+            WHEN 2 THEN CASE med.ItemType
+                WHEN 1 THEN 'DVD/CD' WHEN 2 THEN 'Blu-Ray'
+                WHEN 3 THEN 'Vinyl' ELSE 'Media' END
+            WHEN 3 THEN CASE dev.ItemType
+                WHEN 1 THEN 'Laptop' WHEN 2 THEN 'Tablet'
+                WHEN 3 THEN 'Calculator' ELSE 'Device' END
+            ELSE 'Unknown'
+        END AS ItemTypeName,
+        h.CreatedAt,
+        h.UpdatedAt
+    FROM holds AS h
+    JOIN users        AS u   ON h.UserID = u.UserID
+    JOIN items        AS i   ON h.ItemID = i.ItemID
+    LEFT JOIN literature AS lit ON i.ItemID = lit.ItemID
+    LEFT JOIN media      AS med ON i.ItemID = med.ItemID
+    LEFT JOIN devices    AS dev ON i.ItemID = dev.ItemID
+    WHERE h.HoldStatus = 1
+    ORDER BY h.UpdatedAt DESC;
 END$$
 
 DELIMITER ;

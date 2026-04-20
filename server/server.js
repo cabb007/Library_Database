@@ -1193,6 +1193,16 @@ app.get("/api/librarian/holds/active", requireLibrarian, async (_req, res) => {
   }
 });
 
+app.get("/api/librarian/holds/fulfilled", requireLibrarian, async (_req, res) => {
+  try {
+    const [rows] = await db.execute("CALL GetFulfilledHolds()");
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("Failed to fetch fulfilled holds:", err);
+    res.status(500).json({ error: "Failed to fetch fulfilled holds" });
+  }
+});
+
 app.get("/api/librarian/loans/active", requireLibrarian, async (_req, res) => {
   try {
     const [rows] = await db.execute("CALL GetActiveLoans()");
@@ -1210,6 +1220,16 @@ app.get("/api/librarian/loans/overdue", requireLibrarian, async (_req, res) => {
   } catch (err) {
     console.error("Failed to fetch overdue loans:", err);
     res.status(500).json({ error: "Failed to fetch overdue loans" });
+  }
+});
+
+app.get("/api/librarian/loans/returned", requireLibrarian, async (_req, res) => {
+  try {
+    const [rows] = await db.execute("CALL GetReturnedLoans()");
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("Failed to fetch returned loans:", err);
+    res.status(500).json({ error: "Failed to fetch returned loans" });
   }
 });
 
