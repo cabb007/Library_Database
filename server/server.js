@@ -51,10 +51,11 @@ const ITEM_TYPE_LABELS = {
    GLOBAL CORS FIX (THIS IS WHAT WAS BREAKING EVERYTHING)
    ========================================================= */
 
-const ALLOWED_ORIGIN = ["http://localhost:5173", "https://brave-field-0e8fa9510.1.azurestaticapps.net"];
+const ALLOWED_ORIGINS = new Set(["http://localhost:5173", "https://brave-field-0e8fa9510.1.azurestaticapps.net"]);
 
-function setCorsHeaders(res) {
-  res.setHeader("Access-Control-Allow-Origin", ALLOWED_ORIGIN);
+function setCorsHeaders(req, res) {
+  const origin = req.headers?.origin;
+  res.setHeader("Access-Control-Allow-Origin", ALLOWED_ORIGINS.has(origin) ? origin : "http://localhost:5173");
   res.setHeader("Access-Control-Allow-Credentials", "true");
   res.setHeader(
     "Access-Control-Allow-Headers",
@@ -68,7 +69,7 @@ function setCorsHeaders(res) {
 
 /* If routing.js supports middleware, this will run for all requests */
 app.use?.((req, res, next) => {
-  setCorsHeaders(res);
+  setCorsHeaders(req, res);
 
   // Preflight handling
   if (req.method === "OPTIONS") {
@@ -88,12 +89,12 @@ app.listen = function (...args) {
 /* ================= BASIC ROUTES ================= */
 
 app.get("/", (req, res) => {
-  setCorsHeaders(res);
+  setCorsHeaders(req, res);
   res.send("Backend is running");
 });
 
 app.get("/health", (req, res) => {
-  setCorsHeaders(res);
+  setCorsHeaders(req, res);
   res.status(200).send("ok");
 });
 
@@ -230,7 +231,7 @@ function handleSqlError(res, err, fallbackMessage = "Request failed") {
 /* ================= AUTH HELPERS ================= */
 
 function requireLogin(req, res, next) {
-  setCorsHeaders(res);
+  setCorsHeaders(req, res);
 
   if (!req.session?.user) {
     return res.status(401).json({ error: "Not logged in" });
@@ -239,7 +240,7 @@ function requireLogin(req, res, next) {
 }
 
 function requireLibrarian(req, res, next) {
-  setCorsHeaders(res);
+  setCorsHeaders(req, res);
 
   if (!req.session?.user) {
     return res.status(401).json({ error: "Not logged in" });
@@ -256,7 +257,7 @@ function requireLibrarian(req, res, next) {
 
 app.post("/api/users", async (req, res) => {
   try {
-    setCorsHeaders(res);
+    setCorsHeaders(req, res);
 
     const { Password, FirstName, LastName, Email } = req.body;
 
@@ -291,7 +292,7 @@ app.post("/api/users", async (req, res) => {
 
 app.post("/api/login", async (req, res) => {
   try {
-    setCorsHeaders(res);
+    setCorsHeaders(req, res);
 
     const { Email, Password } = req.body;
 
@@ -317,7 +318,7 @@ app.post("/api/login", async (req, res) => {
 
     res.json({ success: true, user: req.session.user });
   } catch (err) {
-    setCorsHeaders(res);
+    setCorsHeaders(req, res);
     res.status(500).json({ error: "Server error" });
   }
 });
