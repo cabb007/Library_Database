@@ -87,7 +87,7 @@ function getSession(req, res) {
 
   res.setHeader(
     "Set-Cookie",
-    `sid=${newSid}; HttpOnly; Path=/; SameSite=Lax`
+    `sid=${newSid};Path=/; SameSite=none; Secure`
   );
 
   return session;
