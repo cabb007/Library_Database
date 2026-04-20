@@ -69,7 +69,8 @@ BEGIN
     ) AS a
     JOIN users u ON u.UserID = a.ActionUserID
     WHERE
-        (p_start_date IS NULL OR DATE(a.ActionTimestamp) >= p_start_date)
+        u.UserType = 2
+        AND (p_start_date IS NULL OR DATE(a.ActionTimestamp) >= p_start_date)
         AND (p_end_date IS NULL OR DATE(a.ActionTimestamp) <= p_end_date)
         AND (p_librarian_id IS NULL OR a.ActionUserID = p_librarian_id)
         AND (p_table_name IS NULL OR a.TableName = p_table_name)
@@ -280,6 +281,30 @@ END$$
 -- =================================================================================================================
 --                                              CHECKOUT ANALYTICS REPORT
 -- =================================================================================================================
+
+-- =========================================================
+-- Procedure: Recent loan activity (last 8 loans)
+-- =========================================================
+DROP PROCEDURE IF EXISTS GetRecentActivity$$
+CREATE PROCEDURE GetRecentActivity()
+BEGIN
+    SELECT
+        lo.LoanID AS RefID,
+        CONCAT(u.FirstName, ' ', u.LastName) AS UserName,
+        i.Title,
+        lo.CreatedAt AS ActivityAt,
+        CASE
+            WHEN lo.ReturnDate IS NOT NULL THEN 'Returned'
+            WHEN lo.DueDate < CURDATE() THEN 'Overdue'
+            ELSE 'Checked Out'
+        END AS StatusLabel
+    FROM loans lo
+    JOIN users u ON lo.UserID = u.UserID
+    JOIN copies c ON lo.CopyID = c.CopyID
+    JOIN items i ON c.ItemID = i.ItemID
+    ORDER BY lo.CreatedAt DESC
+    LIMIT 8;
+END$$
 
 -- =========================================================
 -- Procedure: Overview dashboard stats

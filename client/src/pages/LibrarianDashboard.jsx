@@ -103,7 +103,14 @@ export default function LibrarianDashboard() {
   const [txSummary, setTxSummary] = useState(null);
   const [txSort, setTxSort] = useState({ key: "TransactionDate", dir: "desc" });
   const [txAppliedType, setTxAppliedType] = useState(null);
+  const [auditFilters, setAuditFilters] = useState({ startDate: "", endDate: "", librarianId: "", tableName: "", actionType: "" });
+  const [auditResults, setAuditResults] = useState([]);
+  const [auditLoading, setAuditLoading] = useState(false);
+  const [auditHasRun, setAuditHasRun] = useState(false);
+  const [auditSummary, setAuditSummary] = useState(null);
+  const [auditSort, setAuditSort] = useState({ key: "LastActionAt", dir: "desc" });
   const [overviewStats, setOverviewStats] = useState(null);
+  const [recentActivity, setRecentActivity] = useState([]);
   const [loansTab, setLoansTab] = useState("active");
   const [activeLoans, setActiveLoans] = useState([]);
   const [loansLoading, setLoansLoading] = useState(false);
@@ -140,13 +147,13 @@ export default function LibrarianDashboard() {
     }
     if (view === "analytics") {
       if (!analyticsSummary) {
-        fetch("http://localhost:3000/api/librarian/analytics/summary", { credentials: "include" })
+        fetch(`${API}/api/librarian/analytics/summary`, { credentials: "include" })
           .then(r => r.json())
           .then(data => { if (!data.error) setAnalyticsSummary(data); })
           .catch(() => {});
       }
       if (!txSummary) {
-        fetch("http://localhost:3000/api/librarian/analytics/transactions/summary", { credentials: "include" })
+        fetch(`${API}/api/librarian/analytics/transactions/summary`, { credentials: "include" })
           .then(r => r.json())
           .then(data => { if (!data.error) setTxSummary(data); })
           .catch(() => {});
@@ -154,13 +161,28 @@ export default function LibrarianDashboard() {
       if (!analyticsHasRun) {
         fetchAnalytics();
       }
+      if (!auditSummary) {
+        fetch(`${API}/api/librarian/employee-audit/summary`, { credentials: "include" })
+          .then(r => r.json())
+          .then(data => { if (!data.error) setAuditSummary(data); })
+          .catch(() => {});
+      }
     }
   }, [view]);
+
+  useEffect(() => {
+    if (analyticsTab === "transactions" && !txHasRun) {
+      fetchTransactionReport();
+    }
+    if (analyticsTab === "audit" && !auditHasRun) {
+      fetchAuditReport();
+    }
+  }, [analyticsTab]);
 
   async function fetchActiveLoans() {
     setLoansLoading(true);
     try {
-      const res = await fetch("http://localhost:3000/api/librarian/loans/active", { credentials: "include" });
+      const res = await fetch(`${API}/api/librarian/loans/active`, { credentials: "include" });
       const data = await res.json();
       if (res.ok) setActiveLoans(data);
     } catch {
@@ -173,7 +195,7 @@ export default function LibrarianDashboard() {
   async function fetchFines(filter) {
     const endpointMap = { all: "/api/librarian/fines", paid: "/api/librarian/fines/paid", unpaid: "/api/librarian/fines/unpaid" };
     try {
-      const res = await fetch(`http://localhost:3000${endpointMap[filter]}`, { credentials: "include" });
+      const res = await fetch(`${API}${endpointMap[filter]}`, { credentials: "include" });
       const data = await res.json();
       if (res.ok) setFines(data);
     } catch {
@@ -184,7 +206,7 @@ export default function LibrarianDashboard() {
   async function fetchOverdueLoans() {
     setLoansLoading(true);
     try {
-      const res = await fetch("http://localhost:3000/api/librarian/loans/overdue", { credentials: "include" });
+      const res = await fetch(`${API}/api/librarian/loans/overdue`, { credentials: "include" });
       const data = await res.json();
       if (res.ok) setOverdueLoans(data);
     } catch {
@@ -196,17 +218,24 @@ export default function LibrarianDashboard() {
 
   async function fetchOverviewStats() {
     try {
-      const res = await fetch("http://localhost:3000/api/librarian/overview/stats", { credentials: "include" });
+      const res = await fetch(`${API}/api/librarian/overview/stats`, { credentials: "include" });
       const data = await res.json();
       if (res.ok) setOverviewStats(data);
     } catch {
       // cards show "—" on failure
     }
+    try {
+      const res = await fetch(`${API}/api/librarian/overview/recent-activity`, { credentials: "include" });
+      const data = await res.json();
+      if (res.ok) setRecentActivity(Array.isArray(data) ? data : []);
+    } catch {
+      // feed stays empty on failure
+    }
   }
 
   useEffect(() => {
     async function checkAccess() {
-      const res = await fetch("http://localhost:3000/api/me", { credentials: "include" });
+      const res = await fetch(`${API}/api/me`, { credentials: "include" });
       const data = await res.json();
       if (!res.ok || data.user?.UserType !== 2) {
         navigate("/login");
@@ -220,7 +249,7 @@ export default function LibrarianDashboard() {
 
   async function fetchUsersQuiet() {
     try {
-      const res = await fetch("http://localhost:3000/api/librarian/users", { credentials: "include" });
+      const res = await fetch(`${API}/api/librarian/users`, { credentials: "include" });
       const data = await res.json();
       if (res.ok) setUsers(data);
     } catch {
@@ -231,7 +260,7 @@ export default function LibrarianDashboard() {
   async function fetchUsers() {
     setError("");
     try {
-      const res = await fetch("http://localhost:3000/api/librarian/users", { credentials: "include" });
+      const res = await fetch(`${API}/api/librarian/users`, { credentials: "include" });
       const data = await res.json();
       if (res.ok) {
         setUsers(data);
@@ -248,7 +277,7 @@ export default function LibrarianDashboard() {
     e.preventDefault();
     setError("");
     try {
-      const res = await fetch("http://localhost:3000/api/librarian/users", {
+      const res = await fetch(`${API}/api/librarian/users`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -287,7 +316,7 @@ export default function LibrarianDashboard() {
     e.preventDefault();
     setError("");
     try {
-      const res = await fetch(`http://localhost:3000/api/librarian/users/${editingUser.UserID}`, {
+      const res = await fetch(`${API}/api/librarian/users/${editingUser.UserID}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -312,7 +341,7 @@ export default function LibrarianDashboard() {
     if (!confirm("Are you sure you want to delete this user?")) return;
     setError("");
     try {
-      const res = await fetch(`http://localhost:3000/api/librarian/users/${userId}`, {
+      const res = await fetch(`${API}/api/librarian/users/${userId}`, {
         method: "DELETE",
         credentials: "include"
       });
@@ -352,7 +381,7 @@ export default function LibrarianDashboard() {
     e.preventDefault();
     setError("");
     try {
-      const res = await fetch(`http://localhost:3000/api/librarian/catalog/literature/${editingLit.ItemID}`, {
+      const res = await fetch(`${API}/api/librarian/catalog/literature/${editingLit.ItemID}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -379,7 +408,7 @@ export default function LibrarianDashboard() {
     e.preventDefault();
     setError("");
     try {
-      const res = await fetch("http://localhost:3000/api/librarian/catalog/literature", {
+      const res = await fetch(`${API}/api/librarian/catalog/literature`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -406,15 +435,15 @@ export default function LibrarianDashboard() {
   async function refreshCatalogData() {
     try {
       if (catalogTab === "books") {
-        const res = await fetch("http://localhost:3000/api/literature");
+        const res = await fetch(`${API}/api/literature`);
         const data = await res.json();
         setLiterature(Array.isArray(data[0]) ? data[0] : data);
       } else if (catalogTab === "media") {
-        const res = await fetch("http://localhost:3000/api/media");
+        const res = await fetch(`${API}/api/media`);
         const data = await res.json();
         setMedia(Array.isArray(data[0]) ? data[0] : data);
       } else if (catalogTab === "devices") {
-        const res = await fetch("http://localhost:3000/api/devices");
+        const res = await fetch(`${API}/api/devices`);
         const data = await res.json();
         setDevices(Array.isArray(data[0]) ? data[0] : data);
       }
@@ -425,7 +454,7 @@ export default function LibrarianDashboard() {
 
   async function loadCopies(item) {
     try {
-      const res = await fetch(`http://localhost:3000/api/librarian/catalog/${item.ItemID}/copies`, {
+      const res = await fetch(`${API}/api/librarian/catalog/${item.ItemID}/copies`, {
         credentials: "include"
       });
       const data = await res.json();
@@ -441,7 +470,7 @@ export default function LibrarianDashboard() {
   async function handleAddCopy(itemId) {
     setError("");
     try {
-      const res = await fetch("http://localhost:3000/api/librarian/catalog/copies", {
+      const res = await fetch(`${API}/api/librarian/catalog/copies`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -460,7 +489,7 @@ export default function LibrarianDashboard() {
     if (!confirm("Are you sure you want to delete this copy?")) return;
     setError("");
     try {
-      const res = await fetch(`http://localhost:3000/api/librarian/catalog/copies/${copyId}`, {
+      const res = await fetch(`${API}/api/librarian/catalog/copies/${copyId}`, {
         method: "DELETE",
         credentials: "include"
       });
@@ -477,7 +506,7 @@ export default function LibrarianDashboard() {
     e.preventDefault();
     setError("");
     try {
-      const res = await fetch("http://localhost:3000/api/librarian/catalog/devices", {
+      const res = await fetch(`${API}/api/librarian/catalog/devices`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -501,7 +530,7 @@ export default function LibrarianDashboard() {
     if (!confirm("Are you sure you want to delete this item?")) return;
     setError("");
     try {
-      const res = await fetch(`http://localhost:3000/api/librarian/catalog/devices/${itemId}`, {
+      const res = await fetch(`${API}/api/librarian/catalog/devices/${itemId}`, {
         method: "DELETE",
         credentials: "include"
       });
@@ -537,7 +566,7 @@ export default function LibrarianDashboard() {
     e.preventDefault();
     setError("");
     try {
-      const res = await fetch(`http://localhost:3000/api/librarian/catalog/media/${editingMedia.ItemID}`, {
+      const res = await fetch(`${API}/api/librarian/catalog/media/${editingMedia.ItemID}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -581,7 +610,7 @@ export default function LibrarianDashboard() {
     e.preventDefault();
     setError("");
     try {
-      const res = await fetch(`http://localhost:3000/api/librarian/catalog/devices/${editingDevice.ItemID}`, {
+      const res = await fetch(`${API}/api/librarian/catalog/devices/${editingDevice.ItemID}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -605,7 +634,7 @@ export default function LibrarianDashboard() {
     e.preventDefault();
     setError("");
     try {
-      const res = await fetch("http://localhost:3000/api/librarian/catalog/media", {
+      const res = await fetch(`${API}/api/librarian/catalog/media`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -631,7 +660,7 @@ export default function LibrarianDashboard() {
     if (!confirm("Are you sure you want to delete this item?")) return;
     setError("");
     try {
-      const res = await fetch(`http://localhost:3000/api/librarian/catalog/media/${itemId}`, {
+      const res = await fetch(`${API}/api/librarian/catalog/media/${itemId}`, {
         method: "DELETE",
         credentials: "include"
       });
@@ -647,7 +676,7 @@ export default function LibrarianDashboard() {
     if (!confirm("Are you sure you want to delete this item?")) return;
     setError("");
     try {
-      const res = await fetch(`http://localhost:3000/api/librarian/catalog/literature/${itemId}`, {
+      const res = await fetch(`${API}/api/librarian/catalog/literature/${itemId}`, {
         method: "DELETE",
         credentials: "include"
       });
@@ -661,7 +690,7 @@ export default function LibrarianDashboard() {
 
     async function fetchCatalog() {
     try {
-      const res = await fetch("http://localhost:3000/api/literature");
+      const res = await fetch(`${API}/api/literature`);
       const data = await res.json();
       setLiterature(Array.isArray(data[0]) ? data[0] : data);
     } catch {
@@ -675,7 +704,7 @@ export default function LibrarianDashboard() {
 
    async function fetchMedia() {
     try {
-      const res = await fetch("http://localhost:3000/api/media");
+      const res = await fetch(`${API}/api/media`);
       const data = await res.json();
       setMedia(Array.isArray(data[0]) ? data[0] : data);
     } catch {
@@ -691,7 +720,7 @@ export default function LibrarianDashboard() {
 
   async function fetchDevices() {
     try {
-      const res = await fetch("http://localhost:3000/api/devices");
+      const res = await fetch(`${API}/api/devices`);
       const data = await res.json();
       setDevices(Array.isArray(data[0]) ? data[0] : data);
     } catch {
@@ -716,7 +745,7 @@ export default function LibrarianDashboard() {
       if (analyticsFilters.category)  params.set("category",  analyticsFilters.category);
       if (analyticsFilters.itemType)  params.set("itemType",  analyticsFilters.itemType);
       const res = await fetch(
-        `http://localhost:3000/api/librarian/analytics/most-checked-out?${params}`,
+        `${API}/api/librarian/analytics/most-checked-out?${params}`,
         { credentials: "include" }
       );
       const data = await res.json();
@@ -742,7 +771,7 @@ export default function LibrarianDashboard() {
       if (txFilters.userId)    params.set("userId",    txFilters.userId);
       if (txFilters.type)      params.set("type",      txFilters.type);
       const res = await fetch(
-        `http://localhost:3000/api/librarian/analytics/transactions/report?${params}`,
+        `${API}/api/librarian/analytics/transactions/report?${params}`,
         { credentials: "include" }
       );
       const data = await res.json();
@@ -754,6 +783,31 @@ export default function LibrarianDashboard() {
       setError("Failed to load transaction report");
     } finally {
       setTxLoading(false);
+    }
+  }
+
+  async function fetchAuditReport() {
+    setAuditLoading(true);
+    setError("");
+    try {
+      const params = new URLSearchParams();
+      if (auditFilters.startDate)   params.set("startDate",   auditFilters.startDate);
+      if (auditFilters.endDate)     params.set("endDate",     auditFilters.endDate);
+      if (auditFilters.librarianId) params.set("librarianId", auditFilters.librarianId);
+      if (auditFilters.tableName)   params.set("tableName",   auditFilters.tableName);
+      if (auditFilters.actionType)  params.set("actionType",  auditFilters.actionType);
+      const res = await fetch(
+        `${API}/api/librarian/employee-audit/report?${params}`,
+        { credentials: "include" }
+      );
+      const data = await res.json();
+      if (!res.ok) { setError(data.error); return; }
+      setAuditResults(data);
+      setAuditHasRun(true);
+    } catch {
+      setError("Failed to load employee audit report");
+    } finally {
+      setAuditLoading(false);
     }
   }
 
@@ -782,7 +836,7 @@ export default function LibrarianDashboard() {
 
   async function handleLogout() {
     try {
-      await fetch("http://localhost:3000/api/logout", {
+      await fetch(`${API}/api/logout`, {
         method: "POST",
         credentials: "include"
       });
@@ -810,35 +864,77 @@ export default function LibrarianDashboard() {
 
   return (
     <div className="librarian-dashboard" style={{ padding: "2rem" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
-        <h1>Librarian Dashboard</h1>
-        <div>
-          <span style={{ marginRight: "1rem" }}>Welcome, {user.FirstName} {user.LastName}</span>
-          <button onClick={() => navigate("/")} style={{ marginRight: "0.5rem" }}>Student View</button>
-          <button onClick={handleLogout}>Logout</button>
+      <div style={{
+        position: "relative",
+        borderRadius: "8px",
+        overflow: "hidden",
+        marginBottom: "1.5rem",
+      }}>
+        <img
+          src="/CougarCommonsBanner.png"
+          alt="Cougar Commons"
+          style={{ width: "100%", height: "200px", objectFit: "cover", display: "block" }}
+        />
+        <div style={{
+          position: "absolute", inset: 0,
+          background: "linear-gradient(to bottom, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.65) 100%)",
+          display: "flex", flexDirection: "column", justifyContent: "space-between",
+          padding: "1.25rem 1.5rem",
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <h1 style={{ margin: 0, color: "#fff", textShadow: "0 2px 8px rgba(0,0,0,0.85), 0 1px 2px rgba(0,0,0,0.9)", fontWeight: "800", letterSpacing: "0.01em", fontSize: "2.25rem" }}>Librarian Dashboard</h1>
+            <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+              <span style={{ color: "#fff", fontSize: "0.85rem", textShadow: "0 1px 3px rgba(0,0,0,0.7)" }}>Logged in as "{user.FirstName} {user.LastName}"</span>
+              <button onClick={() => navigate("/")} style={{ fontSize: "0.8rem" }}>Student View</button>
+              <button onClick={handleLogout} style={{ fontSize: "0.8rem" }}>Logout</button>
+            </div>
+          </div>
+          <nav style={{ display: "flex", gap: "0.5rem" }}>
+            {[
+              { label: "Overview",  key: "home",      action: () => setView("home") },
+              { label: "Users",     key: "users",     action: fetchUsers },
+              { label: "Catalog",   key: "catalog",   action: fetchCatalog },
+              { label: "Loans",     key: "loans",     action: () => setView("loans") },
+              { label: "Fines",     key: "fines",     action: () => setView("fines") },
+              { label: "Analytics", key: "analytics", action: () => setView("analytics") },
+            ].map(({ label, key, action }) => (
+              <button key={key} onClick={action} style={{
+                fontWeight: view === key ? "bold" : "normal",
+                background: view === key ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.1)",
+                color: "#fff",
+                border: "1px solid rgba(255,255,255,0.4)",
+                borderRadius: "4px",
+                padding: "0.3rem 0.75rem",
+                cursor: "pointer",
+                fontSize: "0.85rem",
+                backdropFilter: "blur(4px)",
+              }}>
+                {label}
+              </button>
+            ))}
+          </nav>
         </div>
       </div>
 
       {error && <p style={{ color: "red", marginBottom: "1rem" }}>{error}</p>}
 
-      <nav style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem", borderBottom: "1px solid #ccc", paddingBottom: "0.75rem" }}>
-        {[
-          { label: "Overview",  key: "home",      action: () => setView("home") },
-          { label: "Users",     key: "users",     action: fetchUsers },
-          { label: "Catalog",   key: "catalog",   action: fetchCatalog },
-          { label: "Loans",     key: "loans",     action: () => setView("loans") },
-          { label: "Fines",     key: "fines",     action: () => setView("fines") },
-          { label: "Analytics", key: "analytics", action: () => setView("analytics") },
-        ].map(({ label, key, action }) => (
-          <button key={key} onClick={action} style={{ fontWeight: view === key ? "bold" : "normal" }}>
-            {label}
-          </button>
-        ))}
-      </nav>
-
       {view === "home" && (
         <div>
-          <h2>Overview</h2>
+          {/* Welcome card */}
+          <div style={{ background: "#f0f4ff", border: "1px solid #d0d8f0", borderRadius: "6px", padding: "1rem 1.25rem", marginBottom: "1.25rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.5rem" }}>
+            <div>
+              <div style={{ fontWeight: "bold", fontSize: "1.05rem" }}>Welcome back, {user.FirstName}!</div>
+              <div style={{ fontSize: "0.85rem", color: "#555", marginTop: "0.25rem" }}>
+                {new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+              </div>
+            </div>
+            {overviewStats?.OverdueLoans > 0 && (
+              <div style={{ background: "#fff3f3", border: "1px solid #f5c6c6", borderRadius: "4px", padding: "0.5rem 0.9rem", fontSize: "0.85rem", color: "#c0392b" }}>
+                ⚠ {overviewStats.OverdueLoans} overdue loan{overviewStats.OverdueLoans !== 1 ? "s" : ""} need attention
+              </div>
+            )}
+          </div>
+
           <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginTop: "1rem" }}>
             {[
               { label: "Total Users",      value: overviewStats?.TotalUsers,    subtitle: "registered accounts" },
@@ -853,6 +949,31 @@ export default function LibrarianDashboard() {
               </div>
             ))}
           </div>
+
+          {/* Recent activity feed */}
+          {recentActivity.length > 0 && (
+            <div style={{ marginTop: "1.5rem" }}>
+              <h3 style={{ marginBottom: "0.75rem", fontSize: "0.95rem", color: "#444" }}>Recent Activity</h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                {recentActivity.map((row, idx) => {
+                  const statusColor = row.StatusLabel === "Overdue" ? "#c0392b" : row.StatusLabel === "Returned" ? "#27ae60" : "#2980b9";
+                  return (
+                    <div key={idx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.6rem 0.9rem", background: "#fafafa", border: "1px solid #e8e8e8", borderRadius: "4px", flexWrap: "wrap", gap: "0.4rem" }}>
+                      <div style={{ fontSize: "0.85rem" }}>
+                        <span style={{ fontWeight: "500" }}>{row.UserName}</span>
+                        <span style={{ color: "#888", margin: "0 0.4rem" }}>—</span>
+                        <span>{row.Title}</span>
+                      </div>
+                      <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", fontSize: "0.8rem" }}>
+                        <span style={{ color: statusColor, fontWeight: "500" }}>{row.StatusLabel}</span>
+                        <span style={{ color: "#aaa" }}>{new Date(row.ActivityAt).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -1389,6 +1510,12 @@ export default function LibrarianDashboard() {
               >
                 Transaction Report
               </button>
+              <button
+                onClick={() => setAnalyticsTab("audit")}
+                style={{ fontWeight: analyticsTab === "audit" ? "bold" : "normal" }}
+              >
+                Employee Audit
+              </button>
             </div>
 
             {analyticsTab === "transactions" && (() => {
@@ -1523,24 +1650,25 @@ export default function LibrarianDashboard() {
                           <div style={{ display: "flex", gap: "2rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
                             <div style={{ flex: "1 1 260px" }}>
                               <p style={{ fontSize: "0.85rem", color: "#555", marginBottom: "0.25rem", textAlign: "center" }}>By Transaction Type</p>
-                              <ResponsiveContainer width="100%" height={220}>
+                              <ResponsiveContainer width="100%" height={270}>
                                 <PieChart>
-                                  <Pie data={typeCounts} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={3} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
+                                  <Pie data={typeCounts} dataKey="value" nameKey="name" cx="50%" cy="45%" innerRadius={50} outerRadius={75} paddingAngle={3} label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`} labelLine={false}>
                                     {typeCounts.map((d, i) => <Cell key={i} fill={COLORS[d.name] || "#aaa"} />)}
                                   </Pie>
                                   <Tooltip />
+                                  <Legend iconSize={10} wrapperStyle={{ fontSize: "0.78rem", paddingTop: "8px" }} />
                                 </PieChart>
                               </ResponsiveContainer>
                             </div>
                             <div style={{ flex: "1 1 260px" }}>
                               <p style={{ fontSize: "0.85rem", color: "#555", marginBottom: "0.25rem", textAlign: "center" }}>By Status</p>
-                              <ResponsiveContainer width="100%" height={220}>
+                              <ResponsiveContainer width="100%" height={270}>
                                 <PieChart>
-                                  <Pie data={statusCounts} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={3} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
+                                  <Pie data={statusCounts} dataKey="value" nameKey="name" cx="50%" cy="45%" innerRadius={50} outerRadius={75} paddingAngle={3} label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`} labelLine={false}>
                                     {statusCounts.map((d, i) => <Cell key={i} fill={COLORS[d.name] || "#999"} />)}
                                   </Pie>
                                   <Tooltip />
-                                  <Legend iconSize={10} wrapperStyle={{ fontSize: "0.78rem" }} />
+                                  <Legend iconSize={10} wrapperStyle={{ fontSize: "0.78rem", paddingTop: "8px" }} />
                                 </PieChart>
                               </ResponsiveContainer>
                             </div>
@@ -1574,6 +1702,204 @@ export default function LibrarianDashboard() {
                               <td>{row.AgeDays ?? "—"}</td>
                               <td>{row.DaysOverdue > 0 ? row.DaysOverdue : "—"}</td>
                               <td>{row.FineAmount != null ? `$${Number(row.FineAmount).toFixed(2)}` : "—"}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </>
+                  )}
+                </>
+              );
+            })()}
+
+            {analyticsTab === "audit" && (() => {
+              const auditTables = ["copies", "items", "loans", "users"].filter(tbl =>
+                !auditFilters.tableName || auditFilters.tableName === tbl
+              );
+
+              const computedAuditSummary = auditHasRun && auditResults.length > 0 ? (() => {
+                const total = auditResults.reduce((s, r) => s + r.ActionCount, 0);
+                const creates = auditResults.filter(r => r.ActionType === "Created").reduce((s, r) => s + r.ActionCount, 0);
+                const updates = auditResults.filter(r => r.ActionType === "Updated").reduce((s, r) => s + r.ActionCount, 0);
+                const distinctLibrarians = new Set(auditResults.map(r => r.UserID)).size;
+                const tableCountMap = auditResults.reduce((acc, r) => {
+                  acc[r.TableName] = (acc[r.TableName] || 0) + r.ActionCount;
+                  return acc;
+                }, {});
+                const topTable = Object.entries(tableCountMap).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+                const latestTs = auditResults.reduce((max, r) => {
+                  const ts = new Date(r.LastActionAt);
+                  return ts > max ? ts : max;
+                }, new Date(0));
+                return {
+                  TotalAuditActions: total,
+                  TotalCreates: creates,
+                  TotalUpdates: updates,
+                  DistinctLibrarians: distinctLibrarians,
+                  AvgActionsPerLibrarian: distinctLibrarians > 0 ? Math.round(total / distinctLibrarians * 10) / 10 : null,
+                  TopTouchedTable: topTable,
+                  LatestAuditAction: latestTs.getTime() > 0 ? latestTs.toLocaleDateString() : null,
+                };
+              })() : (auditSummary ? (Array.isArray(auditSummary) ? auditSummary[0] : auditSummary) : null);
+
+              const as = computedAuditSummary;
+              const auditCards = as ? [
+                { label: "Total Audit Actions",       value: as.TotalAuditActions },
+                { label: "Total Creates",             value: as.TotalCreates },
+                { label: "Total Updates",             value: as.TotalUpdates },
+                { label: "Active Librarians",         value: as.DistinctLibrarians },
+                { label: "Avg Actions / Librarian",   value: as.AvgActionsPerLibrarian },
+                { label: "Top Touched Table",         value: as.TopTouchedTable },
+                { label: "Latest Audit Action",       value: as.LatestAuditAction ? new Date(as.LatestAuditAction).toLocaleDateString() : "—" },
+              ] : [];
+
+              const auditSorted = [...auditResults].sort((a, b) => {
+                const dir = auditSort.dir === "asc" ? 1 : -1;
+                if (auditSort.key === "LastActionAt") return dir * (new Date(a.LastActionAt) - new Date(b.LastActionAt));
+                if (auditSort.key === "FirstActionAt") return dir * (new Date(a.FirstActionAt) - new Date(b.FirstActionAt));
+                if (auditSort.key === "UserName") return dir * a.UserName.localeCompare(b.UserName);
+                if (auditSort.key === "TableName") return dir * a.TableName.localeCompare(b.TableName);
+                if (auditSort.key === "ActionType") return dir * a.ActionType.localeCompare(b.ActionType);
+                if (auditSort.key === "ActionCount") return dir * (a.ActionCount - b.ActionCount);
+                return 0;
+              });
+
+              function toggleAuditSort(key) {
+                setAuditSort(prev =>
+                  prev.key === key
+                    ? { key, dir: prev.dir === "desc" ? "asc" : "desc" }
+                    : { key, dir: "desc" }
+                );
+              }
+              function auditSortIndicator(key) {
+                if (auditSort.key !== key) return " ↕";
+                return auditSort.dir === "desc" ? " ↓" : " ↑";
+              }
+
+              return (
+                <>
+                  {auditCards.length > 0 && (
+                    <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", marginBottom: "1.5rem" }}>
+                      {auditCards.map(card => (
+                        <div key={card.label} style={{
+                          border: "1px solid #ccc", borderRadius: "4px",
+                          padding: "0.75rem 1rem", minWidth: "130px", flex: "1 1 130px", background: "#f9f9f9"
+                        }}>
+                          <div style={{ fontSize: "0.75rem", color: "#666", marginBottom: "0.25rem" }}>{card.label}</div>
+                          <div style={{ fontSize: "1.25rem", fontWeight: "bold" }}>{card.value ?? "—"}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Tables used */}
+                  <div style={{ marginBottom: "0.75rem", fontSize: "0.78rem", color: "#555" }}>
+                    <span style={{ marginRight: "0.4rem" }}>Tables Used:</span>
+                    {auditTables.map(tbl => (
+                      <span key={tbl} style={{ display: "inline-block", background: "#eef", border: "1px solid #aac", borderRadius: "3px", padding: "1px 6px", marginRight: "4px", fontFamily: "monospace" }}>{tbl}</span>
+                    ))}
+                  </div>
+
+                  {/* Filter bar */}
+                  <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", alignItems: "flex-end", marginBottom: "1rem", padding: "0.75rem", border: "1px solid #ccc" }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.8rem", marginBottom: "2px" }}>Start Date</label>
+                      <input type="date" value={auditFilters.startDate} onChange={e => setAuditFilters({ ...auditFilters, startDate: e.target.value })} />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.8rem", marginBottom: "2px" }}>End Date</label>
+                      <input type="date" value={auditFilters.endDate} onChange={e => setAuditFilters({ ...auditFilters, endDate: e.target.value })} />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.8rem", marginBottom: "2px" }}>Librarian ID</label>
+                      <input type="number" placeholder="All" value={auditFilters.librarianId} onChange={e => setAuditFilters({ ...auditFilters, librarianId: e.target.value })} style={{ width: "80px" }} />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.8rem", marginBottom: "2px" }}>Table</label>
+                      <select value={auditFilters.tableName} onChange={e => setAuditFilters({ ...auditFilters, tableName: e.target.value })}>
+                        <option value="">All</option>
+                        <option value="users">users</option>
+                        <option value="items">items</option>
+                        <option value="copies">copies</option>
+                        <option value="loans">loans</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.8rem", marginBottom: "2px" }}>Action Type</label>
+                      <select value={auditFilters.actionType} onChange={e => setAuditFilters({ ...auditFilters, actionType: e.target.value })}>
+                        <option value="">All</option>
+                        <option value="Created">Created</option>
+                        <option value="Updated">Updated</option>
+                      </select>
+                    </div>
+                    <button onClick={fetchAuditReport} disabled={auditLoading}>
+                      {auditLoading ? "Loading…" : "Run Report"}
+                    </button>
+                    {(auditFilters.startDate || auditFilters.endDate || auditFilters.librarianId || auditFilters.tableName || auditFilters.actionType) && (
+                      <button onClick={() => setAuditFilters({ startDate: "", endDate: "", librarianId: "", tableName: "", actionType: "" })}>
+                        Clear Filters
+                      </button>
+                    )}
+                  </div>
+
+                  {!auditHasRun && !auditLoading && (
+                    <p style={{ color: "#666" }}>Set filters above and click Run Report to see results.</p>
+                  )}
+                  {auditHasRun && !auditLoading && auditResults.length === 0 && (
+                    <p style={{ color: "#666" }}>No results found for the selected filters.</p>
+                  )}
+                  {auditSorted.length > 0 && (() => {
+                    const barData = Object.values(
+                      auditSorted.reduce((acc, r) => {
+                        if (!acc[r.UserID]) acc[r.UserID] = { name: r.UserName, Created: 0, Updated: 0 };
+                        acc[r.UserID][r.ActionType] = (acc[r.UserID][r.ActionType] || 0) + r.ActionCount;
+                        return acc;
+                      }, {})
+                    ).sort((a, b) => (b.Created + b.Updated) - (a.Created + a.Updated)).slice(0, 10);
+                    return (
+                      <div style={{ marginBottom: "1.5rem" }}>
+                        <p style={{ fontSize: "0.85rem", color: "#555", marginBottom: "0.4rem" }}>Top {barData.length} librarians by actions</p>
+                        <ResponsiveContainer width="100%" height={300}>
+                          <BarChart data={barData} margin={{ top: 4, right: 16, left: 0, bottom: 70 }}>
+                            <XAxis dataKey="name" tick={{ fontSize: 11 }} angle={-35} textAnchor="end" interval={0} />
+                            <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                            <Tooltip />
+                            <Legend iconSize={10} verticalAlign="top" wrapperStyle={{ fontSize: "0.78rem", paddingBottom: "8px" }} />
+                            <Bar dataKey="Created" stackId="a" fill="#4a90d9" radius={[0, 0, 0, 0]} />
+                            <Bar dataKey="Updated" stackId="a" fill="#c8102e" radius={[3, 3, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    );
+                  })()}
+
+                  {auditSorted.length > 0 && (
+                    <>
+                      <p style={{ marginBottom: "0.5rem", color: "#555" }}>{auditSorted.length} record{auditSorted.length !== 1 ? "s" : ""} — click a column header to sort</p>
+                      <table border="1" cellPadding="8" style={{ borderCollapse: "collapse", width: "100%" }}>
+                        <thead>
+                          <tr>
+                            <th>Librarian ID</th>
+                            <th style={{ cursor: "pointer" }} onClick={() => toggleAuditSort("UserName")}>Librarian{auditSortIndicator("UserName")}</th>
+                            <th>Email</th>
+                            <th style={{ cursor: "pointer" }} onClick={() => toggleAuditSort("TableName")}>Table{auditSortIndicator("TableName")}</th>
+                            <th style={{ cursor: "pointer" }} onClick={() => toggleAuditSort("ActionType")}>Action Type{auditSortIndicator("ActionType")}</th>
+                            <th style={{ cursor: "pointer" }} onClick={() => toggleAuditSort("ActionCount")}>Action Count{auditSortIndicator("ActionCount")}</th>
+                            <th style={{ cursor: "pointer" }} onClick={() => toggleAuditSort("FirstActionAt")}>First Action{auditSortIndicator("FirstActionAt")}</th>
+                            <th style={{ cursor: "pointer" }} onClick={() => toggleAuditSort("LastActionAt")}>Last Action{auditSortIndicator("LastActionAt")}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {auditSorted.map((row, idx) => (
+                            <tr key={idx}>
+                              <td>{row.UserID}</td>
+                              <td>{row.UserName}</td>
+                              <td>{row.Email}</td>
+                              <td style={{ fontFamily: "monospace" }}>{row.TableName}</td>
+                              <td>{row.ActionType}</td>
+                              <td>{row.ActionCount}</td>
+                              <td>{row.FirstActionAt ? new Date(row.FirstActionAt).toLocaleDateString() : "—"}</td>
+                              <td>{row.LastActionAt ? new Date(row.LastActionAt).toLocaleDateString() : "—"}</td>
                             </tr>
                           ))}
                         </tbody>
