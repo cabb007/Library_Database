@@ -6,7 +6,7 @@ name: Build and deploy Node.js app to Azure Web App - LibraryDatabaseServer
 on:
   push:
     branches:
-      - mikkel-branch
+      - main
   workflow_dispatch:
 
 jobs:
