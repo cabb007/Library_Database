@@ -653,6 +653,58 @@ app.get("/api/title", async (req, res) => {
   res.json(data);
 });
 
+/* ================= CATALOG: COPIES ================= */
+
+app.get(
+  "/api/librarian/catalog/:itemID/copies",
+  requireLibrarian,
+  async (req, res) => {
+    try {
+      const itemID = Number(req.params.itemID);
+      const [rows] = await db.execute("CALL GetItemCopies(?)", [itemID]);
+      res.json(rows[0]);
+    } catch (err) {
+      handleSqlError(res, err, "Failed to fetch copies");
+    }
+  }
+);
+
+app.post(
+  "/api/librarian/catalog/copies",
+  requireLibrarian,
+  async (req, res) => {
+    try {
+      const itemID = Number(req.body.ItemID);
+
+      await db.execute("CALL AddCopy(?, ?, ?)", [
+        itemID,
+        0,
+        req.session.user.UserID,
+      ]);
+
+      res.status(201).json({ message: "Copy added" });
+    } catch (err) {
+      handleSqlError(res, err, "Failed to add copy");
+    }
+  }
+);
+
+app.delete(
+  "/api/librarian/catalog/copies/:copyID",
+  requireLibrarian,
+  async (req, res) => {
+    try {
+      const copyID = Number(req.params.copyID);
+
+      await db.execute("CALL DeleteCopy(?)", [copyID]);
+
+      res.json({ message: "Copy deleted" });
+    } catch (err) {
+      handleSqlError(res, err, "Failed to delete copy");
+    }
+  }
+);
+
 /* ================= CATALOG: DEVICES ================= */
 
 app.post(
