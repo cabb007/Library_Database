@@ -13,28 +13,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      id-token: write
       contents: read #This is required for actions/checkout
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Azure login
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_67AD448B36D1489295363F9238400005 }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - name: Install OIDC Client from Core Package
-        run: npm install @actions/core@1.6.0 @actions/http-client
-      - name: Get Id Token
-        uses: actions/github-script@v6
-        id: idtoken
-        with:
-          script: |
-            const coredemo = require('@actions/core')
-            return await coredemo.getIDToken()
-          result-encoding: string
 
       - name: Set up Node.js version
         uses: actions/setup-node@v3
@@ -63,6 +45,13 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: node-app
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_67AD448B36D1489295363F9238400005 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_F5E917F0CB7E49DF8F8E65E9D900AA24 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_294EBFFF8ADC4F4C90321DDA2A67AFA6 }}
 
       - name: "Deploy to Azure Web App"
         id: deploy-to-webapp
