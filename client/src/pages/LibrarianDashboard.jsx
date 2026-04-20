@@ -2225,7 +2225,9 @@ export default function LibrarianDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {overdueLoans.map(loan => (
+                  {overdueLoans.filter(l =>
+                    `${l.LoanID} ${l.UserID} ${l.UserName} ${l.Title}`.toLowerCase().includes(loanSearch.toLowerCase())
+                  ).map(loan => (
                     <tr key={loan.LoanID}>
                       <td>{loan.LoanID}</td>
                       <td>{loan.UserID}</td>
