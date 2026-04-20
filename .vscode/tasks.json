@@ -6,6 +6,7 @@
       "type": "shell",
       "command": "npx",
       "args": [
+        "install --force",
         "swa",
         "start",
         "http://localhost:5173",
