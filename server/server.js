@@ -51,7 +51,7 @@ const ITEM_TYPE_LABELS = {
    GLOBAL CORS FIX (THIS IS WHAT WAS BREAKING EVERYTHING)
    ========================================================= */
 
-const ALLOWED_ORIGIN = "http://localhost:5173";
+const ALLOWED_ORIGIN = ["http://localhost:5173", "https://brave-field-0e8fa9510.1.azurestaticapps.net"];
 
 function setCorsHeaders(res) {
   res.setHeader("Access-Control-Allow-Origin", ALLOWED_ORIGIN);
