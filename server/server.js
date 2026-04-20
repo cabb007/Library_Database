@@ -1141,6 +1141,16 @@ app.get("/api/user/holds", requireLogin, async (req, res) => {
 
 /* ================= LIBRARIAN LOANS ================= */
 
+app.get("/api/librarian/holds/active", requireLibrarian, async (_req, res) => {
+  try {
+    const [rows] = await db.execute("CALL GetAllActiveHolds()");
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("Failed to fetch active holds:", err);
+    res.status(500).json({ error: "Failed to fetch active holds" });
+  }
+});
+
 app.get("/api/librarian/loans/active", requireLibrarian, async (_req, res) => {
   try {
     const [rows] = await db.execute("CALL GetActiveLoans()");

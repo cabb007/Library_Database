@@ -113,6 +113,9 @@ export default function LibrarianDashboard() {
   const [recentActivity, setRecentActivity] = useState([]);
   const [loansTab, setLoansTab] = useState("active");
   const [activeLoans, setActiveLoans] = useState([]);
+  const [activeHolds, setActiveHolds] = useState([]);
+  const [holdsLoading, setHoldsLoading] = useState(false);
+  const [holdSearch, setHoldSearch] = useState("");
   const [loansLoading, setLoansLoading] = useState(false);
   const [overdueLoans, setOverdueLoans] = useState([]);
   const [fines, setFines] = useState([]);
@@ -140,6 +143,9 @@ export default function LibrarianDashboard() {
     if (view === "loans") {
       fetchActiveLoans();
       if (users.length === 0) fetchUsersQuiet();
+    }
+    if (view === "holds") {
+      fetchActiveHolds();
     }
     if (view === "fines") {
       fetchFines("all");
@@ -189,6 +195,19 @@ export default function LibrarianDashboard() {
       // table stays empty on failure
     } finally {
       setLoansLoading(false);
+    }
+  }
+
+  async function fetchActiveHolds() {
+    setHoldsLoading(true);
+    try {
+      const res = await fetch(`${API}/api/librarian/holds/active`, { credentials: "include" });
+      const data = await res.json();
+      if (res.ok) setActiveHolds(data);
+    } catch {
+      // table stays empty on failure
+    } finally {
+      setHoldsLoading(false);
     }
   }
 
@@ -681,10 +700,10 @@ export default function LibrarianDashboard() {
         credentials: "include"
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error); return; }
+      if (!res.ok) { alert(data.error || "Failed to delete literature"); return; }
       fetchCatalog();
     } catch {
-      setError("Failed to delete literature");
+      alert("Failed to delete literature");
     }
   }
 
@@ -895,6 +914,7 @@ export default function LibrarianDashboard() {
               { label: "Users",     key: "users",     action: fetchUsers },
               { label: "Catalog",   key: "catalog",   action: fetchCatalog },
               { label: "Loans",     key: "loans",     action: () => setView("loans") },
+              { label: "Holds",     key: "holds",     action: () => setView("holds") },
               { label: "Fines",     key: "fines",     action: () => setView("fines") },
               { label: "Analytics", key: "analytics", action: () => setView("analytics") },
             ].map(({ label, key, action }) => (
@@ -2226,6 +2246,59 @@ export default function LibrarianDashboard() {
                 </tbody>
               </table>
             )
+          )}
+        </div>
+      )}
+
+      {view === "holds" && (
+        <div>
+          <h2>Active Holds</h2>
+          <input
+            placeholder="Search by Hold ID, User ID, Name or Title..."
+            value={holdSearch}
+            onChange={e => setHoldSearch(e.target.value)}
+            style={{ marginBottom: "0.75rem", padding: "0.4rem", width: "100%" }}
+          />
+          {holdsLoading ? (
+            <p>Loading...</p>
+          ) : activeHolds.length === 0 ? (
+            <p>No active holds.</p>
+          ) : (
+            <>
+              <p style={{ marginBottom: "0.5rem", color: "#555" }}>{activeHolds.length} active hold{activeHolds.length !== 1 ? "s" : ""}</p>
+              <table border="1" cellPadding="6" style={{ borderCollapse: "collapse", width: "100%" }}>
+                <thead>
+                  <tr>
+                    <th>Hold ID</th>
+                    <th>User ID</th>
+                    <th>User Name</th>
+                    <th>Email</th>
+                    <th>Item ID</th>
+                    <th>Title</th>
+                    <th>Item Type</th>
+                    <th>Days Waiting</th>
+                    <th>Placed On</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {activeHolds.filter(h =>
+                    `${h.HoldID} ${h.UserID} ${h.UserName} ${h.Title}`.toLowerCase().includes(holdSearch.toLowerCase())
+                  ).map(hold => (
+                    <tr key={hold.HoldID} style={hold.DaysWaiting > 7 ? { background: "#fff8f0" } : {}}>
+                      <td>{hold.HoldID}</td>
+                      <td>{hold.UserID}</td>
+                      <td>{hold.UserName}</td>
+                      <td>{hold.Email}</td>
+                      <td>{hold.ItemID}</td>
+                      <td>{hold.Title}</td>
+                      <td>{hold.ItemTypeName}</td>
+                      <td style={hold.DaysWaiting > 7 ? { color: "#c0392b", fontWeight: "bold" } : {}}>{hold.DaysWaiting}</td>
+                      <td>{hold.CreatedAt ? new Date(hold.CreatedAt).toLocaleDateString() : "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
           )}
         </div>
       )}
