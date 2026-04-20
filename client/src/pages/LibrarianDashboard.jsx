@@ -63,6 +63,7 @@ export default function LibrarianDashboard() {
   const [auditSummary, setAuditSummary] = useState(null);
   const [auditSort, setAuditSort] = useState({ key: "LastActionAt", dir: "desc" });
   const [overviewStats, setOverviewStats] = useState(null);
+  const [recentActivity, setRecentActivity] = useState([]);
   const [loansTab, setLoansTab] = useState("active");
   const [activeLoans, setActiveLoans] = useState([]);
   const [loansLoading, setLoansLoading] = useState(false);
@@ -99,13 +100,13 @@ export default function LibrarianDashboard() {
     }
     if (view === "analytics") {
       if (!analyticsSummary) {
-        fetch("http://localhost:3000/api/librarian/analytics/summary", { credentials: "include" })
+        fetch(`${API}/api/librarian/analytics/summary`, { credentials: "include" })
           .then(r => r.json())
           .then(data => { if (!data.error) setAnalyticsSummary(data); })
           .catch(() => {});
       }
       if (!txSummary) {
-        fetch("http://localhost:3000/api/librarian/analytics/transactions/summary", { credentials: "include" })
+        fetch(`${API}/api/librarian/analytics/transactions/summary`, { credentials: "include" })
           .then(r => r.json())
           .then(data => { if (!data.error) setTxSummary(data); })
           .catch(() => {});
@@ -114,7 +115,7 @@ export default function LibrarianDashboard() {
         fetchAnalytics();
       }
       if (!auditSummary) {
-        fetch("http://localhost:3000/api/librarian/employee-audit/summary", { credentials: "include" })
+        fetch(`${API}/api/librarian/employee-audit/summary`, { credentials: "include" })
           .then(r => r.json())
           .then(data => { if (!data.error) setAuditSummary(data); })
           .catch(() => {});
@@ -134,7 +135,7 @@ export default function LibrarianDashboard() {
   async function fetchActiveLoans() {
     setLoansLoading(true);
     try {
-      const res = await fetch("http://localhost:3000/api/librarian/loans/active", { credentials: "include" });
+      const res = await fetch(`${API}/api/librarian/loans/active`, { credentials: "include" });
       const data = await res.json();
       if (res.ok) setActiveLoans(data);
     } catch {
@@ -147,7 +148,7 @@ export default function LibrarianDashboard() {
   async function fetchFines(filter) {
     const endpointMap = { all: "/api/librarian/fines", paid: "/api/librarian/fines/paid", unpaid: "/api/librarian/fines/unpaid" };
     try {
-      const res = await fetch(`http://localhost:3000${endpointMap[filter]}`, { credentials: "include" });
+      const res = await fetch(`${API}${endpointMap[filter]}`, { credentials: "include" });
       const data = await res.json();
       if (res.ok) setFines(data);
     } catch {
@@ -158,7 +159,7 @@ export default function LibrarianDashboard() {
   async function fetchOverdueLoans() {
     setLoansLoading(true);
     try {
-      const res = await fetch("http://localhost:3000/api/librarian/loans/overdue", { credentials: "include" });
+      const res = await fetch(`${API}/api/librarian/loans/overdue`, { credentials: "include" });
       const data = await res.json();
       if (res.ok) setOverdueLoans(data);
     } catch {
@@ -170,17 +171,24 @@ export default function LibrarianDashboard() {
 
   async function fetchOverviewStats() {
     try {
-      const res = await fetch("http://localhost:3000/api/librarian/overview/stats", { credentials: "include" });
+      const res = await fetch(`${API}/api/librarian/overview/stats`, { credentials: "include" });
       const data = await res.json();
       if (res.ok) setOverviewStats(data);
     } catch {
       // cards show "—" on failure
     }
+    try {
+      const res = await fetch(`${API}/api/librarian/overview/recent-activity`, { credentials: "include" });
+      const data = await res.json();
+      if (res.ok) setRecentActivity(Array.isArray(data) ? data : []);
+    } catch {
+      // feed stays empty on failure
+    }
   }
 
   useEffect(() => {
     async function checkAccess() {
-      const res = await fetch("http://localhost:3000/api/me", { credentials: "include" });
+      const res = await fetch(`${API}/api/me`, { credentials: "include" });
       const data = await res.json();
       if (!res.ok || data.user?.UserType !== 2) {
         navigate("/login");
@@ -194,7 +202,7 @@ export default function LibrarianDashboard() {
 
   async function fetchUsersQuiet() {
     try {
-      const res = await fetch("http://localhost:3000/api/librarian/users", { credentials: "include" });
+      const res = await fetch(`${API}/api/librarian/users`, { credentials: "include" });
       const data = await res.json();
       if (res.ok) setUsers(data);
     } catch {
@@ -205,7 +213,7 @@ export default function LibrarianDashboard() {
   async function fetchUsers() {
     setError("");
     try {
-      const res = await fetch("http://localhost:3000/api/librarian/users", { credentials: "include" });
+      const res = await fetch(`${API}/api/librarian/users`, { credentials: "include" });
       const data = await res.json();
       if (res.ok) {
         setUsers(data);
@@ -222,7 +230,7 @@ export default function LibrarianDashboard() {
     e.preventDefault();
     setError("");
     try {
-      const res = await fetch("http://localhost:3000/api/librarian/users", {
+      const res = await fetch(`${API}/api/librarian/users`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -261,7 +269,7 @@ export default function LibrarianDashboard() {
     e.preventDefault();
     setError("");
     try {
-      const res = await fetch(`http://localhost:3000/api/librarian/users/${editingUser.UserID}`, {
+      const res = await fetch(`${API}/api/librarian/users/${editingUser.UserID}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -286,7 +294,7 @@ export default function LibrarianDashboard() {
     if (!confirm("Are you sure you want to delete this user?")) return;
     setError("");
     try {
-      const res = await fetch(`http://localhost:3000/api/librarian/users/${userId}`, {
+      const res = await fetch(`${API}/api/librarian/users/${userId}`, {
         method: "DELETE",
         credentials: "include"
       });
@@ -325,7 +333,7 @@ export default function LibrarianDashboard() {
     e.preventDefault();
     setError("");
     try {
-      const res = await fetch(`http://localhost:3000/api/librarian/catalog/literature/${editingLit.ItemID}`, {
+      const res = await fetch(`${API}/api/librarian/catalog/literature/${editingLit.ItemID}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -351,7 +359,7 @@ export default function LibrarianDashboard() {
     e.preventDefault();
     setError("");
     try {
-      const res = await fetch("http://localhost:3000/api/librarian/catalog/literature", {
+      const res = await fetch(`${API}/api/librarian/catalog/literature`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -377,15 +385,15 @@ export default function LibrarianDashboard() {
   async function refreshCatalogData() {
     try {
       if (catalogTab === "books") {
-        const res = await fetch("http://localhost:3000/api/literature");
+        const res = await fetch(`${API}/api/literature`);
         const data = await res.json();
         setLiterature(Array.isArray(data[0]) ? data[0] : data);
       } else if (catalogTab === "media") {
-        const res = await fetch("http://localhost:3000/api/media");
+        const res = await fetch(`${API}/api/media`);
         const data = await res.json();
         setMedia(Array.isArray(data[0]) ? data[0] : data);
       } else if (catalogTab === "devices") {
-        const res = await fetch("http://localhost:3000/api/devices");
+        const res = await fetch(`${API}/api/devices`);
         const data = await res.json();
         setDevices(Array.isArray(data[0]) ? data[0] : data);
       }
@@ -396,7 +404,7 @@ export default function LibrarianDashboard() {
 
   async function loadCopies(item) {
     try {
-      const res = await fetch(`http://localhost:3000/api/librarian/catalog/${item.ItemID}/copies`, {
+      const res = await fetch(`${API}/api/librarian/catalog/${item.ItemID}/copies`, {
         credentials: "include"
       });
       const data = await res.json();
@@ -412,7 +420,7 @@ export default function LibrarianDashboard() {
   async function handleAddCopy(itemId) {
     setError("");
     try {
-      const res = await fetch("http://localhost:3000/api/librarian/catalog/copies", {
+      const res = await fetch(`${API}/api/librarian/catalog/copies`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -431,7 +439,7 @@ export default function LibrarianDashboard() {
     if (!confirm("Are you sure you want to delete this copy?")) return;
     setError("");
     try {
-      const res = await fetch(`http://localhost:3000/api/librarian/catalog/copies/${copyId}`, {
+      const res = await fetch(`${API}/api/librarian/catalog/copies/${copyId}`, {
         method: "DELETE",
         credentials: "include"
       });
@@ -448,7 +456,7 @@ export default function LibrarianDashboard() {
     e.preventDefault();
     setError("");
     try {
-      const res = await fetch("http://localhost:3000/api/librarian/catalog/devices", {
+      const res = await fetch(`${API}/api/librarian/catalog/devices`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -472,7 +480,7 @@ export default function LibrarianDashboard() {
     if (!confirm("Are you sure you want to delete this item?")) return;
     setError("");
     try {
-      const res = await fetch(`http://localhost:3000/api/librarian/catalog/devices/${itemId}`, {
+      const res = await fetch(`${API}/api/librarian/catalog/devices/${itemId}`, {
         method: "DELETE",
         credentials: "include"
       });
@@ -507,7 +515,7 @@ export default function LibrarianDashboard() {
     e.preventDefault();
     setError("");
     try {
-      const res = await fetch(`http://localhost:3000/api/librarian/catalog/media/${editingMedia.ItemID}`, {
+      const res = await fetch(`${API}/api/librarian/catalog/media/${editingMedia.ItemID}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -550,7 +558,7 @@ export default function LibrarianDashboard() {
     e.preventDefault();
     setError("");
     try {
-      const res = await fetch(`http://localhost:3000/api/librarian/catalog/devices/${editingDevice.ItemID}`, {
+      const res = await fetch(`${API}/api/librarian/catalog/devices/${editingDevice.ItemID}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -574,7 +582,7 @@ export default function LibrarianDashboard() {
     e.preventDefault();
     setError("");
     try {
-      const res = await fetch("http://localhost:3000/api/librarian/catalog/media", {
+      const res = await fetch(`${API}/api/librarian/catalog/media`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -599,7 +607,7 @@ export default function LibrarianDashboard() {
     if (!confirm("Are you sure you want to delete this item?")) return;
     setError("");
     try {
-      const res = await fetch(`http://localhost:3000/api/librarian/catalog/media/${itemId}`, {
+      const res = await fetch(`${API}/api/librarian/catalog/media/${itemId}`, {
         method: "DELETE",
         credentials: "include"
       });
@@ -615,7 +623,7 @@ export default function LibrarianDashboard() {
     if (!confirm("Are you sure you want to delete this item?")) return;
     setError("");
     try {
-      const res = await fetch(`http://localhost:3000/api/librarian/catalog/literature/${itemId}`, {
+      const res = await fetch(`${API}/api/librarian/catalog/literature/${itemId}`, {
         method: "DELETE",
         credentials: "include"
       });
@@ -629,7 +637,7 @@ export default function LibrarianDashboard() {
 
     async function fetchCatalog() {
     try {
-      const res = await fetch("http://localhost:3000/api/literature");
+      const res = await fetch(`${API}/api/literature`);
       const data = await res.json();
       setLiterature(Array.isArray(data[0]) ? data[0] : data);
     } catch {
@@ -643,7 +651,7 @@ export default function LibrarianDashboard() {
 
    async function fetchMedia() {
     try {
-      const res = await fetch("http://localhost:3000/api/media");
+      const res = await fetch(`${API}/api/media`);
       const data = await res.json();
       setMedia(Array.isArray(data[0]) ? data[0] : data);
     } catch {
@@ -659,7 +667,7 @@ export default function LibrarianDashboard() {
 
   async function fetchDevices() {
     try {
-      const res = await fetch("http://localhost:3000/api/devices");
+      const res = await fetch(`${API}/api/devices`);
       const data = await res.json();
       setDevices(Array.isArray(data[0]) ? data[0] : data);
     } catch {
@@ -684,7 +692,7 @@ export default function LibrarianDashboard() {
       if (analyticsFilters.category)  params.set("category",  analyticsFilters.category);
       if (analyticsFilters.itemType)  params.set("itemType",  analyticsFilters.itemType);
       const res = await fetch(
-        `http://localhost:3000/api/librarian/analytics/most-checked-out?${params}`,
+        `${API}/api/librarian/analytics/most-checked-out?${params}`,
         { credentials: "include" }
       );
       const data = await res.json();
@@ -710,7 +718,7 @@ export default function LibrarianDashboard() {
       if (txFilters.userId)    params.set("userId",    txFilters.userId);
       if (txFilters.type)      params.set("type",      txFilters.type);
       const res = await fetch(
-        `http://localhost:3000/api/librarian/analytics/transactions/report?${params}`,
+        `${API}/api/librarian/analytics/transactions/report?${params}`,
         { credentials: "include" }
       );
       const data = await res.json();
@@ -736,7 +744,7 @@ export default function LibrarianDashboard() {
       if (auditFilters.tableName)   params.set("tableName",   auditFilters.tableName);
       if (auditFilters.actionType)  params.set("actionType",  auditFilters.actionType);
       const res = await fetch(
-        `http://localhost:3000/api/librarian/employee-audit/report?${params}`,
+        `${API}/api/librarian/employee-audit/report?${params}`,
         { credentials: "include" }
       );
       const data = await res.json();
@@ -775,7 +783,7 @@ export default function LibrarianDashboard() {
 
   async function handleLogout() {
     try {
-      await fetch("http://localhost:3000/api/logout", {
+      await fetch(`${API}/api/logout`, {
         method: "POST",
         credentials: "include"
       });
@@ -803,35 +811,77 @@ export default function LibrarianDashboard() {
 
   return (
     <div className="librarian-dashboard" style={{ padding: "2rem" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
-        <h1>Librarian Dashboard</h1>
-        <div>
-          <span style={{ marginRight: "1rem" }}>Welcome, {user.FirstName} {user.LastName}</span>
-          <button onClick={() => navigate("/")} style={{ marginRight: "0.5rem" }}>Student View</button>
-          <button onClick={handleLogout}>Logout</button>
+      <div style={{
+        position: "relative",
+        borderRadius: "8px",
+        overflow: "hidden",
+        marginBottom: "1.5rem",
+      }}>
+        <img
+          src="/CougarCommonsBanner.png"
+          alt="Cougar Commons"
+          style={{ width: "100%", height: "200px", objectFit: "cover", display: "block" }}
+        />
+        <div style={{
+          position: "absolute", inset: 0,
+          background: "linear-gradient(to bottom, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.65) 100%)",
+          display: "flex", flexDirection: "column", justifyContent: "space-between",
+          padding: "1.25rem 1.5rem",
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <h1 style={{ margin: 0, color: "#fff", textShadow: "0 2px 8px rgba(0,0,0,0.85), 0 1px 2px rgba(0,0,0,0.9)", fontWeight: "800", letterSpacing: "0.01em", fontSize: "2.25rem" }}>Librarian Dashboard</h1>
+            <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+              <span style={{ color: "#fff", fontSize: "0.85rem", textShadow: "0 1px 3px rgba(0,0,0,0.7)" }}>Logged in as "{user.FirstName} {user.LastName}"</span>
+              <button onClick={() => navigate("/")} style={{ fontSize: "0.8rem" }}>Student View</button>
+              <button onClick={handleLogout} style={{ fontSize: "0.8rem" }}>Logout</button>
+            </div>
+          </div>
+          <nav style={{ display: "flex", gap: "0.5rem" }}>
+            {[
+              { label: "Overview",  key: "home",      action: () => setView("home") },
+              { label: "Users",     key: "users",     action: fetchUsers },
+              { label: "Catalog",   key: "catalog",   action: fetchCatalog },
+              { label: "Loans",     key: "loans",     action: () => setView("loans") },
+              { label: "Fines",     key: "fines",     action: () => setView("fines") },
+              { label: "Analytics", key: "analytics", action: () => setView("analytics") },
+            ].map(({ label, key, action }) => (
+              <button key={key} onClick={action} style={{
+                fontWeight: view === key ? "bold" : "normal",
+                background: view === key ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.1)",
+                color: "#fff",
+                border: "1px solid rgba(255,255,255,0.4)",
+                borderRadius: "4px",
+                padding: "0.3rem 0.75rem",
+                cursor: "pointer",
+                fontSize: "0.85rem",
+                backdropFilter: "blur(4px)",
+              }}>
+                {label}
+              </button>
+            ))}
+          </nav>
         </div>
       </div>
 
       {error && <p style={{ color: "red", marginBottom: "1rem" }}>{error}</p>}
 
-      <nav style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem", borderBottom: "1px solid #ccc", paddingBottom: "0.75rem" }}>
-        {[
-          { label: "Overview",  key: "home",      action: () => setView("home") },
-          { label: "Users",     key: "users",     action: fetchUsers },
-          { label: "Catalog",   key: "catalog",   action: fetchCatalog },
-          { label: "Loans",     key: "loans",     action: () => setView("loans") },
-          { label: "Fines",     key: "fines",     action: () => setView("fines") },
-          { label: "Analytics", key: "analytics", action: () => setView("analytics") },
-        ].map(({ label, key, action }) => (
-          <button key={key} onClick={action} style={{ fontWeight: view === key ? "bold" : "normal" }}>
-            {label}
-          </button>
-        ))}
-      </nav>
-
       {view === "home" && (
         <div>
-          <h2>Overview</h2>
+          {/* Welcome card */}
+          <div style={{ background: "#f0f4ff", border: "1px solid #d0d8f0", borderRadius: "6px", padding: "1rem 1.25rem", marginBottom: "1.25rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.5rem" }}>
+            <div>
+              <div style={{ fontWeight: "bold", fontSize: "1.05rem" }}>Welcome back, {user.FirstName}!</div>
+              <div style={{ fontSize: "0.85rem", color: "#555", marginTop: "0.25rem" }}>
+                {new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+              </div>
+            </div>
+            {overviewStats?.OverdueLoans > 0 && (
+              <div style={{ background: "#fff3f3", border: "1px solid #f5c6c6", borderRadius: "4px", padding: "0.5rem 0.9rem", fontSize: "0.85rem", color: "#c0392b" }}>
+                ⚠ {overviewStats.OverdueLoans} overdue loan{overviewStats.OverdueLoans !== 1 ? "s" : ""} need attention
+              </div>
+            )}
+          </div>
+
           <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginTop: "1rem" }}>
             {[
               { label: "Total Users",      value: overviewStats?.TotalUsers,    subtitle: "registered accounts" },
@@ -846,6 +896,31 @@ export default function LibrarianDashboard() {
               </div>
             ))}
           </div>
+
+          {/* Recent activity feed */}
+          {recentActivity.length > 0 && (
+            <div style={{ marginTop: "1.5rem" }}>
+              <h3 style={{ marginBottom: "0.75rem", fontSize: "0.95rem", color: "#444" }}>Recent Activity</h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                {recentActivity.map((row, idx) => {
+                  const statusColor = row.StatusLabel === "Overdue" ? "#c0392b" : row.StatusLabel === "Returned" ? "#27ae60" : "#2980b9";
+                  return (
+                    <div key={idx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.6rem 0.9rem", background: "#fafafa", border: "1px solid #e8e8e8", borderRadius: "4px", flexWrap: "wrap", gap: "0.4rem" }}>
+                      <div style={{ fontSize: "0.85rem" }}>
+                        <span style={{ fontWeight: "500" }}>{row.UserName}</span>
+                        <span style={{ color: "#888", margin: "0 0.4rem" }}>—</span>
+                        <span>{row.Title}</span>
+                      </div>
+                      <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", fontSize: "0.8rem" }}>
+                        <span style={{ color: statusColor, fontWeight: "500" }}>{row.StatusLabel}</span>
+                        <span style={{ color: "#aaa" }}>{new Date(row.ActivityAt).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

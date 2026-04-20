@@ -1174,3 +1174,12 @@ app.get("/api/librarian/employee-audit/report", requireLibrarian, async (req, re
     res.status(500).json({ error: "Failed to fetch employee audit report" });
   }
 });
+
+app.get("/api/librarian/overview/recent-activity", requireLibrarian, async (_req, res) => {
+  try {
+    const [rows] = await db.execute("CALL GetRecentActivity()");
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch recent activity" });
+  }
+});

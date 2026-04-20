@@ -283,6 +283,30 @@ END$$
 -- =================================================================================================================
 
 -- =========================================================
+-- Procedure: Recent loan activity (last 8 loans)
+-- =========================================================
+DROP PROCEDURE IF EXISTS GetRecentActivity$$
+CREATE PROCEDURE GetRecentActivity()
+BEGIN
+    SELECT
+        lo.LoanID AS RefID,
+        CONCAT(u.FirstName, ' ', u.LastName) AS UserName,
+        i.Title,
+        lo.CreatedAt AS ActivityAt,
+        CASE
+            WHEN lo.ReturnDate IS NOT NULL THEN 'Returned'
+            WHEN lo.DueDate < CURDATE() THEN 'Overdue'
+            ELSE 'Checked Out'
+        END AS StatusLabel
+    FROM loans lo
+    JOIN users u ON lo.UserID = u.UserID
+    JOIN copies c ON lo.CopyID = c.CopyID
+    JOIN items i ON c.ItemID = i.ItemID
+    ORDER BY lo.CreatedAt DESC
+    LIMIT 8;
+END$$
+
+-- =========================================================
 -- Procedure: Overview dashboard stats
 -- =========================================================
 DROP PROCEDURE IF EXISTS GetOverviewStats$$
