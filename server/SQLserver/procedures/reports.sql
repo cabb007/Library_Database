@@ -295,7 +295,7 @@ BEGIN
         lo.CreatedAt AS ActivityAt,
         CASE
             WHEN lo.ReturnDate IS NOT NULL THEN 'Returned'
-            WHEN lo.DueDate < CURDATE() THEN 'Overdue'
+            WHEN lo.DueDate < CURRENT_TIMESTAMP() THEN 'Overdue'
             ELSE 'Checked Out'
         END AS StatusLabel
     FROM loans lo
@@ -315,7 +315,7 @@ BEGIN
     SELECT
         (SELECT COUNT(*) FROM users) AS TotalUsers,
         (SELECT COUNT(*) FROM loans WHERE ReturnDate IS NULL) AS ActiveLoans,
-        (SELECT COUNT(*) FROM loans WHERE ReturnDate IS NULL AND DueDate < CURDATE()) AS OverdueLoans,
+        (SELECT COUNT(*) FROM loans WHERE ReturnDate IS NULL AND DueDate < CURRENT_TIMESTAMP()) AS OverdueLoans,
         (SELECT COALESCE(SUM(FineAmount), 0) FROM fines WHERE PaidStatus = 0) AS TotalFinesOwed;
 END$$
 
@@ -366,7 +366,7 @@ BEGIN
 
         (SELECT COUNT(*) FROM loans WHERE ReturnDate IS NULL) AS CurrentlyCheckedOut,
 
-        (SELECT COUNT(*) FROM loans WHERE ReturnDate IS NULL AND DueDate < CURDATE()) AS OverdueItems,
+        (SELECT COUNT(*) FROM loans WHERE ReturnDate IS NULL AND DueDate < CURRENT_TIMESTAMP()) AS OverdueItems,
 
         (SELECT ROUND(AVG(DATEDIFF(ReturnDate, CreatedAt)), 1)
          FROM loans
@@ -441,7 +441,7 @@ BEGIN
          JOIN loans lo2 ON c2.CopyID = lo2.CopyID
          WHERE c2.ItemID = i.ItemID
            AND lo2.ReturnDate IS NULL
-           AND lo2.DueDate < CURDATE()) AS OverdueCount
+           AND lo2.DueDate < CURRENT_TIMESTAMP()) AS OverdueCount
     FROM items AS i
     LEFT JOIN literature AS l ON i.ItemID = l.ItemID AND i.ItemCategory = 1
     LEFT JOIN media      AS m ON i.ItemID = m.ItemID AND i.ItemCategory = 2
@@ -480,7 +480,7 @@ BEGIN
         (SELECT COUNT(*)
          FROM loans
          WHERE ReturnDate IS NULL -- Active loans only
-           AND DueDate < CURDATE()) AS OverdueLoans,
+           AND DueDate < CURRENT_TIMESTAMP()) AS OverdueLoans,
         (SELECT COUNT(*) FROM holds) AS TotalHolds,
         (SELECT COUNT(*) FROM holds WHERE HoldStatus = 0) AS ActiveHolds,
         (SELECT COUNT(*) FROM holds WHERE HoldStatus = 1) AS FulfilledHolds,
@@ -521,19 +521,19 @@ BEGIN
         NULL AS FineAmount,
         CASE
             WHEN lo.ReturnDate IS NOT NULL THEN 'Returned'
-            WHEN lo.DueDate < CURDATE() THEN 'Overdue'
+            WHEN lo.DueDate < CURRENT_TIMESTAMP() THEN 'Overdue'
             ELSE 'Active'
         END AS StatusLabel,
-        DATEDIFF(COALESCE(lo.ReturnDate, CURDATE()), lo.CreatedAt) AS AgeDays,
+        DATEDIFF(COALESCE(lo.ReturnDate, CURRENT_TIMESTAMP()), lo.CreatedAt) AS AgeDays,
         CASE
-            WHEN lo.ReturnDate IS NULL AND lo.DueDate < CURDATE()
-                THEN DATEDIFF(CURDATE(), lo.DueDate)
+            WHEN lo.ReturnDate IS NULL AND lo.DueDate < CURRENT_TIMESTAMP()
+                THEN DATEDIFF(CURRENT_TIMESTAMP(), lo.DueDate)
             WHEN lo.ReturnDate IS NOT NULL AND lo.ReturnDate > lo.DueDate
                 THEN DATEDIFF(lo.ReturnDate, lo.DueDate)
             ELSE 0
         END AS DaysOverdue,
         CASE
-            WHEN lo.ReturnDate IS NULL AND lo.DueDate < CURDATE() THEN 1
+            WHEN lo.ReturnDate IS NULL AND lo.DueDate < CURRENT_TIMESTAMP() THEN 1
             ELSE 0
         END AS NeedsAttention,
         NULL AS DaysToPayFine
@@ -603,7 +603,7 @@ BEGIN
             WHEN f.PaidStatus = 1 THEN 'Paid'
             ELSE 'Unpaid'
         END AS StatusLabel,
-        GREATEST(0, DATEDIFF(COALESCE(lo.ReturnDate, CURDATE()), lo.DueDate)) AS AgeDays,
+        GREATEST(0, DATEDIFF(COALESCE(lo.ReturnDate, CURRENT_TIMESTAMP()), lo.DueDate)) AS AgeDays,
         0 AS DaysOverdue,
         CASE
             WHEN f.PaidStatus = 0 THEN 1

@@ -688,7 +688,7 @@ BEGIN
     JOIN copies AS c ON l.CopyID = c.CopyID
     JOIN items AS i ON c.ItemID = i.ItemID
     WHERE l.ReturnDate IS NULL
-        AND l.DueDate >= CURDATE() -- only non-overdue loans
+        AND l.DueDate >= CURRENT_TIMESTAMP() -- only non-overdue loans
     ORDER BY l.DueDate;
 END$$
 
@@ -716,7 +716,7 @@ BEGIN
     JOIN copies AS c ON l.CopyID = c.CopyID
     JOIN items AS i ON c.ItemID = i.ItemID
     WHERE l.ReturnDate IS NULL
-      AND CURDATE() > l.DueDate -- only overdue loans
+      AND CURRENT_TIMESTAMP() > l.DueDate -- only overdue loans
     ORDER BY l.DueDate;
 END$$
 

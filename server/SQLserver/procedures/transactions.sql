@@ -25,7 +25,10 @@ BEGIN
     SELECT
         l.UserID,
         l.LoanID,
-        GREATEST(DATEDIFF(COALESCE(l.ReturnDate, CURDATE()), l.DueDate), 0) * 2.00,
+        LEAST(
+            GREATEST(DATEDIFF(COALESCE(l.ReturnDate, CURRENT_TIMESTAMP()), l.DueDate), 0) * 2.00,
+            50
+        ),
         0,
         NULL,
         CURRENT_TIMESTAMP(),
@@ -35,19 +38,25 @@ BEGIN
     FROM loans l
     LEFT JOIN fines f ON f.LoanID = l.LoanID
     WHERE f.FineID IS NULL
-      AND CURDATE() > l.DueDate; -- only create fines for overdue loans
+      AND LEAST(
+        GREATEST(DATEDIFF(COALESCE(l.ReturnDate, CURRENT_TIMESTAMP()), l.DueDate), 0) * 2.00,
+        50
+      ) > 0;
 
     -- Update all existing unpaid fines
     UPDATE fines f
     JOIN loans l ON f.LoanID = l.LoanID
     SET f.FineAmount = LEAST(
-        GREATEST(DATEDIFF(COALESCE(l.ReturnDate, CURDATE()), l.DueDate), 0) * 2.00,
+        GREATEST(DATEDIFF(COALESCE(l.ReturnDate, CURRENT_TIMESTAMP()), l.DueDate), 0) * 2.00,
         50
     ),
         f.UpdatedAt = CURRENT_TIMESTAMP(),
         f.UpdatedBy = 1 -- SysAdmin UserID = 1
     WHERE f.PaidStatus = 0
-      AND CURDATE() > l.DueDate;
+    AND LEAST(
+            GREATEST(DATEDIFF(COALESCE(l.ReturnDate, CURRENT_TIMESTAMP()), l.DueDate), 0) * 2.00,
+            50
+        ) > 0;
 END$$
 
 -- =========================================================
@@ -69,7 +78,8 @@ BEGIN
     INTO v_UnpaidFineCount
     FROM fines
     WHERE UserID = p_UserID
-      AND PaidStatus = 0;
+      AND PaidStatus = 0
+      AND FineAmount > 0;
 
     IF v_UnpaidFineCount = 0 THEN
         ROLLBACK;
@@ -83,9 +93,9 @@ BEGIN
     FROM fines f
     JOIN loans l ON f.LoanID = l.LoanID
     WHERE f.UserID = p_UserID
-      AND f.PaidStatus = 0
-      AND l.ReturnDate IS NULL;
-
+        AND f.PaidStatus = 0
+        AND f.FineAmount > 0
+        AND l.ReturnDate IS NULL;
     IF v_ActiveLoanFineCount > 0 THEN
         ROLLBACK;
         SIGNAL SQLSTATE '45000'
@@ -99,7 +109,8 @@ BEGIN
         UpdatedAt = CURRENT_TIMESTAMP(),
         UpdatedBy = p_UserID
     WHERE UserID = p_UserID
-      AND PaidStatus = 0;
+      AND PaidStatus = 0
+      AND FineAmount > 0;
 
     -- Update timestamp and status for the user
     UPDATE loans

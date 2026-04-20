@@ -2223,7 +2223,7 @@ export default function LibrarianDashboard() {
                       <td>{loan.CopyID}</td>
                       <td>{loan.ItemID}</td>
                       <td>{loan.Title}</td>
-                      <td>{loan.DueDate ? new Date(loan.DueDate).toLocaleDateString() : "—"}</td>
+                      <td>{loan.DueDate ? new Date(loan.DueDate).toLocaleString() : "—"}</td>
                       <td>{loan.CreatedAt ? new Date(loan.CreatedAt).toLocaleString() : "—"}</td>
                       <td>{userNameById(loan.CreatedBy)}</td>
                       <td>{loan.UpdatedAt ? new Date(loan.UpdatedAt).toLocaleString() : "—"}</td>
@@ -2275,7 +2275,7 @@ export default function LibrarianDashboard() {
                       <td>{loan.CopyID}</td>
                       <td>{loan.ItemID}</td>
                       <td>{loan.Title}</td>
-                      <td>{loan.DueDate ? new Date(loan.DueDate).toLocaleDateString() : "—"}</td>
+                      <td>{loan.DueDate ? new Date(loan.DueDate).toLocaleString() : "—"}</td>
                       <td>{loan.CreatedAt ? new Date(loan.CreatedAt).toLocaleString() : "—"}</td>
                       <td>{userNameById(loan.CreatedBy)}</td>
                       <td>{loan.UpdatedAt ? new Date(loan.UpdatedAt).toLocaleString() : "—"}</td>
@@ -2327,7 +2327,7 @@ export default function LibrarianDashboard() {
                       <td>{loan.CopyID}</td>
                       <td>{loan.ItemID}</td>
                       <td>{loan.Title}</td>
-                      <td>{loan.DueDate ? new Date(loan.DueDate).toLocaleDateString() : "—"}</td>
+                      <td>{loan.DueDate ? new Date(loan.DueDate).toLocaleString() : "—"}</td>
                       <td>{loan.ReturnDate ? new Date(loan.ReturnDate).toLocaleString() : "—"}</td>
                       <td>{loan.CreatedAt ? new Date(loan.CreatedAt).toLocaleString() : "—"}</td>
                       <td>{userNameById(loan.CreatedBy)}</td>

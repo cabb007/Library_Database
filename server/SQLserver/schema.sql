@@ -24,7 +24,7 @@ CREATE TABLE users (
     Email VARCHAR(50) NOT NULL UNIQUE,
     UserType SMALLINT NOT NULL DEFAULT 0,
     LoanPeriodDays INT NOT NULL DEFAULT 14,
-    Status SMALLINT NOT NULL DEFAULT 1, -- 0=Blocked, 1=Active, 2=Removed
+    Status SMALLINT NOT NULL DEFAULT 1, -- 0=Inactive, 1=Active, 2=Removed
     CreatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP(),
     CreatedBy INT NULL,
     UpdatedAt DATETIME NULL,
@@ -151,8 +151,8 @@ CREATE TABLE loans (
     LoanID INT PRIMARY KEY AUTO_INCREMENT,
     UserID INT NOT NULL,
     CopyID INT NOT NULL,
-    DueDate DATE NOT NULL,
-    ReturnDate DATE NULL,
+    DueDate DATETIME NOT NULL,
+    ReturnDate DATETIME NULL,
     CreatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP(),
     CreatedBy INT NULL,
     UpdatedAt DATETIME NULL,
@@ -171,8 +171,8 @@ CREATE TABLE loans (
         ON DELETE SET NULL,
 
 
-CHECK (DueDate >= DATE(CreatedAt)),
-CHECK (ReturnDate IS NULL OR ReturnDate >= DATE(CreatedAt))
+CHECK (DueDate >= CreatedAt),
+CHECK (ReturnDate IS NULL OR ReturnDate >= CreatedAt)
 ) ENGINE=InnoDB;
 
 CREATE INDEX idx_loans_user_active ON loans(UserID, ReturnDate);

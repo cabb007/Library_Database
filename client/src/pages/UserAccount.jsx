@@ -117,9 +117,9 @@ export default function UserAccount() {
     const activeLoans = loans.filter(l => !l.ReturnDate);
     const pastLoans = loans.filter(l => l.ReturnDate);
 
-    function formatDate(dateStr) {
+    function formatDateTime(dateStr) {
         if (!dateStr) return "—";
-        return new Date(dateStr).toLocaleDateString();
+        return new Date(dateStr).toLocaleString();
     }
 
     function isOverdue(dueDateStr) {
@@ -312,7 +312,7 @@ export default function UserAccount() {
                                                 <span className="font-medium truncate">{loan.Title}</span>
                                                 <span className="text-stone-400 text-xs">{loan.ItemTypeName}</span>
                                                 <span className={`text-xs mt-1 ${isOverdue(loan.DueDate) ? "text-red-400" : "text-stone-400"}`}>
-                                                    Due: {formatDate(loan.DueDate)}
+                                                    Due: {formatDateTime(loan.DueDate)}
                                                     {isOverdue(loan.DueDate) && " — Overdue"}
                                                 </span>
                                             </div>
@@ -340,7 +340,7 @@ export default function UserAccount() {
                                                 <span className="font-medium truncate">{hold.Title}</span>
                                                 <span className="text-stone-400 text-xs">{hold.ItemTypeName}</span>
                                                 <span className="text-stone-400 text-xs mt-1">
-                                                    Placed: {formatDate(hold.CreatedAt)}
+                                                    Placed: {formatDateTime(hold.CreatedAt)}
                                                 </span>
                                             </div>
                                             <span className="shrink-0 text-xs text-amber-500 font-semibold tracking-wide uppercase">
@@ -370,7 +370,7 @@ export default function UserAccount() {
                                                 <span className="font-medium truncate">{loan.Title}</span>
                                                 <span className="text-stone-400 text-xs">{loan.ItemTypeName}</span>
                                                 <span className="text-stone-500 text-xs mt-1">
-                                                    Returned: {formatDate(loan.ReturnDate)}
+                                                    Returned: {formatDateTime(loan.ReturnDate)}
                                                 </span>
                                             </div>
                                             <span className="shrink-0 text-xs text-green-600 font-semibold tracking-wide uppercase">

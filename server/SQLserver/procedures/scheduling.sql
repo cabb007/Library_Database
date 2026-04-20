@@ -23,7 +23,10 @@ BEGIN
     SELECT
         l.UserID,
         l.LoanID,
-        GREATEST(DATEDIFF(COALESCE(l.ReturnDate, CURDATE()), l.DueDate), 0) * 2.00,
+        LEAST(
+            GREATEST(DATEDIFF(COALESCE(l.ReturnDate, CURRENT_TIMESTAMP()), l.DueDate), 0) * 2.00,
+            50
+        ),
         0,
         NULL,
         CURRENT_TIMESTAMP,
@@ -33,19 +36,25 @@ BEGIN
     FROM loans l
     LEFT JOIN fines f ON f.LoanID = l.LoanID
     WHERE f.FineID IS NULL
-      AND l.DueDate < CURDATE();
+        AND LEAST(
+                GREATEST(DATEDIFF(COALESCE(l.ReturnDate, CURRENT_TIMESTAMP()), l.DueDate), 0) * 2.00,
+                50
+            ) > 0;
 
     -- Update all existing unpaid fines
-   UPDATE fines f
+    UPDATE fines f
     JOIN loans l ON f.LoanID = l.LoanID
     SET f.FineAmount = LEAST(
-        GREATEST(DATEDIFF(COALESCE(l.ReturnDate, CURDATE()), l.DueDate), 0) * 2.00,
+        GREATEST(DATEDIFF(COALESCE(l.ReturnDate, CURRENT_TIMESTAMP()), l.DueDate), 0) * 2.00,
         50
     ),
     f.UpdatedAt = CURRENT_TIMESTAMP,
     f.UpdatedBy = 1
-WHERE f.PaidStatus = 0
-  AND l.DueDate < CURDATE();
+    WHERE f.PaidStatus = 0
+        AND LEAST(
+                GREATEST(DATEDIFF(COALESCE(l.ReturnDate, CURRENT_TIMESTAMP()), l.DueDate), 0) * 2.00,
+                50
+            ) > 0;
 END$$
 
 -- =========================================================
